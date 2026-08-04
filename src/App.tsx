@@ -3,13 +3,15 @@ import { CameraProvider, cameraProgress, useCamera } from './components/Stage'
 import { Scene } from './components/Scene'
 import { ScreenContent } from './components/ScreenContent'
 import { Cursor, Hint, Nav, Progress } from './components/Overlay'
-import { Contact, Preloader, TitlePlate } from './components/Plates'
+import { Preloader, TitlePlate } from './components/Plates'
+import { RoomFilm, filmLength } from './components/RoomFilm'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
+import { mapRange } from './lib/math'
 import { setMetrics, start, stop } from './lib/scroll'
 
 /** Scrollsträcka för in- respektive utzoomningen, i fönsterhöjder. */
 const ACT1_VH = 4.6
-const ACT3_VH = 3
+const ACT3_VH = 2.6
 
 export default function App() {
   return (
@@ -30,19 +32,22 @@ function Experience() {
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const cameraRef = useRef<HTMLDivElement>(null)
+  const sceneRef = useRef<HTMLDivElement>(null)
 
   // Utan akt 1 och 3 startar sidan direkt inne i skärmen och blir en helt
   // vanlig sida — ingen kamerarörelse alls.
   const act1 = reduced ? 0 : vh * ACT1_VH
   const act3 = reduced ? 0 : vh * ACT3_VH
   const innerMax = Math.max(contentHeight - vh, 0)
+  // Kameraresan genom rummet efter utzoomningen.
+  const filmMax = reduced ? 0 : filmLength(vh)
 
-  // Sidans höjd är summan av de tre akterna — det är den enda scrollytan.
-  const total = act1 + innerMax + act3 + vh
+  // Sidans höjd är summan av akterna — det är den enda scrollytan.
+  const total = act1 + innerMax + act3 + filmMax + vh
 
   useEffect(() => {
-    setMetrics({ act1, act3, innerMax })
-  }, [act1, act3, innerMax])
+    setMetrics({ act1, act3, innerMax, filmMax })
+  }, [act1, act3, innerMax, filmMax])
 
   useEffect(() => {
     // Börja alltid vid rummet, även efter en omladdning mitt i sidan.
@@ -82,6 +87,14 @@ function Experience() {
     // Väl inne i skärmen behövs inte rummet — klassen plockar bort det ur
     // renderingen och släpper på pekhändelser till sidan därinne.
     viewportRef.current?.classList.toggle('is-inside', u > 0.985)
+
+    // Skrivbordsscenen tonas ut när kameraresan tar vid, så att övergången
+    // blir en mjuk övertoning i stället för ett klipp.
+    if (sceneRef.current) {
+      const handOver = f.filmMax > 0 ? mapRange(f.film, 0, f.vh * 0.4) : 0
+      sceneRef.current.style.opacity = (1 - handOver).toFixed(3)
+      sceneRef.current.style.visibility = handOver >= 0.995 ? 'hidden' : 'visible'
+    }
   })
 
   return (
@@ -90,17 +103,19 @@ function Experience() {
 
       <div className="viewport" ref={viewportRef}>
         <div className="camera" ref={cameraRef}>
-          <Scene
-            screen={<ScreenContent onHeight={setContentHeight} reduced={reduced} />}
-          />
+          <div className="camera__scene" ref={sceneRef}>
+            <Scene
+              screen={<ScreenContent onHeight={setContentHeight} reduced={reduced} />}
+            />
+          </div>
         </div>
 
-        {/* Rummets titel och kontaktvyn hör ihop med kameraresan. Utan den
-            ligger kontakten i stället som en vanlig sektion sist på sidan. */}
+        {/* Kameraresan genom rummet tar vid när vi backat ut ur skärmen. */}
+        {!reduced && <RoomFilm />}
+
         {!reduced && (
           <>
             <TitlePlate />
-            <Contact />
             <Hint />
           </>
         )}

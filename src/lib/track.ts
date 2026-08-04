@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react'
+import { useShotRange } from '../components/RoomFilm'
 import { clamp, clamp01 } from './math'
 import type { Frame } from './scroll'
 
@@ -24,6 +25,10 @@ export type Track = {
  * eftersläpning mellan prenumeranter).
  */
 export function useTrack<T extends HTMLElement>(ref: RefObject<T | null>) {
+  // Ute i rummet styrs sektionerna av sin tagning i stället för av
+  // scrollpositionen inuti skärmen. Samma komponenter fungerar på båda
+  // ställena utan att veta vilket det är.
+  const shot = useShotRange()
   const box = useRef({ top: 0, height: 0 })
 
   useEffect(() => {
@@ -44,6 +49,11 @@ export function useTrack<T extends HTMLElement>(ref: RefObject<T | null>) {
   }, [ref])
 
   return useCallback((f: Frame): Track => {
+    if (shot) {
+      const p = clamp01((f.film - shot.start) / shot.length)
+      return { enter: p, pin: p, offset: 0, top: 0, height: 0 }
+    }
+
     const { top, height } = box.current
     const span = height - f.vh
 
@@ -52,5 +62,5 @@ export function useTrack<T extends HTMLElement>(ref: RefObject<T | null>) {
     const pin = span > 0 ? clamp01((f.inner - top) / span) : enter
 
     return { enter, pin, offset, top, height }
-  }, [])
+  }, [shot])
 }

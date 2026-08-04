@@ -39,7 +39,12 @@ export function TitlePlate() {
 
 /* ── Kontakt, efter utzoomningen ─────────────────────────────────────── */
 
-export function Contact({ variant = 'overlay' }: { variant?: 'overlay' | 'static' }) {
+export function Contact({
+  variant = 'overlay',
+}: {
+  /** `film` = sista tagningen i rummet, som sköter in- och uttoning själv. */
+  variant?: 'overlay' | 'static' | 'film'
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const isOverlay = variant === 'overlay'
 
@@ -55,7 +60,7 @@ export function Contact({ variant = 'overlay' }: { variant?: 'overlay' | 'static
   })
 
   return (
-    <div className={`contact ${isOverlay ? '' : 'contact--static'}`} ref={ref} id="kontakt">
+    <div className={`contact contact--${variant}`} ref={ref} id="kontakt">
       <span className="label label--lead">Nästa steg</span>
 
       <h2 className="h-xl" style={{ maxWidth: '16ch' }}>

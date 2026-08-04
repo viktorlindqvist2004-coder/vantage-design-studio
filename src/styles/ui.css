@@ -238,6 +238,19 @@
   will-change: opacity, transform;
 }
 
+/* Sista tagningen i rummet sköter in- och uttoning själv, så kontakten ska
+   inte ha någon egen bakgrund eller opacitet där. */
+.contact--film {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  height: 100%;
+  background: none;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
 /* Vid minskad rörelse ligger kontakten som en vanlig sektion sist på sidan
    i stället för som en överliggande vy. */
 .contact--static {

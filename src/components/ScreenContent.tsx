@@ -4,9 +4,8 @@ import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { MARQUEE_WORDS } from '../data/content'
 import { Marquee } from './inner/Marquee'
-import { About, Hero, Manifest, Numbers, Outro, Services } from './inner/Sections'
+import { Hero, Manifest, Outro } from './inner/Sections'
 import { Work } from './inner/Work'
-import { Process } from './inner/Process'
 import { Contact } from './Plates'
 
 /**
@@ -69,10 +68,6 @@ export function ScreenContent({
           direction={-1}
           speed={0.03}
         />
-        <Services />
-        <Process />
-        <Numbers />
-        <About />
         {reduced ? <Contact variant="static" /> : <Outro />}
       </div>
 

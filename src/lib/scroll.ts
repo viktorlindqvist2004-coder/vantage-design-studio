@@ -14,6 +14,8 @@ export type Metrics = {
   act3: number
   /** Hur långt innehållet inuti skärmen kan rulla (px). */
   innerMax: number
+  /** Scrollsträcka för kameraresan genom rummet efter utzoomningen (px). */
+  filmMax: number
 }
 
 export type Frame = {
@@ -34,6 +36,9 @@ export type Frame = {
   innerMax: number
   /** 0→1 medan kameran backar ut ur skärmen. */
   act3: number
+  /** Hur långt vi kommit i kameraresan genom rummet (px). */
+  film: number
+  filmMax: number
   /** 0 = i rummet, 1 = helt inne i skärmen. */
   inside: number
   reduced: boolean
@@ -45,7 +50,7 @@ type Listener = (f: Frame) => void
 
 const listeners = new Set<Listener>()
 
-let metrics: Metrics = { act1: 0, act3: 0, innerMax: 0 }
+let metrics: Metrics = { act1: 0, act3: 0, innerMax: 0, filmMax: 0 }
 let running = false
 let rafId = 0
 let lastTime = 0
@@ -71,7 +76,7 @@ export const frame: Frame = {
   vw: typeof window !== 'undefined' ? window.innerWidth : 1440,
   vh: typeof window !== 'undefined' ? window.innerHeight : 900,
   dt: 16.67, time: 0,
-  act1: 0, inner: 0, innerMax: 0, act3: 0, inside: 0,
+  act1: 0, inner: 0, innerMax: 0, act3: 0, film: 0, filmMax: 0, inside: 0,
   reduced: false, pointerX: 0, pointerY: 0,
 }
 
@@ -85,7 +90,7 @@ export function getMetrics() {
 
 /** Total scrollhöjd sidan behöver för att rymma hela dramaturgin. */
 export function totalScrollHeight(vh: number) {
-  return metrics.act1 + metrics.innerMax + metrics.act3 + vh
+  return metrics.act1 + metrics.innerMax + metrics.act3 + metrics.filmMax + vh
 }
 
 export function subscribe(fn: Listener) {
@@ -113,12 +118,13 @@ function tick(time: number) {
   pointerX = reduced ? 0 : damp(pointerX, pointerTargetX, 0.06, dt)
   pointerY = reduced ? 0 : damp(pointerY, pointerTargetY, 0.06, dt)
 
-  const { act1, act3, innerMax } = metrics
+  const { act1, act3, innerMax, filmMax } = metrics
   const y = smoothY
 
   const a1 = act1 > 0 ? clamp01(y / act1) : 1
   const inner = clamp(y - act1, 0, innerMax)
   const a3 = act3 > 0 ? clamp01((y - act1 - innerMax) / act3) : 0
+  const film = clamp(y - act1 - innerMax - act3, 0, filmMax)
 
   frame.raw = raw
   frame.y = y
@@ -131,6 +137,8 @@ function tick(time: number) {
   frame.inner = inner
   frame.innerMax = innerMax
   frame.act3 = a3
+  frame.film = film
+  frame.filmMax = filmMax
   frame.reduced = reduced
   frame.pointerX = pointerX
   frame.pointerY = pointerY

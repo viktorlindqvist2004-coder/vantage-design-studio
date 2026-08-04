@@ -20,6 +20,17 @@ import { PHOTO, type PhotoScreen } from '../data/scene-photo'
  * inzoomning i stället för som en förflyttning framåt.
  */
 
+/**
+ * Hur mycket bredare än fönstret scenen som mest får bli.
+ *
+ * Fotot är liggande och ett mobilfönster är stående. Rak cover-beskärning
+ * skulle då visa en så smal remsa av bilden att bildskärmen blir nästan lika
+ * bred som rutan — rummet försvinner och kvar blir en stor svart fyrkant.
+ * Med taket här beskärs bilden måttligt och ytorna över och under fylls i
+ * stället av en suddad kopia.
+ */
+export const MAX_OVERSCAN = 2
+
 /** Avstånd till rumsplanet. Godtyckligt; allt annat räknas relativt det. */
 export const ROOM_DEPTH = 1
 
@@ -53,8 +64,8 @@ export function computeCamera(
   aspect: number = PHOTO.aspect,
   screen: PhotoScreen = PHOTO.screen,
 ): Camera {
-  // Cover: scenen är minst lika bred och hög som fönstret.
-  const stageW = Math.max(vw, vh * aspect)
+  // Cover, men aldrig så hårt beskuren att rummet försvinner.
+  const stageW = Math.min(Math.max(vw, vh * aspect), vw * MAX_OVERSCAN)
   const stageH = stageW / aspect
 
   const screenW = stageW * screen.w

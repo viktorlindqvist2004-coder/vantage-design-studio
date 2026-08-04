@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   KAMERARESAN
+   Efter utzoomningen ur skärmen fortsätter kameran från plats till plats i
+   studion. Varje tagning är en bild som panoreras och åks igenom, och nästa
+   tonas in över slutet av den föregående.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.film {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  background: var(--ink);
+  will-change: opacity;
+}
+
+.film__plate {
+  position: absolute;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.film__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Samma lätta oskärpa som skrivbordet — bilderna är bakgrund, inte motiv,
+     och texten måste kunna ligga var som helst ovanpå. */
+  filter: blur(3px);
+}
+
+/* Håller de fem bilderna i samma ton — de är tagna i samma rum men inte i
+   samma ögonblick. */
+.film__grade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 11, 12, 0.42) 0%, transparent 38%),
+    radial-gradient(76% 72% at 50% 46%, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+/* Ett jämnt mörker under texten, oberoende av hur ljus tagningen är. */
+.film__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 11, 12, 0.74) 0%,
+    rgba(11, 11, 12, 0.52) 30%,
+    rgba(11, 11, 12, 0.6) 62%,
+    rgba(11, 11, 12, 0.9) 100%
+  );
+}
+
+/* Platsens namn, som en diskret bildtext i nederkanten. */
+.film__place {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(1.5rem, 4vh, 2.5rem);
+  z-index: 6;
+  color: var(--dim);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* ── Innehållet som hör till varje tagning ───────────────────────────── */
+
+.film__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  will-change: transform, opacity;
+}
+
+/* Sektionerna är byggda för att ligga i en rullande sida. Här står de
+   stilla i rutan, så deras egna ytterkanter ska inte skjuta ut dem. */
+.film__stage .sec,
+.film__stage .pin,
+.film__stage .pin__inner {
+  position: relative;
+  height: auto;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  inset: auto;
+  transform: none !important;
+}
+
+.film__stage .s-services,
+.film__stage .s-numbers,
+.film__stage .s-about {
+  padding-top: clamp(6rem, 14vh, 10rem);
+  padding-bottom: clamp(4rem, 10vh, 8rem);
+}
+
+.film__stage .proc {
+  height: auto;
+  padding-top: clamp(6rem, 14vh, 10rem);
+  padding-bottom: clamp(4rem, 10vh, 8rem);
+}
+
+.film__stage .proc__panel {
+  min-height: 30vh;
+}
+
+@media (max-width: 780px) {
+  .film__place { display: none; }
+}

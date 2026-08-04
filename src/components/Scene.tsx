@@ -61,11 +61,13 @@ export function Scene({ screen }: { screen: ReactNode }) {
   return (
     <div
       className="stage"
-      style={{
-        aspectRatio: String(PHOTO.aspect),
-        ['--photo-aspect' as string]: String(PHOTO.aspect),
-      }}
+      style={{ width: `${cam.stageW}px`, height: `${cam.stageH}px` }}
     >
+      {/* Fyller ytorna över och under scenen på höga fönster. */}
+      {!missing && (
+        <img className="backdrop" src={photoUrl} alt="" aria-hidden="true" decoding="async" />
+      )}
+
       {/* Sidan — längre bort, bakom öppningen. */}
       <div
         className="plane plane--content"

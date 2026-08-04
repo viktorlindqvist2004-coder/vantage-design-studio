@@ -10,13 +10,31 @@
   will-change: transform;
 }
 
+.camera__scene {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
+
 .stage {
   position: absolute;
   left: 50%;
   top: 50%;
-  /* Cover: scenen är alltid minst lika stor som fönstret. */
-  width: max(100vw, calc(100vh * var(--photo-aspect, 1.7778)));
+  /* Storleken sätts av kameran — se MAX_OVERSCAN i scene.ts. */
   transform: translate(-50%, -50%);
+}
+
+/* Suddad kopia av rummet som fyller ytorna utanför scenen på höga fönster,
+   så att bilden aldrig möter en hård svart kant. */
+.backdrop {
+  position: fixed;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  filter: blur(48px) brightness(0.52) saturate(0.85);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .plane {
