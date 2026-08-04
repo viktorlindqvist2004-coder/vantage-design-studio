@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   SKRIVBORDET
-   Ett riktigt fotografi, lätt oskarpt. Hela scenen är ett plan som skalas
-   kring bildskärmens mittpunkt när kameran åker framåt.
+   SCENEN
+   Två plan på olika djup: rummet närmast, med en öppning där bildskärmen
+   sitter, och webbplatsen längre bort bakom öppningen.
    ═══════════════════════════════════════════════════════════════════════ */
 
 .camera {
@@ -16,22 +16,49 @@
   top: 50%;
   /* Cover: scenen är alltid minst lika stor som fönstret. */
   width: max(100vw, calc(100vh * var(--photo-aspect, 1.7778)));
-  will-change: transform;
+  transform: translate(-50%, -50%);
 }
 
-/* ── Fotot ───────────────────────────────────────────────────────────── */
-
-.plate {
+.plane {
   position: absolute;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ── Sidan, bakom öppningen ──────────────────────────────────────────── */
+
+.plane--content {
+  /* Placeras av Scene.tsx så att mitten hamnar i öppningens mitt. */
+  overflow: hidden;
+  background: var(--ink);
+}
+
+/* ── Rummet, närmast kameran ─────────────────────────────────────────── */
+
+.plane--room {
   inset: 0;
   overflow: hidden;
   background: #08080a;
+
+  /* Hålet där bildskärmen sitter. Två masker läggs på varandra och den inre
+     räknas bort, vilket lämnar en genomskinlig rektangel. Måtten kommer från
+     scene-photo.ts via Scene.tsx, så hålet följer alltid med om skärmytan
+     passas in på nytt. */
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%, var(--hole-w) var(--hole-h);
+  mask-size: 100% 100%, var(--hole-w) var(--hole-h);
+  -webkit-mask-position: 0 0, var(--hole-x) var(--hole-y);
+  mask-position: 0 0, var(--hole-x) var(--hole-y);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 /* Bilden måste ligga exakt i scenens koordinatsystem — det är samma system
-   som skärmytan pekas ut i. Minsta överskott eller förskjutning här och
-   webbsidan hamnar bredvid monitorn i fotot. Oskärpans mjuka kanter döljs i
-   stället av vinjetten. */
+   som öppningen pekas ut i. Minsta förskjutning och hålet hamnar bredvid
+   monitorn i fotot. */
 .plate__img {
   position: absolute;
   inset: 0;
@@ -46,7 +73,7 @@
 }
 
 /* Om fotot saknas visas en neutral botten i stället för en trasig bild. */
-.plate--missing {
+.plane--missing {
   background:
     radial-gradient(58% 52% at 50% 42%, #1c1d21 0%, #0d0d10 62%, #08080a 100%);
 }
@@ -66,24 +93,6 @@
     rgba(0, 0, 0, 0.5) 84%,
     rgba(0, 0, 0, 0.78) 100%
   );
-}
-
-/* ── Skärmytan — portalen in i webbplatsen ───────────────────────────── */
-
-.screen {
-  position: absolute;
-  overflow: hidden;
-  background: var(--ink);
-  transform: translateZ(0);
-  /* Mjuk kant så att den skarpa sidan inte ser inklistrad ut mot det
-     oskarpa fotot. */
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.55),
-    0 0 3vw 0.6vw color-mix(in srgb, var(--glow) 12%, transparent);
-}
-
-.is-inside .plate {
-  visibility: hidden;
 }
 
 /* ── Inpassningsläge (?calibrate) ────────────────────────────────────── */

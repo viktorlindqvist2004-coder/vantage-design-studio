@@ -4,50 +4,47 @@ import { PHOTO, type PhotoScreen } from '../data/scene-photo'
 /**
  * KAMERAN
  * ───────
- * Bakgrunden är ett enda plan — fotografiet. Kameran åker rakt fram mot
- * bildskärmen i bilden, vilket motsvarar att skala fotot kring skärmens
- * mittpunkt:
+ * Scenen är två plan på olika avstånd från kameran:
  *
- *     m = (P - z) / (P - z - zc)
+ *   • RUMMET — fotografiet, närmast. Där bildskärmen sitter är planet
+ *              genomskinligt, som en öppning i en vägg.
+ *   • SIDAN  — webbplatsen, längre bort, bakom öppningen.
  *
- * där P är perspektivavståndet och zc hur långt kameran flyttat sig framåt.
- * Formeln i stället för en rak `scale(1 → 7)` gör att rörelsen accelererar
- * som en riktig framåtåkning: långsamt på håll, snabbt de sista metrarna.
+ * Ett plan på avståndet `d` skalas med `d / (d - t)` när kameran flyttat sig
+ * `t` framåt. Eftersom rummet ligger närmare växer det snabbare än sidan
+ * bakom — man ser mer och mer av sidan genom en allt större öppning, och
+ * ramen sveper till slut förbi kameran.
  *
- * Fotot täcker alltid fönstret (cover), så slutskalan blir densamma oavsett
- * fönsterformat.
+ * Det är hela poängen. Skalas båda planen lika mycket — som ett vanligt foto
+ * som zoomas — får ögat inga djupledsledtrådar, och rörelsen läses som en
+ * inzoomning i stället för som en förflyttning framåt.
  */
 
-export const PERSPECTIVE = 1.15
+/** Avstånd till rumsplanet. Godtyckligt; allt annat räknas relativt det. */
+export const ROOM_DEPTH = 1
 
-/** Fotoplanets djup. */
-export const Z_PLANE = -0.35
+/**
+ * Avstånd till sidan bakom öppningen. Större värde ger tydligare djup, men
+ * också mer av sidan synlig redan på håll.
+ */
+export const CONTENT_DEPTH = 1.55
 
 export type Camera = {
   stageW: number
   stageH: number
+  /** Öppningens storlek i px när kameran står stilla. */
   screenW: number
   screenH: number
-  /** Skala som får skärmytan att täcka fönstret. */
-  scale: number
-  /** Förflyttning som centrerar skärmytan i fönstret. */
+  /** Kamerans läge när öppningen precis täcker fönstret. */
+  travel: number
+  /** Förflyttning som centrerar öppningen i fönstret. */
   dx: number
   dy: number
   /** Transform-origin i px, relativt scenens låda. */
   originX: number
   originY: number
-  /** Kamerans maximala framåtrörelse. */
-  zMax: number
-  /**
-   * Skalan på sidan inuti skärmen.
-   *
-   * `contentExact` gör att sidan landar i exakt 1:1 när kameran är hela vägen
-   * inne. `contentCover` gör att den fyller hela skärmytan på håll. De skiljer
-   * sig åt eftersom skärmens proportioner sällan är precis fönstrets — utan
-   * övergången mellan dem syns svarta kanter inuti monitorn under resan.
-   */
-  contentExact: number
-  contentCover: number
+  vw: number
+  vh: number
 }
 
 export function computeCamera(
@@ -63,7 +60,8 @@ export function computeCamera(
   const screenW = stageW * screen.w
   const screenH = stageH * screen.h
 
-  const scale = Math.max(vw / screenW, vh / screenH)
+  // Så mycket måste öppningen växa för att täcka fönstret.
+  const coverScale = Math.max(vw / screenW, vh / screenH)
 
   const stageLeft = (vw - stageW) / 2
   const stageTop = (vh - stageH) / 2
@@ -74,25 +72,37 @@ export function computeCamera(
   const dx = vw / 2 - (stageLeft + originX)
   const dy = vh / 2 - (stageTop + originY)
 
-  const zMax = (PERSPECTIVE - Z_PLANE) * (1 - 1 / scale)
+  // ROOM_DEPTH / (ROOM_DEPTH - travel) = coverScale
+  const travel = ROOM_DEPTH * (1 - 1 / coverScale)
 
-  const contentExact = Math.min(screenW / vw, screenH / vh)
-  const contentCover = Math.max(screenW / vw, screenH / vh)
-
-  return {
-    stageW, stageH, screenW, screenH, scale, dx, dy, originX, originY, zMax,
-    contentExact, contentCover,
-  }
+  return { stageW, stageH, screenW, screenH, travel, dx, dy, originX, originY, vw, vh }
 }
 
-/** Fotoplanets skala vid kamerapositionen `zc`. */
-export function planeScale(zc: number) {
-  const d0 = PERSPECTIVE - Z_PLANE
-  return d0 / Math.max(d0 - zc, 0.001)
+/** Rummets skala vid kameraläget `t`. */
+export const roomScale = (t: number) =>
+  ROOM_DEPTH / Math.max(ROOM_DEPTH - t, 0.0001)
+
+/**
+ * Sidans skala vid kameraläget `t`, normaliserad så att den landar på exakt 1
+ * när kameran är hela vägen inne — då ligger sidan i 1:1 och texten är lika
+ * skarp som på vilken vanlig webbsida som helst.
+ */
+export function contentScale(t: number, cam: Camera) {
+  const natural =
+    (CONTENT_DEPTH - cam.travel) / Math.max(CONTENT_DEPTH - t, 0.0001)
+
+  // Sidan måste alltid fylla det som faktiskt syns av öppningen, annars
+  // blottas en tunn rand bakgrund längs kanterna strax innan man är inne.
+  // Öppningens delar utanför fönstret spelar ingen roll.
+  const hole = roomScale(t)
+  const needW = Math.min(hole * cam.screenW, cam.vw) / cam.vw
+  const needH = Math.min(hole * cam.screenH, cam.vh) / cam.vh
+
+  return Math.max(natural, needW, needH)
 }
 
 /**
- * "Insidan" — 0 i rummet, 1 när skärmen fyller fönstret.
+ * "Insidan" — 0 vid skrivbordet, 1 när sidan fyller fönstret.
  * Under akt 3 backar samma värde tillbaka mot 0.
  */
 export function insideness(act1: number, act3: number, ease: (t: number) => number) {

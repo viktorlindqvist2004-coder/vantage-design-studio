@@ -5,11 +5,10 @@
    i exakt 1:1 — knivskarp, inte uppförstorad.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Fyller sitt plan; skalningen sköts av Scene.tsx. */
 .screen-content {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform-origin: 50% 50%;
+  inset: 0;
   background: var(--ink);
   color: var(--bone);
   overflow: hidden;
@@ -342,74 +341,6 @@
   text-align: right;
   white-space: nowrap;
   line-height: 1.8;
-}
-
-/* ── Helskärmsbild som zoomar ────────────────────────────────────────── */
-
-.showcase {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--ink);
-}
-
-.showcase__media {
-  position: absolute;
-  inset: 0;
-  will-change: transform;
-}
-
-.showcase__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Reserv om fotot inte ligger på plats — zoomar likadant. */
-.showcase__media--missing {
-  background:
-    radial-gradient(62% 58% at 42% 40%, #232429 0%, #131316 58%, #0b0b0c 100%);
-}
-
-/* Bilderna är ljusa och detaljrika. Mitten hålls öppen så fotot får synas,
-   men nederkanten mörkas ordentligt — det är där texten står. */
-.showcase__scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(11, 11, 12, 0.55) 0%,
-    rgba(11, 11, 12, 0.18) 30%,
-    rgba(11, 11, 12, 0.62) 68%,
-    rgba(11, 11, 12, 0.93) 100%
-  );
-}
-
-.showcase__cap {
-  position: absolute;
-  left: var(--gutter);
-  right: var(--gutter);
-  bottom: clamp(3rem, 10vh, 7rem);
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  will-change: transform, opacity;
-}
-
-.showcase__cap .label {
-  color: color-mix(in srgb, var(--bone) 78%, transparent);
-}
-
-.showcase__text {
-  max-width: 20ch;
-  font-size: clamp(1.6rem, 4vw, 4rem);
-  font-weight: 200;
-  letter-spacing: -0.03em;
-  line-height: 1.14;
-  /* Fotot bakom kan vara ljust i partier — skuggan håller texten läsbar
-     utan att lägga en tyngre platta över bilden. */
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
 /* ── Tjänster ────────────────────────────────────────────────────────── */

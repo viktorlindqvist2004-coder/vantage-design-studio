@@ -1,34 +1,46 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useCamera, cameraProgress } from './Stage'
 import { useFrame } from '../lib/hooks'
-import { planeScale } from '../lib/scene'
+import { contentScale, roomScale } from '../lib/scene'
 import { mapRange } from '../lib/math'
 import { PHOTO, type PhotoScreen } from '../data/scene-photo'
 
 const photoUrl = `${import.meta.env.BASE_URL}${PHOTO.src}`
 
 /**
- * Skrivbordet — ett riktigt fotografi, lätt oskarpt, med webbplatsen liggande
- * i bildskärmen. Hela scenen är ett enda plan som skalas kring skärmens
- * mittpunkt, så att kameran ser ut att åka rakt in i skärmen.
+ * Skrivbordet och sidan, som två plan på olika djup.
+ *
+ * Rumsplanet ligger närmast och har en genomskinlig öppning där bildskärmen
+ * sitter — hålet stansas med en CSS-mask, så det följer automatiskt med om
+ * skärmytan justeras i scene-photo.ts. Sidan ligger längre bort, bakom
+ * öppningen. När kameran åker framåt växer öppningen snabbare än sidan, och
+ * man ser mer och mer av den genom en allt större ram.
  */
 export function Scene({ screen }: { screen: ReactNode }) {
   const cam = useCamera()
-  const stageRef = useRef<HTMLDivElement>(null)
-  const plateRef = useRef<HTMLDivElement>(null)
+  const roomRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const softRef = useRef<HTMLImageElement>(null)
   const [missing, setMissing] = useState(false)
 
   useFrame((f) => {
     const u = cameraProgress(f.act1, f.act3)
     // Lätt andning i vila så att bilden aldrig står helt stilla.
-    const breath = f.reduced ? 0 : Math.sin(f.time * 0.00042) * 0.006 * (1 - u)
-    const m = planeScale(cam.zMax * u + breath)
+    const breath = f.reduced ? 0 : Math.sin(f.time * 0.00042) * 0.004 * (1 - u)
+    const t = cam.travel * (u + breath)
 
-    if (stageRef.current) {
-      stageRef.current.style.transform =
-        `translate(-50%, -50%) scale(${m.toFixed(4)})`
+    const room = roomScale(t)
+
+    if (roomRef.current) {
+      roomRef.current.style.transform = `scale(${room.toFixed(4)})`
+      // När ramen passerat kameran finns inget kvar att visa av rummet.
+      const past = room * cam.screenW >= cam.vw && room * cam.screenH >= cam.vh
+      roomRef.current.style.visibility = past ? 'hidden' : 'visible'
+    }
+
+    if (contentRef.current) {
+      contentRef.current.style.transform = `scale(${contentScale(t, cam).toFixed(5)})`
     }
 
     // Skärpedjupet minskar när kameran närmar sig — som en riktig kamera som
@@ -36,26 +48,46 @@ export function Scene({ screen }: { screen: ReactNode }) {
     if (softRef.current) {
       softRef.current.style.opacity = mapRange(u, 0, 0.7).toFixed(3)
     }
-
-    // Så fort skärmytan täcker fönstret behövs inte fotot längre. Att ta bort
-    // det ur renderingen håller kompositorn nere på ett fåtal lager.
-    if (plateRef.current) {
-      const covered = m * cam.screenW >= f.vw && m * cam.screenH >= f.vh
-      plateRef.current.style.visibility = covered ? 'hidden' : 'visible'
-    }
   })
+
+  const s = PHOTO.screen
+  const holeStyle = {
+    '--hole-x': `${(s.x * cam.stageW).toFixed(1)}px`,
+    '--hole-y': `${(s.y * cam.stageH).toFixed(1)}px`,
+    '--hole-w': `${(s.w * cam.stageW).toFixed(1)}px`,
+    '--hole-h': `${(s.h * cam.stageH).toFixed(1)}px`,
+  } as CSSProperties
 
   return (
     <div
       className="stage"
-      ref={stageRef}
       style={{
-        transformOrigin: `${cam.originX}px ${cam.originY}px`,
         aspectRatio: String(PHOTO.aspect),
         ['--photo-aspect' as string]: String(PHOTO.aspect),
       }}
     >
-      <div className={`plate ${missing ? 'plate--missing' : ''}`} ref={plateRef}>
+      {/* Sidan — längre bort, bakom öppningen. */}
+      <div
+        className="plane plane--content"
+        ref={contentRef}
+        style={{
+          left: `${cam.originX}px`,
+          top: `${cam.originY}px`,
+          width: `${cam.vw}px`,
+          height: `${cam.vh}px`,
+          marginLeft: `${-cam.vw / 2}px`,
+          marginTop: `${-cam.vh / 2}px`,
+        }}
+      >
+        {screen}
+      </div>
+
+      {/* Rummet — närmast kameran, med hålet där skärmen sitter. */}
+      <div
+        className={`plane plane--room ${missing ? 'plane--missing' : ''}`}
+        ref={roomRef}
+        style={{ ...holeStyle, transformOrigin: `${cam.originX}px ${cam.originY}px` }}
+      >
         {!missing && (
           <>
             <img
@@ -67,8 +99,8 @@ export function Scene({ screen }: { screen: ReactNode }) {
               onError={() => setMissing(true)}
               style={{ filter: `blur(${PHOTO.blur}px)` }}
             />
-            {/* Samma bild en gång till, kraftigare oskärpa. Tonas in när
-                kameran närmar sig — billigare än att animera blur. */}
+            {/* Samma bild igen, kraftigare oskärpa. Tonas in när kameran
+                närmar sig — billigare än att animera blur. */}
             <img
               className="plate__img plate__img--soft"
               ref={softRef}
@@ -82,18 +114,6 @@ export function Scene({ screen }: { screen: ReactNode }) {
         )}
         <div className="plate__dim" style={{ opacity: PHOTO.dim }} />
         <div className="plate__vignette" />
-      </div>
-
-      <div
-        className="screen"
-        style={{
-          left: `${PHOTO.screen.x * 100}%`,
-          top: `${PHOTO.screen.y * 100}%`,
-          width: `${PHOTO.screen.w * 100}%`,
-          height: `${PHOTO.screen.h * 100}%`,
-        }}
-      >
-        {screen}
       </div>
 
       <Calibrator />
