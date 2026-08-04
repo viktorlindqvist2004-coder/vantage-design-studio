@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp01, easeInOutCubic, lerp, mapRange } from '../lib/math'
 import { PHOTO } from '../data/scene-photo'
-import { CROSSFADE, SHOTS, type Shot } from '../data/film'
+import { SHOTS, SWING_DISTANCE, SWING_VH, type Shot } from '../data/film'
 import { About, Numbers, Services } from './inner/Sections'
 import { Process } from './inner/Process'
 import { Contact } from './Plates'
@@ -57,6 +57,7 @@ export function RoomFilm() {
   const rootRef = useRef<HTMLDivElement>(null)
   const plateRefs = useRef<(HTMLDivElement | null)[]>([])
   const labelRef = useRef<HTMLSpanElement>(null)
+  const whipRef = useRef<HTMLDivElement>(null)
 
   // Bilderna täcker rutan (cover) — måtten behövs för att räkna ut var i
   // bilden kameran tittar.
@@ -72,12 +73,14 @@ export function RoomFilm() {
     }
 
     let active = 0
+    const swingPx = vh * SWING_VH
 
     SHOTS.forEach((shot, i) => {
       const el = plateRefs.current[i]
       const r = ranges[i]
       if (!el || !r) return
 
+      const end = r.start + r.length
       const p = clamp01((f.film - r.start) / r.length)
       const e = easeInOutCubic(p)
 
@@ -87,22 +90,53 @@ export function RoomFilm() {
       const s = lerp(shot.from.scale, shot.to.scale, e)
 
       // Flytta punkten kameran tittar på till mitten av rutan.
-      const tx = plateW * (0.5 - x)
-      const ty = plateH * (0.5 - y)
+      let tx = plateW * (0.5 - x)
+      let ty = plateH * (0.5 - y)
+
+      // Svepet ut mot nästa plats: bilden glider ur bild i sin svängriktning
+      // i stället för att tonas bort. Nästa tagning kommer in från motsatt
+      // håll, vilket är vad ögat läser som en panorering.
+      const out = easeInOutCubic(clamp01((f.film - (end - swingPx)) / swingPx))
+      tx += shot.swing * out * vw * SWING_DISTANCE
+
+      // ... och samma svep sett från den tagning som kommer in.
+      const prev = SHOTS[i - 1]
+      if (prev) {
+        const inn = easeInOutCubic(clamp01((f.film - (r.start - swingPx)) / swingPx))
+        tx -= prev.swing * (1 - inn) * vw * SWING_DISTANCE
+      }
+
+      // Handhållen mikrorörelse — utan den står bilden stilla mellan
+      // svepen och avslöjar sig som ett foto.
+      const drift = f.reduced ? 0 : 1
+      const hx = Math.sin(f.time * 0.00037 + i) * 5 * drift
+      const hy = Math.cos(f.time * 0.00029 + i * 2) * 3.5 * drift
+      const roll = Math.sin(f.time * 0.00021 + i) * 0.12 * drift
 
       el.style.transformOrigin = `${(x * 100).toFixed(2)}% ${(y * 100).toFixed(2)}%`
       el.style.transform =
-        `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${s.toFixed(4)})`
+        `translate3d(${(tx + hx).toFixed(1)}px, ${(ty + hy).toFixed(1)}px, 0) ` +
+        `rotate(${roll.toFixed(3)}deg) scale(${s.toFixed(4)})`
 
-      // Tagningen tonas in över slutet av den föregående.
-      const fade = r.length * CROSSFADE
-      const o = i === 0
-        ? 1
-        : clamp01((f.film - (r.start - fade)) / fade)
-      el.style.opacity = o.toFixed(3)
+      // Bilden behöver bara plockas bort när den lämnat rutan helt.
+      const gone = out >= 1
+      el.style.visibility = gone ? 'hidden' : 'visible'
 
-      if (f.film >= r.start - fade * 0.5) active = i
+      if (f.film >= r.start - swingPx * 0.5) active = i
     })
+
+    // Ett kort mörker på svepets topp, som när en kamera viner förbi.
+    if (whipRef.current) {
+      let peak = 0
+      SHOTS.forEach((_, i) => {
+        const r = ranges[i]
+        if (!r || i === SHOTS.length - 1) return
+        const end = r.start + r.length
+        const w = clamp01((f.film - (end - swingPx)) / swingPx)
+        if (w > 0 && w < 1) peak = Math.max(peak, Math.sin(Math.PI * w))
+      })
+      whipRef.current.style.opacity = (peak * 0.55).toFixed(3)
+    }
 
     // Sista tagningen bär kontaktuppgifterna ända ut i kanterna, så
     // platsetiketten skulle lägga sig ovanpå kolofonen där.
@@ -140,6 +174,7 @@ export function RoomFilm() {
       ))}
 
       <div className="film__scrim" />
+      <div className="film__whip" ref={whipRef} />
 
       <span className="film__place label" ref={labelRef} aria-hidden="true" />
 

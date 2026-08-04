@@ -31,7 +31,6 @@ export function TitlePlate() {
       <h2 className="title-plate__big">Vantage Design Studio</h2>
       <p className="title-plate__sub">
         Vi ritar och kodar webbplatser med lugn form och tydlig riktning.
-        Scrolla in i skärmen.
       </p>
     </div>
   )

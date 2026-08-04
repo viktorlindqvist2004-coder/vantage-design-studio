@@ -112,3 +112,16 @@
 @media (max-width: 780px) {
   .film__place { display: none; }
 }
+
+/* Ett kort mörker på svepets topp — som när en kamera viner förbi och
+   tappar ljus ett ögonblick. Billigare än rörelseoskärpa och läser
+   likadant i farten. */
+.film__whip {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}

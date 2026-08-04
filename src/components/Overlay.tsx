@@ -152,7 +152,6 @@ export function Hint() {
 
   return (
     <div className="hint" ref={ref} aria-hidden="true">
-      <span className="label">Scrolla</span>
       <div className="hint__rail" />
     </div>
   )

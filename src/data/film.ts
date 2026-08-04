@@ -30,6 +30,12 @@ export type Shot = {
   to: CameraMark
   /** Tagningens längd i fönsterhöjder. */
   length: number
+  /**
+   * Åt vilket håll bilden sveper ut när kameran går vidare till nästa plats.
+   * -1 = bilden glider åt vänster, alltså kameran svänger åt höger. Nästa
+   * tagning kommer då in från motsatt håll, som vid en riktig panorering.
+   */
+  swing: -1 | 1
 }
 
 export const SHOTS: Shot[] = [
@@ -41,6 +47,7 @@ export const SHOTS: Shot[] = [
     from: { x: 0.66, y: 0.52, scale: 1.34 },
     to: { x: 0.36, y: 0.48, scale: 1.08 },
     length: 3.4,
+    swing: 1,
   },
   {
     id: 'shelf',
@@ -50,6 +57,7 @@ export const SHOTS: Shot[] = [
     from: { x: 0.38, y: 0.44, scale: 1.06 },
     to: { x: 0.58, y: 0.54, scale: 1.32 },
     length: 3.8,
+    swing: -1,
   },
   {
     id: 'samples',
@@ -59,6 +67,7 @@ export const SHOTS: Shot[] = [
     from: { x: 0.3, y: 0.62, scale: 1.42 },
     to: { x: 0.56, y: 0.5, scale: 1.05 },
     length: 3.4,
+    swing: -1,
   },
   {
     id: 'lamp',
@@ -68,8 +77,12 @@ export const SHOTS: Shot[] = [
     from: { x: 0.5, y: 0.58, scale: 1.2 },
     to: { x: 0.5, y: 0.4, scale: 1.02 },
     length: 3.6,
+    swing: 1,
   },
 ]
 
-/** Hur stor del av en tagning som används till att tona in nästa. */
-export const CROSSFADE = 0.26
+/** Svepet mellan två platser, i fönsterhöjder scroll. */
+export const SWING_VH = 1.1
+
+/** Hur långt bilderna glider i sidled under svepet, i fönsterbredder. */
+export const SWING_DISTANCE = 1.25

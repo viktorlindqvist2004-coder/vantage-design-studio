@@ -216,30 +216,3 @@ export function About() {
     </section>
   )
 }
-
-/* ── Uttåg ur skärmen ────────────────────────────────────────────────── */
-
-export function Outro() {
-  const ref = useRef<HTMLElement>(null)
-  const track = useTrack(ref)
-  const bigRef = useRef<HTMLParagraphElement>(null)
-
-  useFrame((f) => {
-    const p = easeOutCubic(mapRange(track(f).enter, 0.32, 0.86))
-    if (bigRef.current) {
-      bigRef.current.style.transform = `translate3d(0, ${((1 - p) * 20).toFixed(1)}px, 0)`
-      bigRef.current.style.opacity = p.toFixed(3)
-    }
-  })
-
-  return (
-    <section className="s-outro" ref={ref}>
-      <span className="label">Fortsätt scrolla</span>
-      <p className="s-outro__big" ref={bigRef}>
-        Vi backar ut ur skärmen
-        <br />
-        och tillbaka till studion.
-      </p>
-    </section>
-  )
-}
