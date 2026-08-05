@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react'
-import { useShotRange } from '../components/RoomFilm'
+import { useShotRange } from '../components/Film'
 import { clamp, clamp01 } from './math'
 import type { Frame } from './scroll'
 

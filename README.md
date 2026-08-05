@@ -44,37 +44,30 @@ rör den:
 git diff --quiet HEAD^ HEAD -- .
 ```
 
-## Bilderna
+## Filmen
 
-Sidan vill ha följande filer i `public/images/`. Saknas en fil ritas en neutral
-reserv i stället, så sidan aldrig visar en trasig bildruta:
+Hela sidan ligger på ett enda klipp i `public/clips/`. Kameran åker in i
+bildskärmen, ut i rummet, förbi fönstret, hyllan och lampan, och slutar vid
+skrivbordet. Klippet spelas aldrig av sig självt — scrollen sätter
+uppspelningspunkten, så kameran rör sig exakt så långt och så fort som man drar.
 
-| Fil | Används till |
-| --- | --- |
-| `studio.jpg` | Skrivbordet som sidan öppnar med. **Viktigast.** ✅ |
-| `showcase-01.jpg` | Helskärmsbild efter manifestet — skrivbordet uppifrån ✅ |
-| `showcase-02.jpg` | Helskärmsbild efter processen — identitetsarbete ✅ |
-| `work-01.jpg` … `work-06.jpg` | Projektkorten i arbetsgalleriet (4:3) — saknas än |
+Skärmen i klippet är **magenta**. Den färgen nycklas bort i `KeyedVideo`, och
+bakom den ligger den riktiga webbplatsen. När kameran åkt hela vägen in och
+magentan fyller rutan är det alltså sidan man ser, i full skärpa.
 
-**`studio.jpg` behöver vara ett foto där bildskärmen är vänd rakt mot
-kameran.** Ju mer skärmen är vriden, desto tydligare syns det att den
-rektangulära webbsidan inte ligger i samma vinkel som skärmen i bilden. Ett
-foto med naturligt kort skärpedjup är extra bra — då behövs mindre oskärpa i
-CSS.
+### Byta klipp
 
-### Passa in skärmytan
+1. Rendera ett klipp där skärmen är en jämn, mättad magenta.
+2. Lägg originalet i `clips-raw/` och kör `node scripts/prepare-clip.mjs`.
+3. Läs av tiderna i klippet och skriv in dem i `src/data/film.ts`: när
+   magentan fyller rutan (`enter`), och vilka sekunder varje plats i rummet
+   upptar (`SHOTS`).
 
-När `studio.jpg` är på plats behöver koden veta exakt var skärmen ligger i
-bilden. Starta `npm run dev` och lägg till `?calibrate` i adressfältet:
-
-```
-http://localhost:5173/?calibrate
-```
-
-En ram läggs över skärmytan. Piltangenter flyttar, skift ändrar storlek, alt
-finjusterar. Siffrorna visas i panelen nere till vänster — klistra in dem i
-`screen` i `src/data/scene-photo.ts` och ta bort `?calibrate`. Där ställer du
-även bildens proportioner (`aspect`) och hur oskarp den ska vara.
+Omkodningen gör varje bildruta till en nyckelbildruta. En vanlig MP4 har en
+nyckelbildruta ungefär varannan sekund och webbläsaren kan bara hoppa till en
+sådan — därför hackar scrubbning av vanliga filer. Klippet levereras i två
+format eftersom Chromium utan patentbelagda kodekar inte spelar H.264 och
+Safari inte spelar VP9.
 
 ## Så fungerar kameran
 
@@ -84,11 +77,13 @@ sidan sin höjd.
 
 Scrollen delas i tre akter (`src/App.tsx`):
 
-| Akt | Sträcka | Vad som händer |
+| Skede | Sträcka | Vad som händer |
 | --- | --- | --- |
-| 1 | 4,6 fönsterhöjder | Kameran åker in i skärmen |
-| 2 | innehållets höjd | Sidan inuti skärmen rullar |
-| 3 | 3 fönsterhöjder | Kameran backar ut, kontakten träder fram |
+| 1 | till `enter` i klippet | Kameran åker in mot skärmen |
+| 2 | innehållets höjd | Klippet står stilla medan sidan rullar |
+| 3 | resten av klippet | Kameran fortsätter genom rummet |
+
+Utan pausen i mitten skulle kameran åka vidare medan man läser.
 
 **Skrivbordet** (`src/lib/scene.ts`) är ett enda plan — fotografiet. Kameran
 åker rakt fram mot skärmen i bilden, vilket motsvarar att skala fotot kring

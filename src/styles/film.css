@@ -1,59 +1,57 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   KAMERARESAN
-   Efter utzoomningen ur skärmen fortsätter kameran från plats till plats i
-   studion. Varje tagning är en bild som panoreras och åks igenom, och nästa
-   tonas in över slutet av den föregående.
+   FILMEN
+   Ett enda klipp bär hela sidan. Scrollen sätter uppspelningspunkten, och
+   skärmen i klippet är bortnycklad så att webbplatsen syns genom den.
    ═══════════════════════════════════════════════════════════════════════ */
 
 .film {
   position: absolute;
   inset: 0;
-  z-index: 20;
   overflow: hidden;
   background: var(--ink);
-  will-change: opacity;
 }
 
-.film__plate {
-  position: absolute;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-}
-
-.film__plate img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Samma lätta oskärpa som skrivbordet — bilderna är bakgrund, inte motiv,
-     och texten måste kunna ligga var som helst ovanpå. */
-  filter: blur(3px);
-}
-
-/* Håller de fem bilderna i samma ton — de är tagna i samma rum men inte i
-   samma ögonblick. */
-.film__grade {
+/* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. */
+.film__page {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(11, 11, 12, 0.42) 0%, transparent 38%),
-    radial-gradient(76% 72% at 50% 46%, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+  transform-origin: 50% 50%;
+  will-change: transform;
+  background: var(--ink);
+}
+
+/* Duken filmen ritas på. Ligger över sidan; magentan är genomskinlig. */
+.film__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Ett jämnt mörker under texten, oberoende av hur ljus tagningen är. */
 .film__scrim {
   position: absolute;
   inset: 0;
+  z-index: 3;
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(11, 11, 12, 0.74) 0%,
-    rgba(11, 11, 12, 0.52) 30%,
-    rgba(11, 11, 12, 0.6) 62%,
-    rgba(11, 11, 12, 0.9) 100%
+    rgba(11, 11, 12, 0.7) 0%,
+    rgba(11, 11, 12, 0.42) 30%,
+    rgba(11, 11, 12, 0.52) 62%,
+    rgba(11, 11, 12, 0.88) 100%
   );
+  opacity: var(--film-scrim, 1);
 }
 
-/* Platsens namn, som en diskret bildtext i nederkanten. */
+/* Scrimmen ska inte lägga sig över sidan medan man är inne i skärmen. */
+.is-inside .film__scrim {
+  opacity: 0;
+}
+
 .film__place {
   position: absolute;
   left: var(--gutter);
@@ -64,7 +62,7 @@
   pointer-events: none;
 }
 
-/* ── Innehållet som hör till varje tagning ───────────────────────────── */
+/* ── Innehållet som hör till varje plats ─────────────────────────────── */
 
 .film__stage {
   position: absolute;
@@ -111,17 +109,4 @@
 
 @media (max-width: 780px) {
   .film__place { display: none; }
-}
-
-/* Ett kort mörker på svepets topp — som när en kamera viner förbi och
-   tappar ljus ett ögonblick. Billigare än rörelseoskärpa och läser
-   likadant i farten. */
-.film__whip {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  background: var(--ink);
-  opacity: 0;
-  pointer-events: none;
-  will-change: opacity;
 }

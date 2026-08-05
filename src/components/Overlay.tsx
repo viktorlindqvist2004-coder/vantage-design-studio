@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '../lib/hooks'
 import { getMetrics } from '../lib/scroll'
 import { clamp01, damp, mapRange } from '../lib/math'
-import { cameraProgress } from './Stage'
 import { STUDIO } from '../data/content'
 
 /* ── Muspekare ───────────────────────────────────────────────────────── */
@@ -79,8 +78,7 @@ export function Nav() {
   useFrame((f) => {
     if (!ref.current) return
     // Menyn drar sig undan i själva övergången in i skärmen.
-    const u = cameraProgress(f.act1, f.act3)
-    const hide = mapRange(u, 0.45, 0.72) * (1 - mapRange(u, 0.86, 0.99))
+    const hide = mapRange(f.act1, 0.45, 0.72) * (1 - mapRange(f.act1, 0.86, 0.99))
     ref.current.style.opacity = (1 - hide).toFixed(3)
     ref.current.style.transform = `translate3d(0, ${(-hide * 100).toFixed(1)}%, 0)`
   })

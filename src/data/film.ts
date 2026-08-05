@@ -1,88 +1,52 @@
 /**
- * KAMERARESAN
- * ═══════════
- * Efter att kameran backat ut ur bildskärmen fortsätter den genom studion.
- * Varje tagning nedan är en plats i rummet, och varje plats bär en del av
- * webbplatsen. Kameran står aldrig still: den glider från `from` till `to`
- * medan man scrollar, och tagningarna korstonas i varandra så att det läser
- * som en enda lång tagning i stället för klipp.
+ * FILMEN
+ * ══════
+ * Hela sidan ligger på ett enda klipp: kameran åker in i bildskärmen, ut i
+ * rummet, förbi fönstret, hyllan, lampan och till sist skrivbordet igen.
+ * Klippet spelas aldrig av sig självt — scrollen sätter uppspelningspunkten,
+ * så kameran rör sig exakt så långt och så fort som man drar.
  *
- * `x` och `y` är den punkt i bilden kameran tittar på (0–1). `scale` är hur
- * nära den står. Skillnaden mellan `from` och `to` är alltså själva
- * kamerarörelsen — panorering, åkning eller båda.
+ * Skärmen i klippet är magenta. Den färgen nycklas bort i KeyedVideo, och
+ * bakom den ligger den riktiga webbplatsen. När kameran åkt hela vägen in
+ * och magentan fyller rutan är det alltså sidan man ser.
+ *
+ * Tiderna nedan är avlästa ur klippet: magentan täcker 5 % av rutan vid
+ * start, 98 % vid 1,4 s, hela rutan vid 1,5 s och är borta vid 1,7 s.
  */
 
-export type CameraMark = {
-  /** Punkt i bilden som hamnar mitt i rutan. */
-  x: number
-  y: number
-  /** 1 = bilden täcker rutan precis. Högre värde = närmare. */
-  scale: number
-}
+export const CLIP = {
+  /** Samma klipp i två format. Chromium utan patentbelagda kodekar spelar
+      inte H.264, och Safari spelar inte VP9 — tillsammans täcker de allt. */
+  sources: [
+    { src: 'clips/studio.webm', type: 'video/webm' },
+    { src: 'clips/studio.mp4', type: 'video/mp4' },
+  ],
+  /** Klippets längd i sekunder. */
+  duration: 9.04,
+  /** Sekunden där skärmen fyller rutan och sidan tar över. */
+  enter: 1.55,
+  /** Skärmens färg i klippet. */
+  key: [200, 12, 210] as [number, number, number],
+} as const
+
+/**
+ * Hur många fönsterhöjder man scrollar per sekund film.
+ * Högre värde = långsammare kamera.
+ */
+export const SCROLL_PER_SECOND = 3.4
 
 export type Shot = {
   id: string
-  /** Bild under `public/`. */
-  plate: string
-  /** Kort etikett som visas medan tagningen spelar. */
   place: string
-  from: CameraMark
-  to: CameraMark
-  /** Tagningens längd i fönsterhöjder. */
-  length: number
-  /**
-   * Åt vilket håll bilden sveper ut när kameran går vidare till nästa plats.
-   * -1 = bilden glider åt vänster, alltså kameran svänger åt höger. Nästa
-   * tagning kommer då in från motsatt håll, som vid en riktig panorering.
-   */
-  swing: -1 | 1
+  /** Tidsintervall i klippet, i sekunder. */
+  from: number
+  to: number
 }
 
+/** Platserna kameran passerar efter skärmen, med sitt innehåll. */
 export const SHOTS: Shot[] = [
-  {
-    id: 'window',
-    plate: 'images/room-window.jpg',
-    place: 'Mot staden',
-    // Kameran svänger vänsterut längs fönstren och backar samtidigt något.
-    from: { x: 0.66, y: 0.52, scale: 1.34 },
-    to: { x: 0.36, y: 0.48, scale: 1.08 },
-    length: 3.4,
-    swing: 1,
-  },
-  {
-    id: 'shelf',
-    plate: 'images/room-shelf.jpg',
-    place: 'Hyllan',
-    // Långsam åkning in mot böckerna och den upplysta mellanhyllan.
-    from: { x: 0.38, y: 0.44, scale: 1.06 },
-    to: { x: 0.58, y: 0.54, scale: 1.32 },
-    length: 3.8,
-    swing: -1,
-  },
-  {
-    id: 'samples',
-    plate: 'images/room-samples.jpg',
-    place: 'Materialen',
-    // Nära på färgproverna, drar sedan tillbaka mot staden i fönstret.
-    from: { x: 0.3, y: 0.62, scale: 1.42 },
-    to: { x: 0.56, y: 0.5, scale: 1.05 },
-    length: 3.4,
-    swing: -1,
-  },
-  {
-    id: 'lamp',
-    plate: 'images/room-lamp.jpg',
-    place: 'Studion',
-    // Lugn avslutning: kameran lyfter mot lampan och stannar i mörkret.
-    from: { x: 0.5, y: 0.58, scale: 1.2 },
-    to: { x: 0.5, y: 0.4, scale: 1.02 },
-    length: 3.6,
-    swing: 1,
-  },
+  { id: 'window', place: 'Mot staden', from: 1.9, to: 3.2 },
+  { id: 'shelf', place: 'Hyllan', from: 3.4, to: 5.4 },
+  { id: 'lamp', place: 'Studion', from: 5.8, to: 7.5 },
+  { id: 'samples', place: 'Materialen', from: 7.7, to: 9.04 },
 ]
-
-/** Svepet mellan två platser, i fönsterhöjder scroll. */
-export const SWING_VH = 1.1
-
-/** Hur långt bilderna glider i sidled under svepet, i fönsterbredder. */
-export const SWING_DISTANCE = 1.25

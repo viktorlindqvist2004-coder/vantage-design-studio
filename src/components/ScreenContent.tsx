@@ -1,5 +1,4 @@
 import { useRef } from 'react'
-import { cameraProgress } from './Stage'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { MARQUEE_WORDS } from '../data/content'
@@ -33,7 +32,7 @@ export function ScreenContent({
       scrollRef.current.style.transform = `translate3d(0, ${(-f.inner).toFixed(1)}px, 0)`
     }
 
-    const u = cameraProgress(f.act1, f.act3)
+    const u = f.act1
 
     // Vinjetten hör hemma på avstånd; väl inne ska bilden vara ren.
     if (crtRef.current) {
