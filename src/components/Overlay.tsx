@@ -1,14 +1,15 @@
 import { useRef } from 'react'
 import { useFrame } from '../lib/hooks'
-import { getMetrics } from '../lib/scroll'
+import { findStation, goTo } from '../lib/deck'
 import { mapRange } from '../lib/math'
 import { STUDIO } from '../data/content'
 
 /* ── Navigering ──────────────────────────────────────────────────────── */
 
+/** Kontaktuppgifterna ligger på den sista platsen i rummet. */
 function goToContact() {
-  const { act1, act3, innerMax } = getMetrics()
-  window.scrollTo({ top: act1 + innerMax + act3 * 0.85, behavior: 'smooth' })
+  const at = findStation('room-samples')
+  if (at >= 0) goTo(at)
 }
 
 export function Nav() {
@@ -24,7 +25,7 @@ export function Nav() {
 
   return (
     <header className="nav" ref={ref}>
-      <a className="nav__mark" href="#start" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+      <a className="nav__mark" href="#start" onClick={(e) => { e.preventDefault(); goTo(0) }}>
         <svg viewBox="0 0 64 64" aria-hidden="true">
           <path d="M6 10h13l13 34 13-34h13L40 58H24z" fill="currentColor" />
         </svg>

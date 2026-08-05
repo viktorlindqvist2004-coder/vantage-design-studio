@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { Hero, Manifest, Numbers } from './inner/Sections'
@@ -13,9 +13,19 @@ import { Contact } from './Plates'
  */
 export function ScreenContent({
   onHeight,
+  onStations,
   reduced = false,
 }: {
   onHeight: (h: number) => void
+  /**
+   * Var sidans egna lägen ligger, mätt i rullningen inne i skärmen.
+   *
+   * En sektion är ett läge. Arbetena är ett undantag: de ligger på ett
+   * vågrätt band som drivs av samma rullning, och där hör ett läge till
+   * varje projekt — annars vore hela bandet en enda hållplats och gick
+   * inte att ta sig igenom.
+   */
+  onStations?: (offsets: number[]) => void
   reduced?: boolean
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -23,6 +33,7 @@ export function ScreenContent({
   const barRef = useRef<HTMLSpanElement>(null)
 
   useMeasuredHeight(scrollRef, onHeight)
+  useStationOffsets(scrollRef, onStations)
 
   useFrame((f) => {
     if (scrollRef.current) {
@@ -65,4 +76,43 @@ export function ScreenContent({
       )}
     </div>
   )
+}
+
+/**
+ * Mäter upp sektionernas lägen och rapporterar dem uppåt. Mätningen görs om
+ * när något ändrar storlek, för lägena är i pixlar och pixlarna beror på
+ * fönstret.
+ */
+function useStationOffsets(
+  ref: React.RefObject<HTMLDivElement | null>,
+  onChange?: (offsets: number[]) => void,
+) {
+  const cb = useRef(onChange)
+  cb.current = onChange
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const measure = () => {
+      const offsets: number[] = []
+      el.querySelectorAll<HTMLElement>('[data-station]').forEach((node) => {
+        const count = Number(node.dataset.stations ?? 1)
+        const span = count > 1 ? node.offsetHeight - window.innerHeight : 0
+        for (let i = 0; i < count; i++) {
+          offsets.push(node.offsetTop + (span * i) / Math.max(count - 1, 1))
+        }
+      })
+      cb.current?.(offsets)
+    }
+
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [ref])
 }

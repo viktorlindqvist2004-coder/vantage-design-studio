@@ -57,6 +57,8 @@ export function Work() {
       className="pin"
       ref={secRef}
       id="arbeten"
+      data-station
+      data-stations={PROJECTS.length}
       style={{ height: `${100 + PROJECTS.length * 58}vh` }}
     >
       <div className="pin__inner" ref={pinRef}>

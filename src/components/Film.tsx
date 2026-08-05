@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp01, lerp, mapRange } from '../lib/math'
-import { APPROACH_HEIGHTS, CLIP, CROSSFADE, EXIT_HEIGHTS, SHOTS } from '../data/film'
+import { APPROACH_HEIGHTS, CLIP, CROSSFADE, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
 import { About, Services } from './inner/Sections'
 import { Process } from './inner/Process'
@@ -17,9 +17,6 @@ export const useShotRange = () => useContext(ShotRangeContext)
 
 /** Scrollsträckan för inflygningen fram till skärmen. */
 export const approachLength = (vh: number) => APPROACH_HEIGHTS * vh
-
-/** Scrollsträckan för utflygningen — inflygningen baklänges. */
-export const exitLength = (vh: number) => EXIT_HEIGHTS * vh
 
 /**
  * Scrollsträckan för resan genom rummet.
@@ -81,20 +78,14 @@ const SECTIONS: Record<string, ReactNode> = {
 /**
  * Vilken sekund i skärmklippet vi står på just nu.
  *
- * Tre skeden:
- *   1. kameran åker in mot skärmen           0 → enter
- *   2. den står stilla medan sidan rullar    enter
- *   3. den backar ut ur skärmen igen         enter → exit  (baklänges)
- *
- * Pausen i mitten finns för att kameran annars skulle åka vidare medan man
- * läser. Utflygningen finns för att man ska komma ut ur skärmen på samma
- * väg man kom in. Sedan tar rummet över, och det är inte längre det här
- * klippet — se RoomFilm.
+ * Två skeden: kameran åker in mot skärmen, och sedan står klippet stilla
+ * vid sitt slut medan sidan rullar. Går man tillbaka mot början följer
+ * klippet med dit — men det spelas aldrig baklänges, det ställs om.
+ * Vägen ut ur skärmen är ingen kamerarörelse längre utan en övertoning:
+ * sidan lämnar, rummet träder fram.
  */
 function clipSecond(f: Frame) {
-  if (f.act1 < 1) return f.act1 * CLIP.enter
-  if (f.act3 < 1) return lerp(CLIP.enter, CLIP.exit, f.act3)
-  return CLIP.exit
+  return f.act1 * CLIP.enter
 }
 
 /**
@@ -152,8 +143,8 @@ export function Film({ page, onFail, onReady }: {
         `translate(-50%, -50%) scale(${fit.toFixed(4)})`
     }
 
-    // Sidan tonar in när klippets namnskylt tonar ut, och tonar ut igen
-    // så fort man börjar backa. Opaciteten, inte `visibility`: sidans egna
+    // Sidan tonar in när klippets namnskylt tonar ut, och lämnar över till
+    // rummet med samma övertoning som skärmen. Opaciteten, inte `visibility`: sidans egna
     // lager sätter sin synlighet själva, och ett barn som säger `visible`
     // slår ut en förälder som säger `hidden`. Genomskinlighet går inte att
     // ta tillbaka underifrån.
@@ -162,7 +153,7 @@ export function Film({ page, onFail, onReady }: {
     // ber om — klippet ligger nästan alltid någon hundradel efter, och
     // tonar sidan in före bilden syns skarven.
     if (pageRef.current) {
-      const o = pageIn(shown.current) * (1 - mapRange(f.act3, 0, 0.06))
+      const o = pageIn(shown.current) * (1 - handover)
       pageRef.current.style.opacity = o.toFixed(3)
       pageRef.current.style.visibility = o <= 0.002 ? 'hidden' : 'visible'
     }
@@ -170,7 +161,7 @@ export function Film({ page, onFail, onReady }: {
     // Scrimmen finns för texten ute i rummet. Medan skärmen är motivet
     // skulle den bara lägga en grå hinna över sidan.
     if (scrimRef.current) {
-      const atScreen = mapRange(f.act1, 0.55, 0.95) * (1 - mapRange(f.act3, 0.35, 0.85))
+      const atScreen = mapRange(f.act1, 0.55, 0.95) * (1 - handover)
       scrimRef.current.style.opacity = (1 - atScreen).toFixed(3)
     }
 
@@ -196,13 +187,8 @@ export function Film({ page, onFail, onReady }: {
             src: `${import.meta.env.BASE_URL}${s.src}`,
             type: s.type,
           }))}
-          reverseSources={CLIP.reverse.map((s) => ({
-            src: `${import.meta.env.BASE_URL}${s.src}`,
-            type: s.type,
-          }))}
           keyColor={CLIP.key}
           progress={clipProgress}
-          isReverse={(f) => f.act3 > 0}
           onReady={onReady}
           onFail={onFail}
           timeRef={shown}

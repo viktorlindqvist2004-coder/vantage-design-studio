@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
 import { Nav } from './components/Overlay'
 import { Contact, Preloader } from './components/Plates'
-import { Film, approachLength, exitLength, roomLength } from './components/Film'
+import { Film, approachLength, roomLength } from './components/Film'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
 import { setMetrics, start, stop } from './lib/scroll'
+import { setStations, type Station } from './lib/deck'
+import { SHOTS } from './data/film'
 
 export default function App() {
   return <Experience />
@@ -15,6 +17,7 @@ function Experience() {
   const reduced = usePrefersReducedMotion()
 
   const [contentHeight, setContentHeight] = useState(0)
+  const [innerStations, setInnerStations] = useState<number[]>([0])
   const [loaded, setLoaded] = useState(false)
   const [showPreloader, setShowPreloader] = useState(true)
   // Klippet kan vara omöjligt att visa: ingen WebGL, en kodek webbläsaren
@@ -35,20 +38,47 @@ function Experience() {
   const plain = reduced || filmBroken
   const act1 = plain ? 0 : approachLength(vh)
   const innerMax = Math.max(contentHeight - vh, 0)
-  const act3 = plain ? 0 : exitLength(vh)
+  const act3 = 0
   const filmMax = plain ? 0 : roomLength(vh)
-
-  // Sidans höjd är summan av skedena — det är den enda scrollytan.
-  const total = act1 + innerMax + act3 + filmMax + vh
 
   useEffect(() => {
     setMetrics({ act1, act3, innerMax, filmMax, pageH: vh })
   }, [act1, act3, innerMax, filmMax, vh])
 
+  /**
+   * Sidans lägen, i ordning.
+   *
+   * Skrivbordet, varje vy inne i skärmen, och varje plats ute i rummet. En
+   * dragning flyttar precis ett steg — man landar alltid på ett av dem.
+   *
+   * Platserna i rummet ligger mitt i sitt intervall, inte i början: det är
+   * där texten står färdigt framme och övertoningen till nästa plats ännu
+   * inte börjat.
+   */
+  // Vägen ut ur skärmen är ingen egen akt längre: sidan tonar ut och rummet
+  // tonar in i samma steg.
+  const stations = useMemo<Station[]>(() => {
+    const list: Station[] = [{ id: 'start', y: 0 }]
+
+    for (const [i, offset] of innerStations.entries()) {
+      list.push({ id: `inner-${i}`, y: act1 + Math.min(offset, innerMax) })
+    }
+
+    let at = 0
+    for (const shot of SHOTS) {
+      const length = shot.hold * vh
+      list.push({ id: `room-${shot.id}`, y: act1 + innerMax + at + length / 2 })
+      at += length
+    }
+
+    // Dubbletter uppstår när innehållet är kortare än fönstret.
+    return list.filter((s, i) => i === 0 || s.y - list[i - 1].y > 8)
+  }, [act1, innerMax, innerStations, vh])
+
+  useEffect(() => { setStations(stations) }, [stations])
+
   useEffect(() => {
-    // Börja alltid vid rummet, även efter en omladdning mitt i sidan.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
-    window.scrollTo(0, 0)
     start()
     return () => stop()
   }, [])
@@ -77,7 +107,7 @@ function Experience() {
 
   useFrame((f) => {
     // Väl inne vid skärmen släpps pekhändelser igenom till sidan därinne.
-    viewportRef.current?.classList.toggle('is-inside', f.act1 > 0.985 && f.act3 < 0.02)
+    viewportRef.current?.classList.toggle('is-inside', f.act1 > 0.985 && f.film < 1)
   })
 
   return (
@@ -93,7 +123,12 @@ function Experience() {
         ) : (
           <>
             <Film
-              page={<ScreenContent onHeight={setContentHeight} />}
+              page={(
+                <ScreenContent
+                  onHeight={setContentHeight}
+                  onStations={setInnerStations}
+                />
+              )}
               onFail={filmDown}
               onReady={filmReady}
             />
@@ -101,9 +136,6 @@ function Experience() {
         )}
         <Nav />
       </div>
-
-      {/* Själva scrollytan: tom, hög och osynlig. */}
-      <div className="scroll-spacer" style={{ height: `${total}px` }} aria-hidden="true" />
 
       {showPreloader && <Preloader done={loaded} />}
     </>

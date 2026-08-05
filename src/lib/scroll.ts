@@ -1,10 +1,16 @@
 import { clamp, clamp01, damp } from './math'
+import { advance, attach, detach } from './deck'
 
 /**
- * Sidans hela dramaturgi styrs av ett enda scrollvärde. Motorn nedan läser
- * `window.scrollY`, jämnar ut det och räknar fram alla härledda storheter en
- * gång per bildruta. Komponenter prenumererar med `subscribe()` och skriver
- * direkt till DOM:en — ingen React-omrendering sker per bildruta.
+ * Sidans hela dramaturgi styrs av ett enda värde. Motorn nedan hämtar det
+ * från hållplatsmotorn i deck.ts, räknar fram alla härledda storheter och
+ * delar ut dem en gång per bildruta. Komponenter prenumererar med
+ * `subscribe()` och skriver direkt till DOM:en — ingen React-omrendering
+ * sker per bildruta.
+ *
+ * Värdet kom förr från `window.scrollY`. Sidan rullar inte längre fritt:
+ * en dragning flyttar ett helt steg, till nästa bestämda läge. Skalan är
+ * densamma, så allt härlett räknas likadant som förut.
  */
 
 export type Metrics = {
@@ -92,11 +98,6 @@ export function getMetrics() {
   return metrics
 }
 
-/** Total scrollhöjd sidan behöver för att rymma hela dramaturgin. */
-export function totalScrollHeight(vh: number) {
-  return metrics.act1 + metrics.innerMax + metrics.act3 + metrics.filmMax + vh
-}
-
 export function subscribe(fn: Listener) {
   listeners.add(fn)
   return () => { listeners.delete(fn) }
@@ -111,10 +112,11 @@ function tick(time: number) {
   const dt = lastTime ? clamp(time - lastTime, 1, 64) : 16.67
   lastTime = time
 
-  const raw = window.scrollY || window.pageYOffset || 0
-  // Utan utjämning blir inzoomningen ryckig; med utjämning "glider" kameran.
-  // För mjukt blir den däremot seg — filmen ligger då kvar efter handen.
-  smoothY = reduced ? raw : damp(smoothY, raw, 0.2, dt)
+  const raw = advance(time)
+  // Förflyttningen är redan mjuk i sig — den har en kurva och en speltid.
+  // Utjämningen här är bara till för att svälja steget när fönstret ändrar
+  // storlek och lägena räknas om.
+  smoothY = reduced ? raw : damp(smoothY, raw, 0.5, dt)
 
   const instant = smoothY - prevY
   prevY = smoothY
@@ -157,7 +159,8 @@ function tick(time: number) {
 export function start() {
   if (running) return
   running = true
-  smoothY = prevY = window.scrollY || 0
+  smoothY = prevY = 0
+  attach()
   window.addEventListener('pointermove', onPointerMove, { passive: true })
   rafId = requestAnimationFrame(tick)
 }
@@ -166,6 +169,7 @@ export function stop() {
   if (!running) return
   running = false
   cancelAnimationFrame(rafId)
+  detach()
   window.removeEventListener('pointermove', onPointerMove)
   lastTime = 0
 }

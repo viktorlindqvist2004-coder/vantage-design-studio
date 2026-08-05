@@ -4,10 +4,10 @@
  * Sidan använder rörlig bild på två sätt, och de fungerar tvärtom mot
  * varandra.
  *
- * SKÄRMKLIPPET spelas aldrig av sig självt. Scrollen sätter
- * uppspelningspunkten, så kameran åker in mot bildskärmen exakt så långt
- * och så fort som man drar — och backar ut igen när man drar åt andra
- * hållet.
+ * SKÄRMKLIPPET spelas alltid framlänges, från början. En dragning startar
+ * det, och sedan rullar det klart av sig självt. Går man tillbaka spolas
+ * det inte baklänges — det ställs om till sin första bildruta och står
+ * still där tills man går in igen.
  *
  * Bildskärmen i klippet är magenta. Den färgen nycklas bort i KeyedVideo,
  * och bakom den finns ingenting — bara sidans egen svarta botten. Skärmen
@@ -17,8 +17,9 @@
  * webbplatsen in i deras ställe.
  *
  * RUMSKLIPPEN rullar tvärtom helt för sig själva, i sin egen takt och
- * mycket långsamt. Scrollen bestämmer bara vilket av dem som visas: en
- * plats i taget, med en övertoning emellan.
+ * mycket långsamt. De börjar om från början varje varv. Scrollen bestämmer
+ * bara vilket av dem som visas: en plats i taget, med en övertoning
+ * emellan.
  *
  * Tiderna nedan är avlästa ur materialet.
  */
@@ -30,11 +31,6 @@ export const CLIP = {
     { src: 'clips/screen.webm', type: 'video/webm' },
     { src: 'clips/screen.mp4', type: 'video/mp4' },
   ],
-  /** Samma rulle bildruta för bildruta baklänges — se KeyedVideo. */
-  reverse: [
-    { src: 'clips/screen-rev.webm', type: 'video/webm' },
-    { src: 'clips/screen-rev.mp4', type: 'video/mp4' },
-  ],
   /** Klippets längd i sekunder. */
   duration: 4.04,
   /** Klippets proportioner, 1280 × 720. */
@@ -43,14 +39,6 @@ export const CLIP = {
   handIn: 3.45,
   /** Sekunden sidan tagit över helt. */
   enter: 3.95,
-  /**
-   * Sekunden utflygningen backar tillbaka till.
-   *
-   * Materialet har ingen utflygning — kameran backar aldrig ur skärmen av
-   * sig själv. Rörelsen finns bara om inflygningen spelas baklänges, och
-   * det är vad som händer här.
-   */
-  exit: 0.2,
   /** Skärmens färg i klippet. */
   key: [237, 0, 238] as [number, number, number],
 } as const
@@ -63,14 +51,6 @@ export const CLIP = {
  * närma sig och skärmen ladda, inte upptäcka att man plötsligt är framme.
  */
 export const APPROACH_HEIGHTS = 2.3
-
-/**
- * Hur långt man drar för att komma ut igen.
- *
- * Utflygningen får ta längre tid än inflygningen. In vill man snabbt; ut
- * är ögonblicket man lämnar sidan, och det tål att dröja.
- */
-export const EXIT_HEIGHTS = 2.6
 
 /**
  * Hur fort rumsklippen spelas.
@@ -111,8 +91,8 @@ export const SHOTS: Shot[] = [
     framing: { position: '78% 55%', scale: 1.14 },
   },
   {
-    id: 'samples', place: 'Arbetsljuset', clip: 'room-b', hold: 2.2,
-    framing: { position: '62% 45%', scale: 1 },
+    id: 'samples', place: 'Arbetsljuset', clip: 'room-c', hold: 2.2,
+    framing: { position: '50% 45%', scale: 1 },
   },
 ]
 

@@ -46,7 +46,7 @@ export function Hero() {
   })
 
   return (
-    <section className="s-hero" id="start">
+    <section className="s-hero" id="start" data-station>
       <div className="s-hero__glow" aria-hidden="true" />
 
       {/* Varje bokstav rör sig för sig, men orden måste hålla ihop — annars
@@ -92,7 +92,7 @@ export function Manifest() {
   const words = useRef<(HTMLSpanElement | null)[]>([])
 
   useFrame((f) => {
-    const p = mapRange(track(f).enter, 0.2, 0.7)
+    const p = mapRange(track(f).settle, 0.25, 0.95)
     words.current.forEach((el, i) => {
       if (!el) return
       const s = easeOutCubic(stagger(p, i, MANIFEST.length, 0.82))
@@ -102,7 +102,7 @@ export function Manifest() {
   })
 
   return (
-    <section className="s-manifest" ref={ref} id="manifest">
+    <section className="s-manifest" ref={ref} id="manifest" data-station>
       <p className="manifest__text">
         {MANIFEST.map((w, i) => (
           <span
@@ -126,7 +126,7 @@ export function Services() {
   const rows = useRef<(HTMLDivElement | null)[]>([])
 
   useFrame((f) => {
-    const p = mapRange(track(f).enter, 0.12, 0.62)
+    const p = mapRange(track(f).settle, 0.15, 0.95)
     rows.current.forEach((el, i) => {
       if (!el) return
       const s = easeOutCubic(stagger(p, i, SERVICES.length, 0.62))
@@ -157,7 +157,7 @@ export function Numbers() {
   const items = useRef<(HTMLDivElement | null)[]>([])
 
   useFrame((f) => {
-    const p = mapRange(track(f).enter, 0.2, 0.64)
+    const p = mapRange(track(f).settle, 0.25, 0.95)
     items.current.forEach((el, i) => {
       if (!el) return
       const s = easeOutCubic(stagger(p, i, STATS.length, 0.5))
@@ -167,7 +167,7 @@ export function Numbers() {
   })
 
   return (
-    <section className="sec s-numbers" ref={ref}>
+    <section className="sec s-numbers" data-station ref={ref}>
       {STATS.map((s, i) => (
         <div className="stat" key={s.label} ref={(el) => { items.current[i] = el }}>
           <div className="stat__value">{s.value}</div>
@@ -188,8 +188,8 @@ export function About() {
 
   useFrame((f) => {
     const t = track(f)
-    const p = easeOutCubic(mapRange(t.enter, 0.18, 0.58))
-    const q = easeOutCubic(mapRange(t.enter, 0.26, 0.68))
+    const p = easeOutCubic(mapRange(t.settle, 0.2, 0.9))
+    const q = easeOutCubic(mapRange(t.settle, 0.3, 0.98))
 
     if (leadRef.current) {
       leadRef.current.style.opacity = p.toFixed(3)

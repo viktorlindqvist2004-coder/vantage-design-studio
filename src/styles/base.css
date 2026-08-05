@@ -21,7 +21,11 @@ body {
   font-family: var(--sans);
   color: var(--bone);
   background: var(--ink);
-  overflow-x: hidden;
+  /* Sidan rullar inte. En dragning flyttar ett helt steg, till nästa
+     bestämda läge — se lib/deck.ts. Rullar fönstret också hamnar man mellan
+     två lägen, vilket är precis det som skulle bort. */
+  overflow: hidden;
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -56,7 +60,7 @@ button {
   outline-offset: 4px;
 }
 
-/* Fönstret som allt utspelar sig i. Sidan i sig är bara en hög scrollyta. */
+/* Fönstret som allt utspelar sig i. */
 .viewport {
   position: fixed;
   inset: 0;
@@ -65,13 +69,6 @@ button {
   /* Isolerar kompositlagren så att jättelika skalade lager inte tvingar fram
      omritning av hela sidan. */
   contain: strict;
-}
-
-.scroll-spacer {
-  position: relative;
-  width: 100%;
-  pointer-events: none;
-  z-index: 0;
 }
 
 .sr-only {
