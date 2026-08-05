@@ -23,7 +23,7 @@
  *   node scripts/prepare-clip.mjs <råfil.mp4>
  */
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, statSync } from 'node:fs'
+import { mkdirSync, rmSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
 import { createRequire } from 'node:module'
 
@@ -36,14 +36,36 @@ const FPS = 24
 /** Inflygningen: sekund 0 fram till strax efter att skärmen fyllt rutan. */
 const SCREEN = { name: 'studio', to: 1.75, width: 1280 }
 
-/** Platserna i rummet, avlästa ur materialet. */
+/**
+ * Platserna i rummet.
+ *
+ * De måste gå att skilja åt vid en blick. Två avsnitt som tagits ur samma
+ * kamerarörelse med en sekunds mellanrum visar samma sak ur nästan samma
+ * vinkel, och när det ena tonar över i det andra ser det inte ut som ett
+ * klipp — det ser ut som två filmer som råkat hamna ovanpå varandra.
+ * Avsnitten nedan är valda för att vara fyra olika platser: fönstret,
+ * hyllan, lampan, skrivbordet.
+ */
 const ROOMS = [
-  { name: 'room-window', from: 1.9, to: 3.2 },
-  { name: 'room-shelf', from: 3.4, to: 5.4 },
-  { name: 'room-lamp', from: 5.8, to: 7.5 },
-  { name: 'room-samples', from: 7.7, to: 9.02 },
+  { name: 'room-window', from: 1.8, to: 3.05 },
+  { name: 'room-shelf', from: 4.0, to: 5.45 },
+  { name: 'room-lamp', from: 6.35, to: 7.55 },
+  { name: 'room-samples', from: 8.3, to: 9.02 },
 ]
 const ROOM_WIDTH = 960
+
+/**
+ * Hur många gånger långsammare rummet ska röra sig.
+ *
+ * Att sänka uppspelningshastigheten i webbläsaren räcker inte: klippet har
+ * fortfarande bara 24 bildrutor per sekund, så varje bildruta blir stående
+ * tre gånger så länge och den mjuka kameraåkningen blir en stapplande rad
+ * av stillbilder. Här räknas i stället mellanbilderna fram, med
+ * rörelsekompensering, så att den långsamma åkningen har lika många egna
+ * bildrutor som den snabba hade.
+ */
+const SLOW = 3.2
+const ROOM_FPS = 30
 
 const run = (args) =>
   execFileSync(ffmpeg, args, { stdio: ['ignore', 'ignore', 'inherit'] })
@@ -102,20 +124,34 @@ write(
   { gop: 1, crf: 22, vp9crf: 30 },
 )
 
-console.log('\nRumsklippen — fram och tillbaka, sömlös loop:')
+console.log('\nRumsklippen — fram och tillbaka, i långsam takt:')
+mkdirSync('.clip-tmp', { recursive: true })
+
 for (const r of ROOMS) {
   const frames = Math.round((r.to - r.from) * FPS)
+  const tmp = `.clip-tmp/${r.name}.mp4`
+
   // Vändningen tas utan första och sista bildrutan; annars står bilden
-  // still ett ögonblick i varje ände och loopen får en hicka.
+  // still ett ögonblick i varje ände och loopen får en hicka. Nedsaktningen
+  // görs efter vändningen, så att `reverse` bara behöver hålla det korta
+  // klippets bildrutor i minnet.
   const filter =
     `[0:v]scale=${ROOM_WIDTH}:-2:flags=lanczos,fps=${FPS},split[a][b];`
-    + `[b]reverse,trim=start_frame=1:end_frame=${frames - 1},setpts=PTS-STARTPTS[r];`
-    + `[a][r]concat=n=2:v=1[v]`
+    + `[b]reverse,trim=start_frame=1:end_frame=${frames - 1},setpts=PTS-STARTPTS[rev];`
+    + `[a][rev]concat=n=2:v=1,setpts=${SLOW}*PTS,`
+    + `minterpolate=fps=${ROOM_FPS}:mi_mode=mci:me_mode=bidir:mc_mode=aobmc[v]`
 
-  write(
-    ['-y', '-ss', String(r.from), '-t', String(r.to - r.from), '-i', input],
-    filter,
-    `${OUT}/${r.name}`,
-    { gop: FPS, crf: 27, vp9crf: 36 },
-  )
+  // Mellanbildsberäkningen är dyr och behöver bara göras en gång, inte en
+  // gång per format. Resultatet mellanlandar därför i en nästan förlustfri
+  // fil som båda kodningarna läser.
+  console.log(`  ${r.name} — räknar fram mellanbilder …`)
+  run(['-y', '-ss', String(r.from), '-t', String(r.to - r.from), '-i', input,
+    '-an', '-filter_complex', filter, '-map', '[v]',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12',
+    '-pix_fmt', 'yuv420p', tmp])
+
+  write(['-y', '-i', tmp], '[0:v]null[v]', `${OUT}/${r.name}`,
+    { gop: ROOM_FPS, crf: 28, vp9crf: 37 })
 }
+
+rmSync('.clip-tmp', { recursive: true, force: true })

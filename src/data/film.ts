@@ -68,5 +68,12 @@ export const SHOTS: Shot[] = [
   { id: 'samples', place: 'Materialen', clip: 'room-samples', hold: 2.2 },
 ]
 
-/** Övertoningen mellan två platser, i fönsterhöjder. */
-export const CROSSFADE = 0.55
+/**
+ * Övertoningen mellan två platser, i fönsterhöjder.
+ *
+ * Kort nog att läsas som ett klipp. Dras den ut blir den ett tillstånd i
+ * stället — två rum ovanpå varandra under en fjärdedel av sträckan, vilket
+ * ser ut som att två filmer spelas samtidigt snarare än att den ena tar
+ * över efter den andra.
+ */
+export const CROSSFADE = 0.42

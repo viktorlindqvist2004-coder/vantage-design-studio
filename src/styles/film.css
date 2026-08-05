@@ -89,12 +89,14 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
+  /* Rummen har ljusa partier — pappret på skrivbordet, staden i fönstret —
+     och texten ligger över dem. Mörkret måste hålla även där. */
   background: linear-gradient(
     180deg,
-    rgba(11, 11, 12, 0.7) 0%,
-    rgba(11, 11, 12, 0.42) 30%,
-    rgba(11, 11, 12, 0.52) 62%,
-    rgba(11, 11, 12, 0.88) 100%
+    rgba(11, 11, 12, 0.74) 0%,
+    rgba(11, 11, 12, 0.5) 30%,
+    rgba(11, 11, 12, 0.62) 62%,
+    rgba(11, 11, 12, 0.9) 100%
   );
   opacity: var(--film-scrim, 1);
 }
