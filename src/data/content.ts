@@ -1,11 +1,8 @@
 /**
  * All text på sidan bor här.
  *
- * OBS: Arbetsexemplen nedan är konceptarbeten som visar upp studions
- * formspråk — de presenteras som just koncept i gränssnittet. Byt ut dem mot
- * riktiga uppdrag när de finns.
- *
- * Studion talar i vi-form. Inga namn på enskilda personer.
+ * Studion talar i vi-form, till läsaren som ni. Inga namn på enskilda
+ * personer, och inga påståenden om uppdrag som inte finns.
  */
 
 export const STUDIO = {
@@ -17,70 +14,75 @@ export const STUDIO = {
   location: 'Sverige',
 } as const
 
-export type Project = {
+export type Offering = {
+  /** Vad slags webbplats det är. */
   name: string
-  sector: string
-  year: string
-  tags: string
-  /** Foto under `public/`. Saknas filen ritas grafiken i ProjectMedia i stället. */
+  /** Vilka den brukar vara till för. */
+  kind: string
+  /** Vad kunden får ut av den. */
+  desc: string
+  /** Foto under `public/`. Saknas filen ritas grafiken i OfferingMedia. */
   image: string
   seed: number
   palette: [string, string, string]
 }
 
-/* Dämpade paletter med precis så mycket temperaturskillnad att korten går
-   att skilja åt — aldrig mer. */
-export const PROJECTS: Project[] = [
+/**
+ * Bredden på det vi bygger.
+ *
+ * Listan finns för att svara på en enda fråga: bygger ni sådant som jag
+ * behöver? Den ska därför täcka spannet snarare än visa upp smakprov, och
+ * ingen post är knuten till en bransch — samma sorts sajt byggs åt en
+ * advokatbyrå som åt ett bageri.
+ *
+ * Dämpade paletter med precis så mycket temperaturskillnad att korten går
+ * att skilja åt — aldrig mer.
+ */
+export const OFFERINGS: Offering[] = [
   {
-    name: 'Nordvik Kapital',
-    sector: 'Fintech',
-    year: '2026',
-    tags: 'Webbplats · Designsystem',
+    name: 'Företagswebbplats',
+    kind: 'Alla branscher',
+    desc: 'Sidan som förklarar vad ni gör, för vem, och varför valet ska falla på er.',
     image: 'images/work-01.jpg',
     seed: 11,
     palette: ['#8d97a5', '#565e6a', '#131519'],
   },
   {
-    name: 'Ateljé Söder',
-    sector: 'Mode',
-    year: '2026',
-    tags: 'Identitet · E-handel',
+    name: 'E-handel',
+    kind: 'Butik och produkt',
+    desc: 'Från produktsida till genomförd kassa, byggt för att sälja utan att stå i vägen.',
     image: 'images/work-02.jpg',
     seed: 27,
     palette: ['#cabfad', '#7d7263', '#191613'],
   },
   {
-    name: 'Form & Betong',
-    sector: 'Arkitektur',
-    year: '2026',
-    tags: 'Portfölj · Art direction',
+    name: 'Bokning och tjänster',
+    kind: 'Tjänsteföretag',
+    desc: 'Era kunder ska kunna boka, beställa eller höra av sig utan att först behöva ringa.',
     image: 'images/work-03.jpg',
     seed: 43,
     palette: ['#bcbab5', '#68665f', '#141415'],
   },
   {
-    name: 'Bruk Kaffe',
-    sector: 'Varumärke',
-    year: '2026',
-    tags: 'Förpackning · Webb',
+    name: 'Portfölj och galleri',
+    kind: 'Kreativa verksamheter',
+    desc: 'Arbetet i centrum, i en inramning som lyfter det i stället för att konkurrera.',
     image: 'images/work-04.jpg',
     seed: 58,
     palette: ['#a89579', '#655a49', '#161310'],
   },
   {
-    name: 'Puls Festival',
-    sector: 'Kultur',
-    year: '2026',
-    tags: 'Kampanj · Rörelse',
+    name: 'Kampanj och lansering',
+    kind: 'Enskild sida',
+    desc: 'En sida med ett enda syfte, snabbt uppe och mätt från första dagen.',
     image: 'images/work-05.jpg',
     seed: 71,
     palette: ['#a39aa8', '#635d6b', '#141216'],
   },
   {
-    name: 'Helix AI',
-    sector: 'Teknik',
-    year: '2026',
-    tags: 'Produktsajt · Motion',
+    name: 'Portal och inloggat',
+    kind: 'Kunder och medlemmar',
+    desc: 'Konton, inloggning och det som ska finnas innanför — kopplat till era system.',
     image: 'images/work-06.jpg',
     seed: 89,
     palette: ['#9db0b4', '#5e6d70', '#101415'],
@@ -90,63 +92,89 @@ export const PROJECTS: Project[] = [
 export const SERVICES = [
   {
     name: 'Webbdesign',
-    desc: 'Art direction och gränssnitt som bär ett varumärke hela vägen — från första skiss till sista pixel.',
+    desc: 'Ett gränssnitt som gör det ni erbjuder lätt att förstå — och lätt att säga ja till.',
   },
   {
     name: 'Utveckling',
-    desc: 'Handskriven kod. Snabba, tillgängliga sajter utan tunga ramverk och utan mallar.',
+    desc: 'Handskriven kod som laddar snabbt, fungerar överallt och går att bygga vidare på.',
   },
   {
     name: 'Identitet',
-    desc: 'Logotyp, typografi, färg och ton. Ett system som håller ihop i alla kanaler.',
+    desc: 'Logotyp, typografi och färg som hänger ihop, så att ni känns igen var ni än syns.',
   },
   {
     name: 'Rörelse',
-    desc: 'Animation med dramaturgi. Rörelse som förklarar, förstärker och får folk att stanna kvar.',
+    desc: 'Animation som vägleder i stället för att ta uppmärksamhet från det ni vill säga.',
   },
   {
     name: 'Prestanda',
-    desc: 'Laddtider, Core Web Vitals och teknisk SEO. Snyggt räcker inte om ingen hinner se det.',
+    desc: 'Laddtid, tillgänglighet och sökbarhet — det som avgör om någon stannar kvar.',
   },
   {
     name: 'Förvaltning',
-    desc: 'Vi lämnar dig inte vid lansering. Löpande vidareutveckling, mätning och finslipning.',
+    desc: 'Vi finns kvar efter lansering och fortsätter mäta och justera så länge ni vill.',
   },
 ]
 
 export const PROCESS = [
   {
     title: 'Kartläggning',
-    body: 'Vi börjar med att förstå affären, målgruppen och vad som faktiskt ska hända när någon landar på sajten. Inga antaganden.',
+    body: 'Vi börjar med att förstå er verksamhet, era kunder och vad som faktiskt ska hända när någon hittar hit. Vi gissar inte åt er.',
   },
   {
     title: 'Riktning',
-    body: 'Ett tydligt designkoncept med moodboards, typografi och färg. Du vet exakt vart vi är på väg innan vi bygger något.',
+    body: 'Ett tydligt förslag på form och innehåll, med tidplan och pris. Ni vet vart vi är på väg innan vi bygger något — och kan ändra er medan det är enkelt.',
   },
   {
     title: 'Design',
-    body: 'Vi ritar varje vy i detalj — desktop, surfplatta och mobil. Rörelsen designas samtidigt som formen, aldrig efteråt.',
+    body: 'Vi ritar varje vy i detalj, för dator, surfplatta och mobil. Ni ser allt och tycker till innan en rad kod skrivs.',
   },
   {
     title: 'Bygge',
-    body: 'Handkodat, komponent för komponent. Testat i riktiga webbläsare på riktiga enheter, med tillgänglighet från start.',
+    body: 'Handkodat, komponent för komponent, testat i riktiga webbläsare på riktiga enheter. Tillgänglighet är med från början, inte tillagt sist.',
   },
   {
     title: 'Lansering',
-    body: 'Vi flyttar upp, mäter, justerar och lämnar över. Sedan fortsätter vi förbättra så länge du vill ha oss kvar.',
+    body: 'Vi flyttar upp, mäter och justerar, och lämnar över koden till er. Sedan finns vi kvar för det som behöver ses om när verkligheten möter planen.',
   },
 ]
 
 export const STATS = [
-  { value: '2026', label: 'Året studion grundades — vi är nya, hungriga och väljer uppdrag med omsorg.' },
-  { value: '0', label: 'Mallar. Varje sajt ritas och kodas från ett tomt ark.' },
-  { value: '100%', label: 'Handskriven kod. Inga sidbyggare, ingen plugin-soppa.' },
-  { value: '1:1', label: 'Du pratar alltid direkt med dem som gör jobbet.' },
+  { value: '2026', label: 'Året studion grundades. Vi är nya, tar få uppdrag och ger dem hela vår uppmärksamhet.' },
+  { value: '0', label: 'Mallar. Er webbplats byggs för er verksamhet, inte anpassad från någon annans.' },
+  { value: '100%', label: 'Av koden blir er egen. Inga licenser att förnya och ingen som sitter på nycklarna.' },
+  { value: '1:1', label: 'Ni pratar alltid direkt med dem som utför arbetet.' },
 ]
 
+/**
+ * Det stora påståendet. Det ska handla om besökarens verklighet, inte om
+ * studions smak — den som läser är ute efter vad hen får ut av arbetet.
+ */
 export const MANIFEST = [
-  'Vi', 'ritar', 'och', 'kodar', 'webbplatser', 'med',
-  'lugn', 'form,', 'tydlig', 'riktning', 'och', 'rörelse',
-  'som', 'betyder', 'något.',
+  'De', 'flesta', 'som', 'hittar', 'till', 'er',
+  'bestämmer', 'sig', 'på', 'några', 'sekunder.',
+  'Vårt', 'arbete', 'går', 'ut', 'på',
+  'att', 'de', 'sekunderna', 'räcker.',
+]
+
+/**
+ * Varför arbetet görs som det görs.
+ *
+ * Tre skäl, formulerade som löften till den som ska anlita oss — inte som
+ * en beskrivning av hur vi tycker om att jobba.
+ */
+export const WHY = [
+  {
+    title: 'Att bli förstådd är det svåraste',
+    body: 'De flesta verksamheter är bättre än vad deras webbplats visar. Vi börjar därför med att förstå vad ni gör och vem ni gör det för, och låter formen följa av det — inte tvärtom.',
+  },
+  {
+    title: 'Ni ska aldrig behöva gissa',
+    body: 'Ni ser riktningen innan vi bygger, och vet vad varje steg kostar i tid och pengar. Vill ni ändra er gör ni det medan det fortfarande är enkelt och billigt.',
+  },
+  {
+    title: 'Det ska hålla efter lansering',
+    body: 'Ni får koden och äger den. Vi bygger utan låsningar till oss, och finns kvar för det som behöver ses om när sajten mött sina första riktiga besökare.',
+  },
 ]
 

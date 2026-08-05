@@ -40,6 +40,16 @@ const LEAVE_MS = 1500
 
 /** Hur mycket hjul som krävs för att räknas som en dragning. */
 const WHEEL_THRESHOLD = 40
+/**
+ * Så lång tystnad som avslutar en dragning.
+ *
+ * En enda svepning på en styrplatta ger dussintals hjulhändelser, och en
+ * setervikt som räknar varje tröskelpassering för sig läser den som fem
+ * dragningar. Händelserna kommer tätt så länge handen är kvar och slutar
+ * när den släpper — en paus längre än så här är alltså nästa dragning, och
+ * ingenting däremellan räknas.
+ */
+const GESTURE_GAP_MS = 110
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -70,6 +80,9 @@ let position = 0
 /** Dragningar som väntar på tur, med tecken för riktningen. */
 let queued = 0
 let wheelAcc = 0
+let wheelAt = 0
+/** Sant när den pågående dragningen redan gett sitt steg. */
+let wheelSpent = false
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -160,11 +173,22 @@ function step(dir: number) {
 
 function onWheel(e: WheelEvent) {
   e.preventDefault()
+  const now = performance.now()
+
+  // Ny dragning så fort hjulet varit tyst en stund.
+  if (now - wheelAt > GESTURE_GAP_MS) {
+    wheelAcc = 0
+    wheelSpent = false
+  }
+  wheelAt = now
+
+  // Resten av dragningen — inklusive stylsläng och tröghet — räknas inte.
+  if (wheelSpent) return
+
   wheelAcc += e.deltaY
   if (Math.abs(wheelAcc) < WHEEL_THRESHOLD) return
-  const dir = Math.sign(wheelAcc)
-  wheelAcc = 0
-  step(dir)
+  wheelSpent = true
+  step(Math.sign(wheelAcc))
 }
 
 function onTouchStart(e: TouchEvent) {

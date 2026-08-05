@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
-import { MANIFEST, SERVICES, STATS, STUDIO } from '../../data/content'
+import { MANIFEST, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
 
 /** Fördröjer element i en serie så att de rör sig in efter varandra. */
 const stagger = (p: number, i: number, n: number, spread = 0.55) => {
@@ -71,8 +71,9 @@ export function Hero() {
       </h1>
 
       <p className="hero__sub" ref={subRef}>
-        Designstudio för webbplatser med lugn form, tydlig riktning och
-        genomtänkt rörelse. Från tomt ark till lansering.
+        Vi hjälper företag till en webbplats som är lätt att förstå, snabb
+        att använda och enkel att växa med. Från första samtal till lansering
+        — och en bra bit därefter.
       </p>
 
       <div className="hero__meta label" ref={metaRef}>
@@ -114,6 +115,38 @@ export function Manifest() {
           </span>
         ))}
       </p>
+    </section>
+  )
+}
+
+/* ── Varför ──────────────────────────────────────────────────────────── */
+
+export function Why() {
+  const ref = useRef<HTMLElement>(null)
+  const track = useTrack(ref)
+  const items = useRef<(HTMLDivElement | null)[]>([])
+
+  useFrame((f) => {
+    const p = mapRange(track(f).settle, 0.25, 0.95)
+    items.current.forEach((el, i) => {
+      if (!el) return
+      const s = easeOutCubic(stagger(p, i, WHY.length, 0.5))
+      el.style.opacity = s.toFixed(3)
+      el.style.transform = `translate3d(0, ${((1 - s) * 26).toFixed(1)}px, 0)`
+    })
+  })
+
+  return (
+    <section className="sec s-why" id="varfor" data-station ref={ref}>
+      <span className="label label--lead">Varför vi arbetar som vi gör</span>
+      <div className="why__grid">
+        {WHY.map((w, i) => (
+          <div className="why" key={w.title} ref={(el) => { items.current[i] = el }}>
+            <h3 className="why__title">{w.title}</h3>
+            <p className="body">{w.body}</p>
+          </div>
+        ))}
+      </div>
     </section>
   )
 }
@@ -206,22 +239,21 @@ export function About() {
       <div>
         <span className="label label--lead">Studion</span>
         <h2 className="h-lg" ref={leadRef}>
-          En liten studio med en stor omsorg om detaljer.
+          Nära samarbete, tydliga besked och inga överraskningar.
         </h2>
       </div>
 
       <div className="about__body" ref={bodyRef}>
         <p className="body">
-          {STUDIO.name} grundades {STUDIO.founded}. Idén var enkel: de flesta
-          webbplatser ser likadana ut för att de byggs likadant. Vi börjar i
-          stället varje projekt med ett tomt ark, och slutar med något som
-          bara kan tillhöra just din verksamhet.
+          {STUDIO.name} grundades {STUDIO.founded}. Vi är ett litet team av
+          designers och utvecklare, och vi tar få uppdrag åt gången — ett
+          uppdrag som får hela uppmärksamheten blir helt enkelt bättre än tre
+          som delar på den.
         </p>
         <p className="body">
-          Vi är ett litet team av designers och utvecklare, och vi tar få
-          uppdrag åt gången. Det gör att du alltid pratar direkt med dem som
-          ritar och kodar, och att varje detalj hinner bli genomtänkt —
-          typografin, rörelsen, laddtiden och allt däremellan.
+          Ni pratar direkt med dem som ritar och kodar. Vägen från fråga till
+          svar blir kort, och det blir enkelt att ändra riktning medan det
+          fortfarande är enkelt att ändra riktning.
         </p>
         <div className="about__sign">
           <span className="about__name">{STUDIO.name}</span>

@@ -1,17 +1,17 @@
 import { useMemo } from 'react'
 import { seeded } from '../lib/math'
-import type { Project } from '../data/content'
+import type { Offering } from '../data/content'
 
 /**
  * Varje projektkort får en egen genererad komposition i stället för ett
  * fotografi. Formerna byggs deterministiskt ur projektets `seed`, så samma
  * projekt ser likadant ut vid varje rendering — lugna, tunna och glesa.
  */
-export function ProjectArt({ project, index }: { project: Project; index: number }) {
-  const [a, b, bg] = project.palette
+export function OfferingArt({ offering, index }: { offering: Offering; index: number }) {
+  const [a, b, bg] = offering.palette
 
   const shapes = useMemo(() => {
-    const rnd = seeded(project.seed)
+    const rnd = seeded(offering.seed)
     const style = index % 6
 
     if (style === 0) {
@@ -110,7 +110,7 @@ export function ProjectArt({ project, index }: { project: Project; index: number
         <circle cx="200" cy="150" r="86" fill="none" stroke={b} strokeWidth="1" opacity="0.6" />
       </>
     )
-  }, [project.seed, index, a, b])
+  }, [offering.seed, index, a, b])
 
   return (
     <svg
@@ -118,7 +118,7 @@ export function ProjectArt({ project, index }: { project: Project; index: number
       viewBox="0 0 400 300"
       preserveAspectRatio="xMidYMid slice"
       role="img"
-      aria-label={`Grafiskt koncept för ${project.name}`}
+      aria-label={`Grafiskt koncept för ${offering.name}`}
     >
       <rect width="400" height="300" fill={bg} />
       {shapes}

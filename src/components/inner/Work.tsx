@@ -2,12 +2,12 @@ import { useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp, clamp01 } from '../../lib/math'
-import { PROJECTS } from '../../data/content'
-import { ProjectMedia } from '../ProjectMedia'
+import { OFFERINGS } from '../../data/content'
+import { OfferingMedia } from '../OfferingMedia'
 
 /**
- * Arbetena ligger på ett vågrätt band. Sektionen är hög, innehållet nålas fast
- * i fönstret och lodrät scroll översätts till vågrät förflyttning.
+ * Vad vi bygger, på ett vågrätt band. Sektionen är hög, innehållet nålas
+ * fast i fönstret och den lodräta rörelsen översätts till vågrät.
  */
 export function Work() {
   const secRef = useRef<HTMLElement>(null)
@@ -46,7 +46,7 @@ export function Work() {
     })
 
     if (countRef.current) {
-      const i = Math.round(clamp(t.pin * (PROJECTS.length - 1), 0, PROJECTS.length - 1)) + 1
+      const i = Math.round(clamp(t.pin * (OFFERINGS.length - 1), 0, OFFERINGS.length - 1)) + 1
       const label = String(i).padStart(2, '0')
       if (countRef.current.textContent !== label) countRef.current.textContent = label
     }
@@ -58,35 +58,38 @@ export function Work() {
       ref={secRef}
       id="arbeten"
       data-station
-      data-stations={PROJECTS.length}
-      style={{ height: `${100 + PROJECTS.length * 58}vh` }}
+      data-stations={OFFERINGS.length}
+      style={{ height: `${100 + OFFERINGS.length * 58}vh` }}
     >
       <div className="pin__inner" ref={pinRef}>
         <div className="work__head">
-          <span className="label">Urval — konceptarbeten</span>
+          <div>
+            <span className="label">Vad vi bygger</span>
+            <p className="work__note">
+              Vilken sorts webbplats ni än behöver, och oavsett bransch.
+              Behöver ni något som inte står här bygger vi det också.
+            </p>
+          </div>
           <span className="work__count">
-            <b ref={countRef}>01</b> — {String(PROJECTS.length).padStart(2, '0')}
+            <b ref={countRef}>01</b> — {String(OFFERINGS.length).padStart(2, '0')}
           </span>
         </div>
 
         <div className="work__track" ref={trackRef}>
-          {PROJECTS.map((p, i) => (
+          {OFFERINGS.map((o, i) => (
             <article
               className="card"
-              key={p.name}
+              key={o.name}
               ref={(el) => { cardRefs.current[i] = el }}
             >
               <div className="card__frame">
-                <ProjectMedia project={p} index={i} />
+                <OfferingMedia offering={o} index={i} />
               </div>
               <div className="card__meta">
-                <h3 className="card__name">{p.name}</h3>
-                <span className="card__tag">
-                  {p.sector}
-                  <br />
-                  {p.tags}
-                </span>
+                <h3 className="card__name">{o.name}</h3>
+                <span className="card__tag">{o.kind}</span>
               </div>
+              <p className="card__desc">{o.desc}</p>
             </article>
           ))}
         </div>

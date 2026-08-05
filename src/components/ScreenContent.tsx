@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
-import { Hero, Manifest, Numbers } from './inner/Sections'
+import { Hero, Manifest, Numbers, Why } from './inner/Sections'
 import { Work } from './inner/Work'
 import { Contact } from './Plates'
 
@@ -61,6 +61,7 @@ export function ScreenContent({
       <div className="screen-scroll" ref={scrollRef}>
         <Hero />
         <Manifest />
+        <Why />
         <Numbers />
         <Work />
         {reduced && <Contact variant="static" />}
