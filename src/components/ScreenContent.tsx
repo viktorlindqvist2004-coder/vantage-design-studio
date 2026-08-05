@@ -3,7 +3,7 @@ import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { MARQUEE_WORDS } from '../data/content'
 import { Marquee } from './inner/Marquee'
-import { Hero, Manifest } from './inner/Sections'
+import { Hero, Manifest, Numbers } from './inner/Sections'
 import { Work } from './inner/Work'
 import { Contact } from './Plates'
 
@@ -34,9 +34,11 @@ export function ScreenContent({
 
     const u = f.act1
 
-    // Vinjetten hör hemma på avstånd; väl inne ska bilden vara ren.
+    // Vinjetten hör hemma på avstånd; väl inne ska bilden vara ren. På väg
+    // ut blir skärmen en skärm igen, och då kommer den tillbaka.
     if (crtRef.current) {
-      crtRef.current.style.setProperty('--crt', (1 - mapRange(u, 0.68, 0.98)).toFixed(3))
+      const v = clamp01((1 - mapRange(u, 0.68, 0.98)) + mapRange(f.act3, 0.15, 0.7))
+      crtRef.current.style.setProperty('--crt', v.toFixed(3))
     }
 
     // Skärmen vaknar lugnt medan kameran närmar sig, och somnar om först när
@@ -45,7 +47,7 @@ export function ScreenContent({
     const wake = wakeRef.current
     if (wake) {
       const fade = clamp01(
-        (1 - mapRange(f.act1, 0.34, 0.62)) + mapRange(f.act3, 0.8, 1),
+        (1 - mapRange(f.act1, 0.34, 0.62)) + mapRange(f.act3, 0.55, 0.95),
       )
       wake.style.opacity = fade.toFixed(3)
       wake.style.visibility = fade <= 0.01 ? 'hidden' : 'visible'
@@ -61,6 +63,7 @@ export function ScreenContent({
         <Hero />
         <Marquee words={MARQUEE_WORDS} />
         <Manifest />
+        <Numbers />
         <Work />
         <Marquee
           words={['Vantage Design Studio', 'Grundad 2026', 'Handkodat', 'Inga mallar']}

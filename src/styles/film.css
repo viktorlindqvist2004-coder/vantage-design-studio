@@ -22,11 +22,17 @@
   overflow: hidden;
 }
 
-/* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. */
+/* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. Storleken
+   sätts i Film.tsx: samma ram som klippet, men aldrig utanför fönstret.
+   Sektionerna därinne mäter sin höjd mot --page-h i stället för mot vh —
+   en "skärmfull" är rutan de faktiskt ligger i. */
 .film__page {
   position: absolute;
-  inset: 0;
-  transform-origin: 50% 50%;
+  left: 0;
+  top: 0;
+  /* Film.tsx placerar och skalar den direkt i bildrutans koordinater —
+     därför origo i hörnet, inte i mitten. */
+  transform-origin: 0 0;
   will-change: transform;
   background: var(--ink);
 }
@@ -82,9 +88,18 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
+  /* Etappen är en hinna över hela rutan. Vore den träffbar för pekaren
+     skulle hjulet landa i den i stället för på sidan — och eftersom
+     scrollen är filmens enda drivkraft skulle kameran stanna där.
+     Bara det man faktiskt kan klicka på tar emot. */
+  pointer-events: none;
   will-change: transform, opacity;
+}
+
+.film__stage a,
+.film__stage button {
+  pointer-events: auto;
 }
 
 /* Sektionerna är byggda för att ligga i en rullande sida. Här står de
@@ -101,21 +116,69 @@
   transform: none !important;
 }
 
+/* Ute i rummet får varje etapp exakt en fönsterhöjd — inget rullar här,
+   texten står still medan kameran åker. Luften uppåt håller undan
+   navigeringen, luften nedåt platsnamnet. */
 .film__stage .s-services,
-.film__stage .s-numbers,
 .film__stage .s-about {
-  padding-top: clamp(6rem, 14vh, 10rem);
-  padding-bottom: clamp(4rem, 10vh, 8rem);
+  padding-top: clamp(4.5rem, 9vh, 7rem);
+  padding-bottom: clamp(3rem, 7vh, 5rem);
+}
+
+/* Sex tjänster på höjden ryms inte i en ruta. I två spalter gör de det,
+   och raderna blir dessutom lättare att överblicka. */
+.film__stage .s-services {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(2rem, 5vw, 5rem);
+  align-content: center;
+}
+
+.film__stage .s-services > .label--lead {
+  grid-column: 1 / -1;
+}
+
+.film__stage .srv {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  row-gap: 0.4rem;
+  padding: clamp(0.9rem, 2.2vh, 1.6rem) 0;
+}
+
+.film__stage .srv__desc {
+  grid-column: 2;
+  max-width: 34ch;
+}
+
+.film__stage .srv__name {
+  font-size: clamp(1.05rem, 1.7vw, 1.7rem);
+}
+
+.film__stage .srv:last-child {
+  border-bottom: none;
 }
 
 .film__stage .proc {
   height: auto;
-  padding-top: clamp(6rem, 14vh, 10rem);
-  padding-bottom: clamp(4rem, 10vh, 8rem);
+  padding-top: clamp(4.5rem, 9vh, 7rem);
+  padding-bottom: clamp(3rem, 7vh, 5rem);
 }
 
 .film__stage .proc__panel {
   min-height: 30vh;
+}
+
+@media (max-width: 900px) {
+  /* En spalt igen — då måste raderna i stället bli nättare för att rymmas. */
+  .film__stage .s-services {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .film__stage .srv {
+    padding: clamp(0.5rem, 1.4vh, 0.9rem) 0;
+  }
+  .film__stage .srv__desc {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
 }
 
 @media (max-width: 780px) {

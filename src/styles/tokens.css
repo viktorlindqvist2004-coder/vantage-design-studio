@@ -1,4 +1,9 @@
 :root {
+  /* Höjden på rutan sidan rullar i. Ute i rummet är det fönstret; inne i
+     filmen är det klippets ram, som kan vara lägre. Film.tsx skriver om
+     den på .film__page. */
+  --page-h: 100vh;
+
   /* Färg -------------------------------------------------------------
      Nästan monokromt. En enda dämpad accent i sand, resten är ljus och
      skugga. Det som ska dra blicken är typografin och rörelsen — inte
@@ -19,10 +24,13 @@
   --line-soft: color-mix(in srgb, var(--bone) 6%, transparent);
 
   /* Typografi --------------------------------------------------------
-     Ett enda typsnitt genom hela sidan, med vikten som enda kontrast. */
-  --sans: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+     Ett enda typsnitt genom hela sidan, med vikten som enda kontrast.
+     Geist är en rak, neutral grotesk utan egenheter — bokstäverna ska
+     inte märkas, bara texten. Den smala varianten vi hade tidigare drog
+     ihop orden och gav rubrikerna en ton sidan inte ska ha. */
+  --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     'Helvetica Neue', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Rytm -------------------------------------------------------------- */
   --gutter: clamp(1.5rem, 5vw, 6rem);

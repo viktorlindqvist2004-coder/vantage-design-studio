@@ -21,7 +21,7 @@ export function Hero() {
 
   useFrame((f) => {
     // Sektionen ligger överst — dess uttåg styrs direkt av scrollen.
-    const p = easeOutCubic(clamp01(f.inner / f.vh))
+    const p = easeOutCubic(clamp01(f.inner / f.pageH))
 
     chars.current.forEach((el, i) => {
       if (!el) return

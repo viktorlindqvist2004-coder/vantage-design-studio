@@ -16,6 +16,8 @@ export type Metrics = {
   innerMax: number
   /** Scrollsträcka för kameraresan genom rummet efter utzoomningen (px). */
   filmMax: number
+  /** Höjden på rutan sidan rullar i — filmens ram, inte alltid fönstret. */
+  pageH: number
 }
 
 export type Frame = {
@@ -39,6 +41,8 @@ export type Frame = {
   /** Hur långt vi kommit i kameraresan genom rummet (px). */
   film: number
   filmMax: number
+  /** Höjden på rutan sidan rullar i. Se Metrics. */
+  pageH: number
   /** 0 = i rummet, 1 = helt inne i skärmen. */
   inside: number
   reduced: boolean
@@ -50,7 +54,7 @@ type Listener = (f: Frame) => void
 
 const listeners = new Set<Listener>()
 
-let metrics: Metrics = { act1: 0, act3: 0, innerMax: 0, filmMax: 0 }
+let metrics: Metrics = { act1: 0, act3: 0, innerMax: 0, filmMax: 0, pageH: 0 }
 let running = false
 let rafId = 0
 let lastTime = 0
@@ -76,7 +80,7 @@ export const frame: Frame = {
   vw: typeof window !== 'undefined' ? window.innerWidth : 1440,
   vh: typeof window !== 'undefined' ? window.innerHeight : 900,
   dt: 16.67, time: 0,
-  act1: 0, inner: 0, innerMax: 0, act3: 0, film: 0, filmMax: 0, inside: 0,
+  act1: 0, inner: 0, innerMax: 0, act3: 0, film: 0, filmMax: 0, pageH: 0, inside: 0,
   reduced: false, pointerX: 0, pointerY: 0,
 }
 
@@ -109,7 +113,8 @@ function tick(time: number) {
 
   const raw = window.scrollY || window.pageYOffset || 0
   // Utan utjämning blir inzoomningen ryckig; med utjämning "glider" kameran.
-  smoothY = reduced ? raw : damp(smoothY, raw, 0.16, dt)
+  // För mjukt blir den däremot seg — filmen ligger då kvar efter handen.
+  smoothY = reduced ? raw : damp(smoothY, raw, 0.24, dt)
 
   const instant = smoothY - prevY
   prevY = smoothY
@@ -139,6 +144,7 @@ function tick(time: number) {
   frame.act3 = a3
   frame.film = film
   frame.filmMax = filmMax
+  frame.pageH = metrics.pageH || frame.vh
   frame.reduced = reduced
   frame.pointerX = pointerX
   frame.pointerY = pointerY

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useFrame } from '../lib/hooks'
-import { clamp01 } from '../lib/math'
+import { clamp, clamp01 } from '../lib/math'
 import type { Frame } from '../lib/scroll'
 
 /**
@@ -69,6 +69,26 @@ void main() {
   gl_FragColor = vec4(tex.rgb * a, a);
 }`
 
+/**
+ * Trösklarna för uppspelningen. De två första har glapp mellan sig med
+ * flit: startade och stannade klippet vid samma eftersläpning skulle det
+ * växla mellan spela och pausa flera gånger i sekunden när man drar sakta,
+ * och varje växling kostar mer än den bild den vinner.
+ */
+/** Eftersläpning (s) som får klippet att börja spela igen. Ungefär en bildruta. */
+const RESUME = 0.05
+/** Eftersläpning (s) under vilken klippet ska stå still. */
+const SETTLE = 0.005
+/**
+ * Över så här stor eftersläpning (s) hoppar vi i stället för att spela ikapp.
+ * Tröskeln ligger strax över den eftersläpning en snabb scroll kan hålla, så
+ * att ett klipp i filmen blir ett klipp — inte en hastig genomspelning av
+ * bildrutorna emellan.
+ */
+const JUMP = 0.6
+/** Hur hårt hastigheten dras upp av eftersläpningen. Högre = tätare efter handen. */
+const GAIN = 10
+
 function compile(gl: WebGLRenderingContext, type: number, src: string) {
   const s = gl.createShader(type)!
   gl.shaderSource(s, src)
@@ -88,8 +108,6 @@ export function KeyedVideo({
   softness = 0.12,
   /** Returnerar 0–1: var i klippet vi ska stå. */
   progress,
-  /** Klippets bildfrekvens — sökningen rundas till närmaste bildruta. */
-  fps = 24,
   className = '',
   onReady,
 }: {
@@ -99,7 +117,6 @@ export function KeyedVideo({
   tolerance?: number
   softness?: number
   progress: (f: Frame) => number
-  fps?: number
   className?: string
   onReady?: () => void
 }) {
@@ -113,7 +130,8 @@ export function KeyedVideo({
     tex: WebGLTexture
     uFit: WebGLUniformLocation
   } | null>(null)
-  const lastTime = useRef(-1)
+  /** Uppspelningspunkten som redan ligger på duken. */
+  const drawn = useRef(-1)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -199,16 +217,37 @@ export function KeyedVideo({
     const d = video.duration
     if (!d || !isFinite(d)) return
 
-    // Scrollen är enda drivkraften. Sökningen måste dock hushållas:
-    // currentTime är asynkront, och skriver man varje bildruta köas
-    // sökningar upp snabbare än de hinner utföras. Resultatet blir hackigt.
-    // Genom att runda till närmaste bildruta och vänta tills föregående
-    // sökning är klar begärs bara sådant som faktiskt går att visa.
-    const t = clamp01(progress(f)) * d
-    const snapped = Math.round(t * fps) / fps
-    if (snapped !== lastTime.current && !video.seeking) {
-      lastTime.current = snapped
-      video.currentTime = snapped
+    // ── Hur klippet följer scrollen ────────────────────────────────────
+    // Att söka (`currentTime = …`) en gång per bildruta ser ut som det
+    // borde fungera, men gör det inte: varje sökning är asynkron, tar
+    // längre tid än en bildruta, och medan den pågår står bilden still.
+    // Rörelsen blir ryckig och ligger alltid steget efter handen.
+    //
+    // I stället låter vi klippet spelas — men i den takt scrollen ber om.
+    // Då avkodar webbläsaren löpande, precis som vid vanlig uppspelning,
+    // och varje bildruta kommer fram i tid. Sökning används bara till det
+    // den är bra på: att backa, och att ta igen ett långt hopp.
+    const target = clamp01(progress(f)) * d
+    const diff = target - video.currentTime
+
+    if (diff < -0.03 || diff > JUMP) {
+      // Bakåt, eller så långt efter att uppspelning aldrig hinner ikapp.
+      if (!video.seeking) {
+        if (!video.paused) video.pause()
+        video.currentTime = target
+      }
+    } else if (video.paused) {
+      // Stillastående: vänta tills det finns minst en bildruta att visa.
+      if (diff > RESUME) {
+        video.playbackRate = clamp(diff * GAIN, 0.25, 4)
+        video.play().catch(() => {})
+      }
+    } else if (diff < SETTLE) {
+      // Ikapp — kameran ska stå still tills man drar igen.
+      video.pause()
+    } else {
+      // Framåt: ju längre efter vi ligger, desto snabbare spelas klippet.
+      video.playbackRate = clamp(diff * GAIN, 0.25, 4)
     }
 
     // Rita bara i den upplösning duken faktiskt har på skärmen.
@@ -216,10 +255,18 @@ export function KeyedVideo({
     const w = Math.round(canvas.clientWidth * dpr)
     const h = Math.round(canvas.clientHeight * dpr)
     if (!w || !h) return
-    if (canvas.width !== w || canvas.height !== h) {
+
+    const resized = canvas.width !== w || canvas.height !== h
+    if (resized) {
       canvas.width = w
       canvas.height = h
     }
+
+    // Står klippet still finns det ingen ny bildruta att ladda upp. Att
+    // ändå göra det varje varv tar tid från allt annat på sidan — och det
+    // är den tiden rörelsen känns i.
+    if (!resized && video.currentTime === drawn.current) return
+    drawn.current = video.currentTime
 
     const { gl, tex, uFit } = ctx
     gl.viewport(0, 0, w, h)

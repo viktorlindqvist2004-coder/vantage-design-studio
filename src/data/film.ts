@@ -27,6 +27,18 @@ export const CLIP = {
   aspect: 1280 / 704,
   /** Sekunden där skärmen fyller rutan och sidan tar över. */
   enter: 1.55,
+  /**
+   * Sekunden utflygningen backar tillbaka till.
+   *
+   * Klippet klipper rakt från den fyllda skärmen till rummet — kameran
+   * backar aldrig ut av sig själv. Utflygningen görs därför genom att
+   * spela inflygningen baklänges hit: skrivbordet och skärmen kommer
+   * tillbaka, sidan krymper ned på skärmen igen, och först därefter
+   * klipps rumsresan in.
+   */
+  exit: 0.5,
+  /** Sekunden rummet börjar — första bildrutan efter klippet i materialet. */
+  room: 1.62,
   /** Skärmens färg i klippet. */
   key: [200, 12, 210] as [number, number, number],
 } as const
@@ -35,7 +47,7 @@ export const CLIP = {
  * Hur många fönsterhöjder man scrollar per sekund film.
  * Högre värde = långsammare kamera.
  */
-export const SCROLL_PER_SECOND = 2.1
+export const SCROLL_PER_SECOND = 1.35
 
 export type Shot = {
   id: string
@@ -49,6 +61,6 @@ export type Shot = {
 export const SHOTS: Shot[] = [
   { id: 'window', place: 'Mot staden', from: 1.9, to: 3.2 },
   { id: 'shelf', place: 'Hyllan', from: 3.4, to: 5.4 },
-  { id: 'lamp', place: 'Studion', from: 5.8, to: 7.5 },
+  { id: 'lamp', place: 'Arbetsljuset', from: 5.8, to: 7.5 },
   { id: 'samples', place: 'Materialen', from: 7.7, to: 9.04 },
 ]

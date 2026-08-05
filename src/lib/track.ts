@@ -54,10 +54,13 @@ export function useTrack<T extends HTMLElement>(ref: RefObject<T | null>) {
       return { enter: p, pin: p, offset: 0, top: 0, height: 0 }
     }
 
+    // Rutan här inne är filmens ram, inte fönstret — på en telefon är den
+    // märkbart lägre, och mäter man mot fönstret hamnar sektionerna i
+    // otakt med det man faktiskt ser.
     const { top, height } = box.current
-    const span = height - f.vh
+    const span = height - f.pageH
 
-    const enter = clamp01((f.inner + f.vh - top) / (f.vh + height || 1))
+    const enter = clamp01((f.inner + f.pageH - top) / (f.pageH + height || 1))
     const offset = clamp(f.inner - top, 0, Math.max(span, 0))
     const pin = span > 0 ? clamp01((f.inner - top) / span) : enter
 
