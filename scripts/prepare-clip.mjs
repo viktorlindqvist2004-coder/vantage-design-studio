@@ -12,9 +12,10 @@
  * blir stor per sekund, men den är bara ett par sekunder lång.
  *
  * RUMSKLIPPEN är platserna kameran besöker efteråt. De rullar av sig
- * själva och byts ut när man scrollat vidare, så de behöver varken sökas
- * i eller vara skarpa — de ligger bakom text och är lätt oskarpa. Låg
- * bredd, gles nyckelbildruta, liten fil.
+ * själva och byts ut när man scrollat vidare, så de behöver aldrig sökas
+ * i — gles nyckelbildruta räcker. De saktas däremot ned kraftigt, med
+ * framräknade mellanbilder, och de fyller rutan på alla skärmar, så de
+ * måste vara bredare än ett fönster.
  *
  * Varje rumsklipp läggs ihop med sig självt baklänges. Ett kort klipp som
  * loopar rakt av hoppar till utgångsläget varje varv; går det i stället
@@ -50,21 +51,32 @@ const ROOMS = [
   { name: 'room-window', from: 1.8, to: 3.05 },
   { name: 'room-shelf', from: 4.0, to: 5.45 },
   { name: 'room-lamp', from: 6.35, to: 7.55 },
-  { name: 'room-samples', from: 8.3, to: 9.02 },
+  // Skrivbordet är sista bilden man ser, och den man läser
+  // kontaktuppgifterna över. Den får röra sig långsammast av alla.
+  { name: 'room-samples', from: 8.3, to: 9.02, slow: 10 },
 ]
-const ROOM_WIDTH = 960
+
+/**
+ * Rumsklippens bredd.
+ *
+ * De fyller rutan och beskärs, så på en stående telefon sträcks de till
+ * långt mer än fönstrets bredd — och en bakgrund som ser mjuk ut på en
+ * bärbar dator ser grynig ut där. Bredden ligger därför över den vanliga
+ * fönsterbredden, inte i nivå med den.
+ */
+const ROOM_WIDTH = 1280
 
 /**
  * Hur många gånger långsammare rummet ska röra sig.
  *
  * Att sänka uppspelningshastigheten i webbläsaren räcker inte: klippet har
  * fortfarande bara 24 bildrutor per sekund, så varje bildruta blir stående
- * tre gånger så länge och den mjuka kameraåkningen blir en stapplande rad
+ * sex gånger så länge och den mjuka kameraåkningen blir en stapplande rad
  * av stillbilder. Här räknas i stället mellanbilderna fram, med
  * rörelsekompensering, så att den långsamma åkningen har lika många egna
  * bildrutor som den snabba hade.
  */
-const SLOW = 3.2
+const SLOW = 6.5
 const ROOM_FPS = 30
 
 const run = (args) =>
@@ -121,7 +133,7 @@ write(
   `[0:v]scale=${SCREEN.width}:-2:flags=lanczos,fps=${FPS}[v]`,
   `${OUT}/${SCREEN.name}`,
   // -g 1: varje bildruta är en nyckelbildruta, se resonemanget överst.
-  { gop: 1, crf: 22, vp9crf: 30 },
+  { gop: 1, crf: 20, vp9crf: 28 },
 )
 
 console.log('\nRumsklippen — fram och tillbaka, i långsam takt:')
@@ -138,7 +150,7 @@ for (const r of ROOMS) {
   const filter =
     `[0:v]scale=${ROOM_WIDTH}:-2:flags=lanczos,fps=${FPS},split[a][b];`
     + `[b]reverse,trim=start_frame=1:end_frame=${frames - 1},setpts=PTS-STARTPTS[rev];`
-    + `[a][rev]concat=n=2:v=1,setpts=${SLOW}*PTS,`
+    + `[a][rev]concat=n=2:v=1,setpts=${r.slow ?? SLOW}*PTS,`
     + `minterpolate=fps=${ROOM_FPS}:mi_mode=mci:me_mode=bidir:mc_mode=aobmc[v]`
 
   // Mellanbildsberäkningen är dyr och behöver bara göras en gång, inte en
@@ -147,11 +159,11 @@ for (const r of ROOMS) {
   console.log(`  ${r.name} — räknar fram mellanbilder …`)
   run(['-y', '-ss', String(r.from), '-t', String(r.to - r.from), '-i', input,
     '-an', '-filter_complex', filter, '-map', '[v]',
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '10',
     '-pix_fmt', 'yuv420p', tmp])
 
   write(['-y', '-i', tmp], '[0:v]null[v]', `${OUT}/${r.name}`,
-    { gop: ROOM_FPS, crf: 28, vp9crf: 37 })
+    { gop: ROOM_FPS, crf: 24, vp9crf: 33 })
 }
 
 rmSync('.clip-tmp', { recursive: true, force: true })

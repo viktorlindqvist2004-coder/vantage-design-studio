@@ -3,39 +3,6 @@ import { useFrame } from '../lib/hooks'
 import { clamp01, easeOutCubic, mapRange } from '../lib/math'
 import { STUDIO } from '../data/content'
 
-/**
- * Titeln ligger som en plansch framför rummet och glider förbi kameran när
- * resan in mot skärmen börjar.
- */
-export function TitlePlate() {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useFrame((f) => {
-    const el = ref.current
-    if (!el) return
-
-    const p = easeOutCubic(mapRange(f.act1, 0, 0.4))
-    const back = mapRange(f.act3, 0.6, 1) // planschen kommer tillbaka på slutet
-    const scale = 1 + p * 0.9
-    const opacity = (1 - clamp01(p * 1.4)) * (1 - back)
-
-    el.style.transform =
-      `translate3d(${(-f.pointerX * 10).toFixed(1)}px, ${(-f.pointerY * 7 - p * 24).toFixed(1)}px, 0) scale(${scale.toFixed(3)})`
-    el.style.opacity = opacity.toFixed(3)
-    el.style.visibility = opacity <= 0.01 ? 'hidden' : 'visible'
-  })
-
-  return (
-    <div className="title-plate" ref={ref}>
-      <span className="label">Designstudio · Grundad {STUDIO.founded}</span>
-      <h2 className="title-plate__big">Vantage Design Studio</h2>
-      <p className="title-plate__sub">
-        Vi ritar och kodar webbplatser med lugn form och tydlig riktning.
-      </p>
-    </div>
-  )
-}
-
 /* ── Kontakt, efter utzoomningen ─────────────────────────────────────── */
 
 export function Contact({

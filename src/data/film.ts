@@ -46,10 +46,21 @@ export const CLIP = {
 } as const
 
 /**
- * Hur många fönsterhöjder man scrollar per sekund skärmklipp.
- * Högre värde = långsammare kamera.
+ * Hur långt man drar för att komma in i skärmen, i fönsterhöjder.
+ *
+ * En dragning ska räcka. Sträckan är alltså en skärmfull scroll, inte en
+ * resa — den som vill in ska vara inne, inte ha scrollat i tio omgångar
+ * och undrat om något hänt.
  */
-export const SCROLL_PER_SECOND = 1.35
+export const APPROACH_HEIGHTS = 1
+
+/**
+ * Hur långt man drar för att komma ut igen.
+ *
+ * Utflygningen får ta längre tid än inflygningen. In vill man snabbt; ut
+ * är ögonblicket man lämnar sidan, och det tål att dröja.
+ */
+export const EXIT_HEIGHTS = 2.4
 
 export type Shot = {
   id: string

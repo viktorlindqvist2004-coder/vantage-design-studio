@@ -85,9 +85,18 @@ const SETTLE = 0.005
  * att ett klipp i filmen blir ett klipp — inte en hastig genomspelning av
  * bildrutorna emellan.
  */
-const JUMP = 0.6
+const JUMP = 0.95
 /** Hur hårt hastigheten dras upp av eftersläpningen. Högre = tätare efter handen. */
 const GAIN = 10
+/**
+ * Snabbaste uppspelning.
+ *
+ * Inflygningen är en dragning lång, så en snabb svep ber om flera sekunder
+ * film på en bråkdel av en sekund. Taket måste rymma det — annars faller
+ * klippet efter, tröskeln ovan löser ut, och den mjuka åkningen blir ett
+ * hopp precis i det ögonblick den syns bäst.
+ */
+const MAX_RATE = 6
 
 function compile(gl: WebGLRenderingContext, type: number, src: string) {
   const s = gl.createShader(type)!
@@ -290,7 +299,7 @@ export function KeyedVideo({
     } else if (video.paused) {
       // Stillastående: vänta tills det finns minst en bildruta att visa.
       if (diff > RESUME) {
-        video.playbackRate = clamp(diff * GAIN, 0.25, 4)
+        video.playbackRate = clamp(diff * GAIN, 0.25, MAX_RATE)
         video.play().catch(() => {})
       }
     } else if (diff < SETTLE) {
@@ -298,7 +307,7 @@ export function KeyedVideo({
       video.pause()
     } else {
       // Framåt: ju längre efter vi ligger, desto snabbare spelas klippet.
-      video.playbackRate = clamp(diff * GAIN, 0.25, 4)
+      video.playbackRate = clamp(diff * GAIN, 0.25, MAX_RATE)
     }
 
     // Rita aldrig i fler bildpunkter än klippet självt har. Duken kan vara

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
-import { Hint, Nav, Progress } from './components/Overlay'
-import { Contact, Preloader, TitlePlate } from './components/Plates'
+import { Nav } from './components/Overlay'
+import { Contact, Preloader } from './components/Plates'
 import { Film, approachLength, exitLength, frameSize, roomLength } from './components/Film'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
 import { setMetrics, start, stop } from './lib/scroll'
@@ -88,12 +88,9 @@ function Experience() {
               page={<ScreenContent onHeight={setContentHeight} />}
               onFail={filmDown}
             />
-            <TitlePlate />
-            <Hint />
           </>
         )}
         <Nav />
-        <Progress />
       </div>
 
       {/* Själva scrollytan: tom, hög och osynlig. */}

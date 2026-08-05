@@ -150,6 +150,3 @@ export const MANIFEST = [
   'som', 'betyder', 'något.',
 ]
 
-export const MARQUEE_WORDS = [
-  'Webbdesign', 'Identitet', 'Rörelse', 'Utveckling', 'Art direction', 'Prestanda',
-]

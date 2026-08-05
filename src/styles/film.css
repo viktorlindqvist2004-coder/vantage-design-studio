@@ -106,15 +106,6 @@
   opacity: 0;
 }
 
-.film__place {
-  position: absolute;
-  left: var(--gutter);
-  bottom: clamp(1.5rem, 4vh, 2.5rem);
-  z-index: 6;
-  color: var(--dim);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
-}
 
 /* ── Innehållet som hör till varje plats ─────────────────────────────── */
 
@@ -228,6 +219,3 @@
   }
 }
 
-@media (max-width: 780px) {
-  .film__place { display: none; }
-}

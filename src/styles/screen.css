@@ -5,7 +5,9 @@
    i exakt 1:1 — knivskarp, inte uppförstorad.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Fyller sitt plan; skalningen sköts av Scene.tsx. */
+/* Fyller sitt plan. Den måste beskära: sidan är många skärmfulla hög och
+   rullas med transform, så allt utanför rutan ligger kvar och skulle synas
+   utanför bildskärmen i filmen om det inte klipptes bort här. */
 .screen-content {
   position: absolute;
   inset: 0;
@@ -23,20 +25,6 @@
   position: relative;
   width: 100%;
   will-change: transform;
-}
-
-/* En mycket återhållsam vinjett på avstånd — inga scanlines, inget brus. */
-.crt {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 60;
-  background: radial-gradient(
-    82% 76% at 50% 50%,
-    transparent 48%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
-  opacity: var(--crt, 1);
 }
 
 /* Skärmen vaknar: ett lugnt ljus och en tunn linje som fylls. */
@@ -192,50 +180,6 @@
   gap: clamp(1rem, 4vw, 4rem);
   padding-top: 1.5rem;
   border-top: var(--rule);
-}
-
-/* ── Löpande text ────────────────────────────────────────────────────── */
-
-.marquee {
-  position: relative;
-  display: flex;
-  width: 100%;
-  overflow: hidden;
-  border-top: var(--rule);
-  border-bottom: var(--rule);
-  padding: clamp(1.4rem, 3vh, 2.4rem) 0;
-}
-
-.marquee__track {
-  display: flex;
-  flex: 0 0 auto;
-  will-change: transform;
-}
-
-.marquee__group {
-  display: flex;
-  align-items: center;
-  gap: clamp(2.5rem, 6vw, 6rem);
-  padding-right: clamp(2.5rem, 6vw, 6rem);
-}
-
-.marquee__item {
-  font-size: clamp(1.1rem, 2.1vw, 2rem);
-  font-weight: 200;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  color: var(--bone);
-  display: flex;
-  align-items: center;
-  gap: clamp(2.5rem, 6vw, 6rem);
-}
-
-.marquee__dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex: none;
 }
 
 /* ── Manifest ────────────────────────────────────────────────────────── */

@@ -51,10 +51,6 @@
   gap: clamp(1.5rem, 3vw, 3rem);
 }
 
-.nav__links {
-  display: flex;
-  gap: clamp(1.5rem, 2.5vw, 2.5rem);
-}
 
 .nav__link {
   position: relative;
@@ -67,121 +63,6 @@
 }
 
 @media (max-width: 780px) {
-  .nav__links { display: none; }
-}
-
-/* ── Förloppsmätare ──────────────────────────────────────────────────── */
-
-.progress {
-  position: absolute;
-  right: var(--gutter);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 90;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.2rem;
-}
-
-.progress__rail {
-  width: 1px;
-  height: 18vh;
-  background: var(--line);
-  position: relative;
-  overflow: hidden;
-}
-
-.progress__rail i {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 0%;
-  background: color-mix(in srgb, var(--bone) 55%, transparent);
-  will-change: height;
-}
-
-.progress__act {
-  writing-mode: vertical-rl;
-  font-family: var(--mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--dim);
-  /* Läsbar även mot ljusa foton. */
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-}
-
-@media (max-width: 780px) {
-  .progress { display: none; }
-  /* På mobil säger hjältetexten redan "scrolla in i skärmen". */
-  .hint { display: none; }
-}
-
-/* ── Scrollhint ──────────────────────────────────────────────────────── */
-
-.hint {
-  position: absolute;
-  right: var(--gutter);
-  bottom: clamp(1.5rem, 4vh, 2.5rem);
-  z-index: 90;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.9rem;
-  will-change: opacity;
-}
-
-.hint__rail {
-  width: 1px;
-  height: clamp(2.5rem, 6vh, 4rem);
-  background: var(--line);
-  overflow: hidden;
-  position: relative;
-}
-
-.hint__rail::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent, var(--bone));
-  animation: hint-run 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes hint-run {
-  0% { transform: translateY(-100%); }
-  55%, 100% { transform: translateY(100%); }
-}
-
-/* ── Titeln i rummet ─────────────────────────────────────────────────── */
-
-.title-plate {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 0 var(--gutter) clamp(4rem, 12vh, 9rem);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.title-plate__big {
-  font-size: clamp(2.4rem, 7vw, 7rem);
-  font-weight: 200;
-  letter-spacing: -0.04em;
-  line-height: 1.04;
-  color: var(--bone);
-  margin-top: clamp(1rem, 2.5vh, 2rem);
-}
-
-.title-plate__sub {
-  margin-top: clamp(1.2rem, 3vh, 2.2rem);
-  max-width: 34ch;
-  font-size: clamp(0.95rem, 1.15vw, 1.15rem);
-  font-weight: 300;
-  line-height: 1.65;
-  color: var(--dim);
 }
 
 /* ── Kontakt, efter utzoomningen ─────────────────────────────────────── */

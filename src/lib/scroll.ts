@@ -114,7 +114,7 @@ function tick(time: number) {
   const raw = window.scrollY || window.pageYOffset || 0
   // Utan utjämning blir inzoomningen ryckig; med utjämning "glider" kameran.
   // För mjukt blir den däremot seg — filmen ligger då kvar efter handen.
-  smoothY = reduced ? raw : damp(smoothY, raw, 0.24, dt)
+  smoothY = reduced ? raw : damp(smoothY, raw, 0.2, dt)
 
   const instant = smoothY - prevY
   prevY = smoothY

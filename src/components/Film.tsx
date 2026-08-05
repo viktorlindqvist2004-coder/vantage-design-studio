@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp, clamp01, lerp, mapRange } from '../lib/math'
-import { CLIP, CROSSFADE, SCROLL_PER_SECOND, SHOTS } from '../data/film'
+import { APPROACH_HEIGHTS, CLIP, CROSSFADE, EXIT_HEIGHTS, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
 import { SCREEN_TRACK, type ScreenSample } from '../data/screen-track'
 import { About, Services } from './inner/Sections'
@@ -16,24 +16,11 @@ export type ShotRange = { start: number; length: number }
 const ShotRangeContext = createContext<ShotRange | null>(null)
 export const useShotRange = () => useContext(ShotRangeContext)
 
-/** Sekunder film omräknat till scrollsträcka. */
-export const secondsToPx = (seconds: number, vh: number) =>
-  seconds * SCROLL_PER_SECOND * vh
-
 /** Scrollsträckan för inflygningen fram till skärmen. */
-export const approachLength = (vh: number) => secondsToPx(CLIP.enter, vh)
+export const approachLength = (vh: number) => APPROACH_HEIGHTS * vh
 
-/**
- * Scrollsträckan för utflygningen — inflygningen baklänges.
- *
- * Den får gott om väg. Inflygningen har man framför sig och vet vart den
- * ska; utflygningen är det ögonblick man lämnar sidan, och den tål att ta
- * tid. Kameran går alltså långsammare ut än in, över samma sträcka film.
- */
-const EXIT_SCROLL_SCALE = 1.9
-
-export const exitLength = (vh: number) =>
-  secondsToPx(CLIP.enter - CLIP.exit, vh) * EXIT_SCROLL_SCALE
+/** Scrollsträckan för utflygningen — inflygningen baklänges. */
+export const exitLength = (vh: number) => EXIT_HEIGHTS * vh
 
 /**
  * Scrollsträckan för resan genom rummet.
@@ -176,7 +163,6 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
   const { w: frameW, h: frameH, pageW, pageH } = frameSize(vw, vh)
   const pageRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
-  const labelRef = useRef<HTMLSpanElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
   /** Sekunden som faktiskt ligger på duken — skrivs av KeyedVideo. */
   const shown = useRef(0)
@@ -237,14 +223,6 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
       scrimRef.current.style.opacity = (1 - atScreen).toFixed(3)
     }
 
-    if (labelRef.current) {
-      const shot = SHOTS.find((s) => {
-        const r = ranges[s.id]
-        return f.film >= r.start && f.film < r.start + r.length
-      })
-      const text = shot && shot.id !== 'samples' ? shot.place : ''
-      if (labelRef.current.textContent !== text) labelRef.current.textContent = text
-    }
   })
 
   return (
@@ -286,7 +264,6 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
       </div>
 
       <div className="film__scrim" ref={scrimRef} />
-      <span className="film__place label" ref={labelRef} aria-hidden="true" />
 
       {SHOTS.map((shot, i) => (
         <ShotStage
