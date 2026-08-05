@@ -64,15 +64,26 @@ const GESTURE_GAP_MS = 90
  */
 const NOTCH_MIN = 45
 /**
- * Hur mycket ett utslag ska växa för att räknas som en ny svepning.
+ * Hur mycket ett utslag ska växa över svansens botten för att räknas som en
+ * ny svepning.
  *
  * Trögheten efter en svepning klingar av: utslagen blir mindre och mindre,
  * men de fortsätter komma i nästan en sekund. Utan det här räknas hela den
  * svansen som samma gest, och drar man igen medan den pågår händer
- * ingenting — det är precis då man drar igen. En hand som lägger på nytt
- * ger ett tydligt större utslag än det förra, och det går att se.
+ * ingenting — det är precis då man drar igen.
+ *
+ * Jämförelsen måste dock gå mot svansens botten och inte mot förra
+ * utslaget. En svepning växer nämligen fortfarande när dess första steg
+ * går: fingret drar på, utslagen tredubblas mellan händelserna, och varje
+ * sådan ökning ser ut som en ny påläggning. En enda snabb flick blev då
+ * ett dussin steg. Först när utslagen börjat falla från sin topp finns det
+ * en svans att lägga på i.
  */
-const NEW_PUSH = 1.4
+const NEW_PUSH = 1.8
+/** Golv under NEW_PUSH, så att skakningar i en döende svans inte räcker. */
+const NEW_PUSH_FLOOR = 6
+/** Så långt under toppen utslagen ska ha fallit innan svansen räknas börjad. */
+const FALLEN = 0.55
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -108,8 +119,12 @@ let wheelAt = 0
 let wheelSpent = false
 /** Sant när gesten kommer från ett mushjul och inte från en styrplatta. */
 let wheelNotches = false
-/** Förra utslagets storlek, för att känna igen en ny påläggning. */
-let wheelPrev = 0
+/** Största utslaget i den pågående gesten. */
+let wheelPeak = 0
+/** Minsta utslaget sedan toppen — svansens botten just nu. */
+let wheelLow = 0
+/** Sant när utslagen fallit tydligt från toppen, alltså när svansen börjat. */
+let wheelFell = false
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -198,6 +213,13 @@ function step(dir: number) {
   duration = next
 }
 
+/** Börjar om formmätningen — ny gest, eller ny påläggning i en gammal. */
+function freshGesture(mag: number) {
+  wheelPeak = mag
+  wheelLow = mag
+  wheelFell = false
+}
+
 function onWheel(e: WheelEvent) {
   e.preventDefault()
   const now = performance.now()
@@ -210,18 +232,33 @@ function onWheel(e: WheelEvent) {
     wheelAcc = 0
     wheelSpent = false
     wheelNotches = mag >= NOTCH_MIN
-    wheelPrev = 0
+    freshGesture(mag)
   }
   wheelAt = now
 
+  // Följ gestens form: hur högt den nådde, och hur långt ned svansen gått
+  // sedan dess. Det är de två som skiljer en hand som drar på från en
+  // tröghet som klingar av.
+  if (mag > wheelPeak) {
+    wheelPeak = mag
+    wheelLow = mag
+  } else if (mag < wheelLow) {
+    wheelLow = mag
+  }
+  if (mag < wheelPeak * FALLEN) wheelFell = true
+
   // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt —
-  // men lägger handen på igen mitt i svansen är det en ny svepning, och
-  // den ska räknas. Trögheten avtar; en ny påläggning gör tvärtom.
-  const pushedAgain = mag > wheelPrev * NEW_PUSH + 2
-  wheelPrev = mag
+  // men lägger handen på igen mitt i svansen är det en ny svepning, och den
+  // ska räknas. En ny påläggning är ett tydligt uppsving ur svansens botten,
+  // inte vilken ökning som helst: under uppdraget växer utslagen också, och
+  // den växten är samma svepning.
+  const pushedAgain = wheelFell
+    && mag > wheelLow * NEW_PUSH + NEW_PUSH_FLOOR
+    && mag > wheelPeak * 0.25
   if (wheelSpent && pushedAgain) {
     wheelSpent = false
     wheelAcc = 0
+    freshGesture(mag)
   }
 
   // Ett hjul ger ett steg per hack, för varje hack är en egen handling.

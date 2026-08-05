@@ -168,12 +168,14 @@ rooms.forEach((arg, i) => {
   const [from, to] = span ? span.split(':').map(Number) : []
   const name = `room-${String.fromCharCode(97 + i)}`
 
-  // Gestalterna i samtalsklippet är tunna vita linjer mot svart, och den
-  // sortens detalj kostar mer att koda än de dämpade rummen. Kvaliteten
-  // sänks därför här utan att något syns — linjerna håller ändå, och
-  // filen hamnar i samma storleksklass som de andra platserna.
+  // Rummen är dämpad, suddig film där kompressionen inte har mycket att
+  // förstöra. Samtalsklippet är tvärtom tunna vita linjer mot svart — den
+  // sortens detalj är både dyrast att koda och känsligast för att kodas
+  // hårt, och eftersom klippet dessutom skalas upp mot en tät skärm syns
+  // varje utsmetad linje. Det får därför kosta det det kostar; klippet
+  // hämtas ändå först när man närmar sig platsen.
   const quality = span
-    ? { gop: FPS, crf: 28, vp9crf: 42 }
+    ? { gop: FPS, crf: 20, vp9crf: 26 }
     : { gop: FPS, crf: 24, vp9crf: 33 }
 
   write(input, roomFilter(from, to), `${OUT}/${name}`, quality)
