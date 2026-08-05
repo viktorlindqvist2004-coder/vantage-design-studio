@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
 import { Nav } from './components/Overlay'
 import { Contact, Preloader } from './components/Plates'
-import { Film, approachLength, exitLength, frameSize, roomLength } from './components/Film'
+import { Film, approachLength, exitLength, roomLength } from './components/Film'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
 import { setMetrics, start, stop } from './lib/scroll'
 
@@ -11,7 +11,7 @@ export default function App() {
 }
 
 function Experience() {
-  const { vw, vh } = useViewport()
+  const { vh } = useViewport()
   const reduced = usePrefersReducedMotion()
 
   const [contentHeight, setContentHeight] = useState(0)
@@ -22,6 +22,11 @@ function Experience() {
   // stället för att stå kvar och zooma i ett tomt rum.
   const [filmBroken, setFilmBroken] = useState(false)
   const filmDown = useCallback(() => setFilmBroken(true), [])
+  // Draperiet ska ligga kvar tills filmens första bildruta finns att visa.
+  // Lyfts det på en klocka i stället hinner man se svart där rummet ska
+  // vara, och sidan börjar med ett hål.
+  const [clipReady, setClipReady] = useState(false)
+  const filmReady = useCallback(() => setClipReady(true), [])
 
   const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -29,11 +34,7 @@ function Experience() {
   // sida — ingen kamerarörelse alls.
   const plain = reduced || filmBroken
   const act1 = plain ? 0 : approachLength(vh)
-  // Sidan rullar i sin egen ruta inne i filmen, som är lägre än fönstret
-  // när klippet är beskuret. Mäter man mot fönstret i stället rullar den
-  // för långt och slutar med en tom yta.
-  const pageH = plain ? vh : frameSize(vw, vh).pageH
-  const innerMax = Math.max(contentHeight - pageH, 0)
+  const innerMax = Math.max(contentHeight - vh, 0)
   const act3 = plain ? 0 : exitLength(vh)
   const filmMax = plain ? 0 : roomLength(vh)
 
@@ -41,8 +42,8 @@ function Experience() {
   const total = act1 + innerMax + act3 + filmMax + vh
 
   useEffect(() => {
-    setMetrics({ act1, act3, innerMax, filmMax, pageH })
-  }, [act1, act3, innerMax, filmMax, pageH])
+    setMetrics({ act1, act3, innerMax, filmMax, pageH: vh })
+  }, [act1, act3, innerMax, filmMax, vh])
 
   useEffect(() => {
     // Börja alltid vid rummet, även efter en omladdning mitt i sidan.
@@ -62,10 +63,17 @@ function Experience() {
     }
     const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
     const wait = fonts?.ready ?? Promise.resolve()
-    Promise.race([wait, new Promise((r) => setTimeout(r, 2600))])
-      .then(() => setTimeout(ready, 900))
+    // Typsnitten och filmen ska båda vara framme — men ingendera får hålla
+    // kvar draperiet i all evighet om något strular.
+    const film = plain || clipReady
+      ? Promise.resolve()
+      : new Promise((r) => setTimeout(r, 6000))
+    Promise.race([
+      Promise.all([wait, film]),
+      new Promise((r) => setTimeout(r, 7000)),
+    ]).then(() => setTimeout(ready, 500))
     return () => { cancelled = true }
-  }, [])
+  }, [plain, clipReady])
 
   useFrame((f) => {
     // Väl inne vid skärmen släpps pekhändelser igenom till sidan därinne.
@@ -87,6 +95,7 @@ function Experience() {
             <Film
               page={<ScreenContent onHeight={setContentHeight} />}
               onFail={filmDown}
+              onReady={filmReady}
             />
           </>
         )}

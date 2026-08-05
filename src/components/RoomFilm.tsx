@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useFrame } from '../lib/hooks'
 import { mapRange } from '../lib/math'
-import { CROSSFADE, SHOTS } from '../data/film'
+import { CROSSFADE, ROOM_RATE, SHOTS } from '../data/film'
 import type { ShotRange } from './Film'
 import type { Frame } from '../lib/scroll'
 
@@ -9,16 +9,17 @@ import type { Frame } from '../lib/scroll'
  * RUMMET
  * ══════
  * Platserna kameran besöker efter skärmen. Till skillnad från skärmklippet
- * dras de inte av scrollen — de rullar i sin egen takt, om och om igen.
- * Scrollen bestämmer bara vilken plats som visas.
+ * dras de inte av scrollen — de rullar i sin egen takt, om och om igen, och
+ * så långsamt att bilden nästan står still. Ett rum som fryser när handen
+ * fryser är ett fotografi; rummet ska leva medan man läser.
  *
- * Skälet är enkelt: ett klipp som står still när handen står still är
- * ingen film, det är ett fotografi. Rummet ska leva medan man läser. Det
- * som ska följa handen är kameran in i skärmen, ingenting annat.
+ * Två klipp räcker till fyra platser. Samma klipp visas aldrig två gånger i
+ * rad, och de två platser som delar klipp har olika utsnitt — så att en
+ * övertoning alltid byter vy, aldrig visar samma bild igen.
  *
- * Varje klipp är klippt så att det går fram och tillbaka, så loopen inte
- * har någon skarv. Övergången mellan två platser är en övertoning, inte
- * ett hopp — och den första tonar in över skrivbordet man just lämnat.
+ * Klippen är klippta så att de går fram och tillbaka, så loopen inte har
+ * någon skarv. Övergången mellan två platser är en övertoning, och den
+ * första tonar in över skärmen man just lämnat.
  */
 export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
   const els = useRef<Record<string, HTMLVideoElement | null>>({})
@@ -31,9 +32,8 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
       const range = ranges[shot.id]
       if (!el || !range) return
 
-      // Ingen laddar fyra klipp i förväg. Varje plats hämtas hem när den
-      // är ungefär en fönsterhöjd bort — långt innan den syns, men först
-      // när man är på väg dit.
+      // Varje plats hämtas när den är ungefär en fönsterhöjd bort — långt
+      // innan den syns, men först när man är på väg dit.
       if (!fetched.current.has(shot.id) && f.film > range.start - f.vh * 1.4) {
         fetched.current.add(shot.id)
         el.preload = 'auto'
@@ -46,8 +46,12 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
       // Ett klipp som inte syns ska inte heller avkodas.
       const live = o > 0.004
       el.style.visibility = live ? 'visible' : 'hidden'
-      if (live && el.paused && el.readyState >= 2) el.play().catch(() => {})
-      else if (!live && !el.paused) el.pause()
+      if (live && el.paused && el.readyState >= 2) {
+        el.playbackRate = ROOM_RATE
+        el.play().catch(() => {})
+      } else if (!live && !el.paused) {
+        el.pause()
+      }
     })
   })
 
@@ -58,6 +62,10 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
           key={shot.id}
           className="room__clip"
           ref={(el) => { els.current[shot.id] = el }}
+          style={{
+            objectPosition: shot.framing.position,
+            transform: `scale(${shot.framing.scale})`,
+          }}
           muted
           loop
           playsInline

@@ -110,6 +110,7 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
 
 export function KeyedVideo({
   sources,
+  reverseSources,
   /** Nyckelfärgen i klippet, 0–255. */
   keyColor = [200, 12, 210],
   /** Hur nära nyckelfärgens ton en pixel måste ligga för att räknas som skärm. */
@@ -121,9 +122,19 @@ export function KeyedVideo({
   onReady,
   onFail,
   timeRef,
+  isReverse,
 }: {
   /** Samma klipp i flera format — se kommentaren vid uppspelningen. */
   sources: { src: string; type: string }[]
+  /**
+   * Samma klipp, bildruta för bildruta baklänges.
+   *
+   * En webbläsare kan inte spela en video baklänges; den kan bara hoppa,
+   * och ett hopp per bildruta ser trasigt ut. Med rullen redan vänd blir
+   * bakåt en helt vanlig uppspelning framåt, och rörelsen ut ur skärmen
+   * lika mjuk som rörelsen in.
+   */
+  reverseSources?: { src: string; type: string }[]
   keyColor?: [number, number, number]
   tolerance?: number
   softness?: number
@@ -141,12 +152,17 @@ export function KeyedVideo({
    * glider det mot bilden så fort takten ändras.
    */
   timeRef?: { current: number }
+  /** Sant när rörelsen går bakåt, alltså när den vända rullen ska spelas. */
+  isReverse?: (f: Frame) => boolean
 }) {
   const [keyR, keyG, keyB] = keyColor
   // Stabil identitet för listan, så effekten inte körs om vid varje rendering.
   const key = sources.map((s) => s.src).join('|')
+  const revKey = (reverseSources ?? []).map((s) => s.src).join('|')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  /** Den vända rullen, om det finns en. Hämtas först när den behövs. */
+  const revRef = useRef<HTMLVideoElement | null>(null)
   const glRef = useRef<{
     gl: WebGLRenderingContext
     tex: WebGLTexture
@@ -159,38 +175,49 @@ export function KeyedVideo({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const video = document.createElement('video')
     // Chromium utan patentbelagda kodekar spelar inte H.264, och Safari
     // spelar inte VP9. Webbläsaren får välja den första den klarar.
-    for (const s of sources) {
-      const el = document.createElement('source')
-      el.src = s.src
-      el.type = s.type
-      video.appendChild(el)
+    //
+    // Videon måste dessutom sitta i dokumentet. En löst skapad video
+    // avkodar inte i Safari på iOS — den ger inga bildrutor att lägga i
+    // texturen, och då blir duken tom fastän allt annat ser rätt ut. Den
+    // göms med storlek och genomskinlighet i stället för display:none,
+    // som stoppar avkodningen på samma sätt.
+    const build = (list: { src: string; type: string }[], preload: string) => {
+      const el = document.createElement('video')
+      for (const s of list) {
+        const src = document.createElement('source')
+        src.src = s.src
+        src.type = s.type
+        el.appendChild(src)
+      }
+      el.muted = true
+      el.playsInline = true
+      el.preload = preload as HTMLMediaElement['preload']
+      el.crossOrigin = 'anonymous'
+      // Attributen behövs vid sidan av egenskaperna: iOS läser dem när
+      // elementet sätts in i dokumentet, inte efteråt.
+      el.setAttribute('muted', '')
+      el.setAttribute('playsinline', '')
+      el.setAttribute('webkit-playsinline', '')
+      el.className = 'film__source'
+      canvas.parentElement?.appendChild(el)
+      return el
     }
-    video.muted = true
-    video.playsInline = true
-    video.preload = 'auto'
-    video.crossOrigin = 'anonymous'
-    // Attributen behövs vid sidan av egenskaperna: iOS läser dem när
-    // elementet sätts in i dokumentet, inte efteråt.
-    video.setAttribute('muted', '')
-    video.setAttribute('playsinline', '')
-    video.setAttribute('webkit-playsinline', '')
 
-    // Videon måste sitta i dokumentet. En löst skapad video avkodar inte i
-    // Safari på iOS — den ger inga bildrutor att lägga i texturen, och då
-    // blir duken tom fastän allt annat ser rätt ut. Den göms med storlek
-    // och genomskinlighet i stället för display:none, som stoppar
-    // avkodningen på samma sätt.
-    video.className = 'film__source'
-    canvas.parentElement?.appendChild(video)
+    const video = build(sources, 'auto')
     videoRef.current = video
+
+    // Den vända rullen behövs först på vägen ut, så den får vänta tills
+    // inflygningen är på god väg — se hämtningen i bildruteloopen.
+    const rev = reverseSources?.length ? build(reverseSources, 'none') : null
+    revRef.current = rev
 
     // iOS avkodar inte en video som aldrig rörts vid, och vägrar då söka i
     // den. Ett tyst play/pause direkt gör den sökbar utan att något syns.
     const prime = () => {
       video.play().then(() => { video.pause() }).catch(() => {})
+      rev?.play().then(() => { rev.pause() }).catch(() => {})
     }
     video.addEventListener('loadeddata', () => { prime(); onReady?.() }, { once: true })
     // Nekas uppspelning utan handpåläggning tas första bästa beröring.
@@ -213,6 +240,7 @@ export function KeyedVideo({
       return () => {
         window.clearTimeout(watchdog)
         video.remove()
+        rev?.remove()
       }
     }
 
@@ -263,18 +291,45 @@ export function KeyedVideo({
       video.remove()
       video.innerHTML = ''
       video.load()
+      rev?.remove()
       glRef.current = null
     }
-  }, [key, keyR, keyG, keyB, tolerance, softness, onReady, onFail])
+  }, [key, revKey, keyR, keyG, keyB, tolerance, softness, onReady, onFail])
 
   useFrame((f) => {
     const canvas = canvasRef.current
-    const video = videoRef.current
+    const forward = videoRef.current
     const ctx = glRef.current
-    if (!canvas || !video || !ctx || video.readyState < 2) return
+    if (!canvas || !forward || !ctx || forward.readyState < 2) return
 
-    const d = video.duration
+    const d = forward.duration
     if (!d || !isFinite(d)) return
+
+    const wantsBack = isReverse?.(f) ?? false
+    const rev = revRef.current
+
+    // Den vända rullen hämtas hem strax innan den behövs — den syns först
+    // på vägen ut, och ska inte konkurrera med den första bildrutan.
+    if (rev && rev.preload === 'none' && (wantsBack || f.act1 > 0.35)) {
+      rev.preload = 'auto'
+      rev.load()
+    }
+
+    // Bakåt spelas som en vanlig uppspelning framåt, av den vända rullen.
+    // Rullarna är bildruta för bildruta varandras spegelbild, så bytet
+    // mellan dem visar exakt samma bild och syns inte.
+    const back = wantsBack && !!rev && rev.readyState >= 2
+    const video = back ? rev! : forward
+    const idle = back ? forward : rev
+
+    const targetForward = clamp01(progress(f)) * d
+    const target = back ? d - targetForward : targetForward
+    if (timeRef) {
+      timeRef.current = back ? d - video.currentTime : video.currentTime
+    }
+
+    // Rullen som just lämnats ska inte fortsätta avkoda i bakgrunden.
+    if (idle && !idle.paused) idle.pause()
 
     // ── Hur klippet följer scrollen ────────────────────────────────────
     // Att söka (`currentTime = …`) en gång per bildruta ser ut som det
@@ -285,13 +340,11 @@ export function KeyedVideo({
     // I stället låter vi klippet spelas — men i den takt scrollen ber om.
     // Då avkodar webbläsaren löpande, precis som vid vanlig uppspelning,
     // och varje bildruta kommer fram i tid. Sökning används bara till det
-    // den är bra på: att backa, och att ta igen ett långt hopp.
-    const target = clamp01(progress(f)) * d
+    // den är bra på: att ta igen ett hopp, och att landa rätt direkt efter
+    // ett rullbyte.
     const diff = target - video.currentTime
-    if (timeRef) timeRef.current = video.currentTime
 
     if (diff < -0.03 || diff > JUMP) {
-      // Bakåt, eller så långt efter att uppspelning aldrig hinner ikapp.
       if (!video.seeking) {
         if (!video.paused) video.pause()
         video.currentTime = target

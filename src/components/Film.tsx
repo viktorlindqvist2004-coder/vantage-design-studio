@@ -1,10 +1,9 @@
 import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react'
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
-import { clamp, clamp01, lerp, mapRange } from '../lib/math'
+import { clamp01, lerp, mapRange } from '../lib/math'
 import { APPROACH_HEIGHTS, CLIP, CROSSFADE, EXIT_HEIGHTS, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
-import { SCREEN_TRACK, type ScreenSample } from '../data/screen-track'
 import { About, Services } from './inner/Sections'
 import { Process } from './inner/Process'
 import { Contact } from './Plates'
@@ -32,7 +31,7 @@ export const roomLength = (vh: number) =>
   SHOTS.reduce((sum, s) => sum + s.hold, 0) * vh
 
 /**
- * Klippets ram i fönstret, och sidans ram i samma fönster.
+ * Klippets ram i fönstret.
  *
  * På en liggande skärm ryms hela bildrutan, och då visas hela bildrutan.
  * På en stående telefon gör den inte det: en 16:9-ruta i fönstrets bredd
@@ -40,87 +39,30 @@ export const roomLength = (vh: number) =>
  * i stället höjden och beskärs i sidled — rummet syns, om än en smalare
  * del av det.
  *
- * Sidan är alltid högst så stor som fönstret. Den kan alltså inte matcha
- * en beskuren bildrutas bredd — och ska inte heller göra det. Se
- * placeScreen: den matchar skärmens höjd, och blir därmed en stående yta
- * på en liggande bildskärm. Vilket är precis vad en mobilsajt är.
+ * Sidan har ingen egen ram längre. Den satt förr på bildskärmen i klippet
+ * och måste följa den bildruta för bildruta; nu tonar den i stället in
+ * över den svarta skärmen när klippets namnskylt tonar ut, och kan då lika
+ * gärna fylla fönstret som vilken sida som helst.
  */
 export function frameSize(vw: number, vh: number) {
+  const contain = Math.min(vw, vh * CLIP.aspect)
+  const cover = Math.max(vw, vh * CLIP.aspect)
   const portrait = vh > vw
-  const w = portrait
-    ? Math.max(vw, vh * CLIP.aspect)
-    : Math.min(vw, vh * CLIP.aspect)
-  const h = w / CLIP.aspect
-  return { w, h, pageW: Math.min(w, vw), pageH: Math.min(h, vh) }
-}
-
-/**
- * Var bildskärmen står i bildrutan vid en given sekund, interpolerat mellan
- * de uppmätta bildrutorna i SCREEN_TRACK. Före första mätpunkten gäller den
- * första, efter den sista fyller skärmen hela rutan.
- */
-function sampleScreen(t: number) {
-  const track = SCREEN_TRACK
-  if (!track.length) return { cx: 0.5, cy: 0.5, w: 1, h: 1 }
-  const at = (s: ScreenSample) => ({ cx: s[1], cy: s[2], w: s[3], h: s[4] })
-  if (t <= track[0][0]) return at(track[0])
-
-  for (let i = 1; i < track.length; i++) {
-    const [t1, cx1, cy1, w1, h1] = track[i]
-    if (t > t1) continue
-    const [t0, cx0, cy0, w0, h0] = track[i - 1]
-    const k = (t - t0) / (t1 - t0 || 1)
-    return {
-      cx: lerp(cx0, cx1, k),
-      cy: lerp(cy0, cy1, k),
-      w: lerp(w0, w1, k),
-      h: lerp(h0, h1, k),
-    }
-  }
-
-  return at(track[track.length - 1])
-}
-
-/**
- * Sidan ska se ut att stå på bildskärmen, inte bakom den. Måttet ovan är
- * skärmens yttre kant; sidan läggs en gnutta innanför så att ingen mörk
- * remsa kan sticka ut utanför skärmen på vägen in.
- */
-const SCREEN_INSET = 0.985
-
-/**
- * Var sidan ska ligga i fönstret, och hur stor den ska vara, vid en given
- * sekund i klippet. Allt räknas i fönstrets koordinater — bildrutan är
- * centrerad i fönstret och kan vara bredare än det.
- *
- * Sidan matchar skärmens **höjd**, inte dess bredd. På en liggande skärm är
- * det samma sak — sidan och bildrutan har samma proportioner. På en stående
- * telefon är det skillnaden mellan att fungera och inte: bildrutan är där
- * fyra gånger bredare än fönstret, så en sida skalad till skärmens bredd
- * skulle förstoras fyra gånger. Texten spränger rutan och det ser ut som om
- * hela sidan zoomar in.
- *
- * Med höjden som mått blir sidan i stället en stående yta mitt på en
- * liggande bildskärm, och när kameran är framme fyller den fönstrets höjd
- * med svart omkring — vilket är svart ändå.
- */
-function placeScreen(t: number, vw: number, vh: number,
-  frameW: number, frameH: number, pageW: number, pageH: number) {
-  const s = sampleScreen(t)
-
-  const scale = clamp01((s.h * frameH * SCREEN_INSET) / pageH)
-  const w = pageW * scale
-  const h = pageH * scale
-
-  // Skärmens mitt i fönstrets koordinater. Sidan hålls innanför kanterna
-  // när den blivit så stor att den inte längre får plats var som helst.
-  const cx = vw / 2 + (s.cx - 0.5) * frameW
-  const cy = vh / 2 + (s.cy - 0.5) * frameH
-
+  const w = portrait ? cover : contain
   return {
-    scale,
-    x: clamp(cx, Math.min(w / 2, vw / 2), Math.max(vw - w / 2, vw / 2)) - w / 2,
-    y: clamp(cy, Math.min(h / 2, vh / 2), Math.max(vh - h / 2, vh / 2)) - h / 2,
+    w,
+    h: w / CLIP.aspect,
+    /**
+     * Hur mycket rutan ska krympas för att hela bildrutan ska synas.
+     *
+     * På en stående telefon fyller filmen höjden och beskärs i sidled, för
+     * annars vore rummet en remsa mitt i rutan. Men klippet slutar med
+     * studions namn skrivet tvärs över bilden, och den texten går inte att
+     * beskära — då står det "ntage Design Stu". Rutan krymper därför till
+     * hela bildrutan medan skärmen tar över; vid det laget är kanterna
+     * svarta åt alla håll, så omramningen syns inte.
+     */
+    fitScale: portrait ? contain / cover : 1,
   }
 }
 
@@ -155,12 +97,29 @@ function clipSecond(f: Frame) {
   return CLIP.exit
 }
 
+/**
+ * Hur framme webbplatsen är, 0–1.
+ *
+ * Klippet slutar med att skärmen står svart med studions namn och en
+ * väntesnurra, som tonar ut. Sidan tonar in i deras ställe — samma
+ * ögonblick, motsatt riktning — så att laddningen i filmen övergår i den
+ * riktiga sidan utan att något klipps.
+ */
+function pageIn(second: number) {
+  return mapRange(second, CLIP.handIn, CLIP.enter)
+}
+
 const clipProgress = (f: Frame) => clipSecond(f) / CLIP.duration
 
-export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void }) {
+export function Film({ page, onFail, onReady }: {
+  page: ReactNode
+  onFail?: () => void
+  /** Anropas när klippets första bildruta finns att visa. */
+  onReady?: () => void
+}) {
   const { vw, vh } = useViewport()
 
-  const { w: frameW, h: frameH, pageW, pageH } = frameSize(vw, vh)
+  const { w: frameW, h: frameH, fitScale } = frameSize(vw, vh)
   const pageRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
@@ -187,33 +146,25 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
     if (frameRef.current) {
       frameRef.current.style.opacity = (1 - handover).toFixed(3)
       frameRef.current.style.visibility = handover >= 1 ? 'hidden' : 'visible'
+      // Omramningen sker medan skärmen fyller rutan — se fitScale ovan.
+      const fit = lerp(1, fitScale, mapRange(shown.current, 1.45, 2.15))
+      frameRef.current.style.transform =
+        `translate(-50%, -50%) scale(${fit.toFixed(4)})`
     }
 
-    // Skärmen finns i bild under in- och utflygningen. När rummet tagit
-    // över finns ingen skärm att ligga på, och sidan behöver inte ritas.
+    // Sidan tonar in när klippets namnskylt tonar ut, och tonar ut igen
+    // så fort man börjar backa. Opaciteten, inte `visibility`: sidans egna
+    // lager sätter sin synlighet själva, och ett barn som säger `visible`
+    // slår ut en förälder som säger `hidden`. Genomskinlighet går inte att
+    // ta tillbaka underifrån.
+    //
+    // Måttet tas ur den bildruta som ligger på duken, inte ur den scrollen
+    // ber om — klippet ligger nästan alltid någon hundradel efter, och
+    // tonar sidan in före bilden syns skarven.
     if (pageRef.current) {
-      const gone = f.act3 >= 1
-      // Opaciteten, inte `visibility`: sidans egna lager sätter sin
-      // synlighet själva, och ett barn som säger `visible` slår ut en
-      // förälder som säger `hidden`. Genomskinlighet går inte att ta
-      // tillbaka underifrån.
-      pageRef.current.style.opacity = gone ? '0' : '1'
-      pageRef.current.style.visibility = gone ? 'hidden' : 'visible'
-
-      // Sidan läggs exakt där skärmen står och krymps till dess storlek.
-      // Den är alltså inte en bakgrund som råkar synas genom ett hål — den
-      // sitter på skärmen, och texten växer i takt med att kameran kommer
-      // närmare, precis som den skulle göra på riktigt. Samma mått bär
-      // utflygningen: sidan krymper tillbaka ned på skärmen.
-      //
-      // Måttet tas ur den bildruta som ligger på duken, inte ur den scrollen
-      // ber om. Klippet ligger nästan alltid någon hundradel efter — det är
-      // så uppspelningen hinner ikapp mjukt — och sidan måste ligga lika
-      // långt efter. Annars glider den mot skärmen varje gång takten ändras,
-      // och det syns som att innehållet skakar.
-      const p = placeScreen(shown.current, vw, vh, frameW, frameH, pageW, pageH)
-      pageRef.current.style.transform =
-        `translate(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px) scale(${p.scale.toFixed(5)})`
+      const o = pageIn(shown.current) * (1 - mapRange(f.act3, 0, 0.06))
+      pageRef.current.style.opacity = o.toFixed(3)
+      pageRef.current.style.visibility = o <= 0.002 ? 'hidden' : 'visible'
     }
 
     // Scrimmen finns för texten ute i rummet. Medan skärmen är motivet
@@ -230,20 +181,9 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
       {/* Rummet ligger underst och rullar för sig självt. */}
       <RoomFilm ranges={ranges} />
 
-      {/* Webbplatsen — syns genom den bortnycklade skärmen. Den ligger i
-          fönstret, inte i bildrutan: bildrutan får vara bredare än fönstret
-          och beskäras, men sidan ska aldrig hamna utanför kanten. */}
-      <div
-        className="film__page"
-        ref={pageRef}
-        style={{
-          width: `${pageW}px`,
-          height: `${pageH}px`,
-          ['--page-h' as string]: `${pageH}px`,
-        }}
-      >
-        {page}
-      </div>
+      {/* Webbplatsen. Den fyller fönstret och tonar in över den svarta
+          skärmen — den ligger inte längre på bildskärmen i klippet. */}
+      <div className="film__page" ref={pageRef}>{page}</div>
 
       <div
         className="film__frame"
@@ -256,8 +196,14 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
             src: `${import.meta.env.BASE_URL}${s.src}`,
             type: s.type,
           }))}
+          reverseSources={CLIP.reverse.map((s) => ({
+            src: `${import.meta.env.BASE_URL}${s.src}`,
+            type: s.type,
+          }))}
           keyColor={CLIP.key}
           progress={clipProgress}
+          isReverse={(f) => f.act3 > 0}
+          onReady={onReady}
           onFail={onFail}
           timeRef={shown}
         />

@@ -13,9 +13,8 @@
 
 /* ── Rummet ──────────────────────────────────────────────────────────── */
 
-/* Platserna kameran besöker efter skärmen. De rullar för sig själva och
-   ligger underst; scrollen bestämmer bara vilken som syns. Här finns inget
-   att passa in mot, så de fyller rutan och beskärs. */
+/* Platserna kameran besöker efter skärmen. De ligger underst och fyller
+   rutan; scrollen bestämmer bara vilken som syns. */
 .room {
   position: absolute;
   inset: 0;
@@ -56,20 +55,17 @@
   pointer-events: none;
 }
 
-/* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. Storleken
-   sätts i Film.tsx: samma ram som klippet, men aldrig utanför fönstret.
-   Sektionerna därinne mäter sin höjd mot --page-h i stället för mot vh —
-   en "skärmfull" är rutan de faktiskt ligger i. */
+/* Webbplatsen. Den fyller fönstret och ligger över filmen — den tonar in
+   när klippets svarta laddningsskärm tonar ut, och behöver alltså inte
+   passa in i något. Bakgrunden är svart, samma svart som skärmen den
+   avlöser, så övergången sker i tonen och ingenstans annars. */
 .film__page {
   position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 1;
-  /* Film.tsx placerar och skalar den direkt i fönstrets koordinater —
-     därför origo i hörnet, inte i mitten. */
-  transform-origin: 0 0;
-  will-change: transform;
+  inset: 0;
+  z-index: 4;
+  opacity: 0;
   background: var(--ink);
+  will-change: opacity;
 }
 
 /* Duken filmen ritas på. Ligger över sidan; magentan är genomskinlig. */
