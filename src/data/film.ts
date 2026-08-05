@@ -44,6 +44,24 @@ export const CLIP = {
 } as const
 
 /**
+ * När skärmen i klippet tänder, i klippets egna sekunder.
+ *
+ * Skärmen står mörk medan kameran börjar närma sig, slår upp en bit in i
+ * åkningen och lägger sig sedan på ett svagt bakgrundsljus. Tändningen är
+ * över i god tid innan klippets eget slutskede, så att de två inte krockar,
+ * och glöden lämnas över till sidan på samma sekunder som sidan tonas in.
+ *
+ * Det som gör att det läses som en skärm och inte som en animation är att
+ * tiderna hör till klippet: drar man långsamt tänder skärmen långsamt, för
+ * det är kamerarörelsen man styr.
+ */
+export const BOOT = {
+  from: 0.55,
+  to: 1.75,
+  out: [CLIP.handIn, CLIP.enter] as [number, number],
+}
+
+/**
  * Hur långt man drar för att komma in i skärmen, i fönsterhöjder.
  *
  * Drygt två skärmfullar. Kort nog att man är inne efter ett par dragningar,

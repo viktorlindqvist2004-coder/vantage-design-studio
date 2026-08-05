@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp01, lerp, mapRange } from '../lib/math'
-import { APPROACH_HEIGHTS, CLIP, CROSSFADE, PAGE_OUT, SHOTS } from '../data/film'
+import { APPROACH_HEIGHTS, BOOT, CLIP, CROSSFADE, PAGE_OUT, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
 import { About, Services } from './inner/Sections'
 import { Process } from './inner/Process'
@@ -215,6 +215,7 @@ export function Film({ page, onFail, onReady }: {
           }))}
           keyColor={CLIP.key}
           progress={clipProgress}
+          boot={BOOT}
           onReady={onReady}
           onFail={onFail}
           timeRef={shown}

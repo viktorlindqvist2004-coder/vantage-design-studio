@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useFrame } from '../lib/hooks'
-import { clamp, clamp01 } from '../lib/math'
+import { clamp, clamp01, mapRange } from '../lib/math'
 import type { Frame } from '../lib/scroll'
 
 /**
@@ -34,6 +34,7 @@ varying vec2 vUv;
 uniform sampler2D uTex;
 uniform vec3 uKey;        // nyckelfärg i RGB
 uniform vec2 uTol;        // tröskel och mjukhet
+uniform vec2 uBoot;       // x = förlopp genom tändningen, y = hur mycket (x < 0 = släckt)
 
 // Bara färgtonen jämförs, inte ljusstyrkan. Skärmen i filmen varierar i
 // ljus över bildrutan, men färgtonen håller sig — det är den som avgör.
@@ -66,7 +67,52 @@ void main() {
   tex.r = mix(tex.r, min(tex.r, tex.g * 1.12), bleed);
   tex.b = mix(tex.b, min(tex.b, tex.g * 1.12), bleed);
 
-  gl_FragColor = vec4(tex.rgb * a, a);
+  // ── Skärmen tänder ────────────────────────────────────────────────
+  // Ljuset läggs i nyckelytan, alltså precis där skärmen är. Då följer det
+  // rutan genom hela inflygningen utan att någon behöver mäta upp var
+  // skärmen sitter i bild: nycklingen vet det redan, bildruta för bildruta.
+  float boot = 0.0;
+  vec3 lit = vec3(0.0);
+  if (uBoot.x >= 0.0 && isKey > 0.01) {
+    float p = clamp(uBoot.x, 0.0, 1.0);
+
+    // Slaget när panelen tänder. Hårt, men med tillräcklig svans för att
+    // lämna över till bakgrundsljuset — klingar det av för fort blir det
+    // svart en stund mitt i, och då ser det ut som att skärmen slocknat
+    // igen i stället för att hålla på att starta.
+    float strike = exp(-p * 16.0);
+
+    // Bandet som rullar igenom en gång medan ljuset kommer upp. Det är den
+    // rörelsen som gör att man läser det som en skärm som startar och inte
+    // som en lampa som tänds — och den behöver ta tid nog att hinna ses.
+    float roll = clamp((p - 0.06) / 0.52, 0.0, 1.0);
+    float band = exp(-pow((vUv.y - (1.2 - roll * 1.4)) * 5.0, 2.0));
+
+    // Bakgrundsljuset kommer upp och lägger sig på en låg, jämn nivå, där
+    // det stannar tills sidan tar över rutan.
+    float base = smoothstep(0.0, 0.42, p);
+
+    // Två darrningar innan det står stilla. En panel tänder inte rent, och
+    // utan dem ser tändningen animerad ut i stället för elektrisk. Grunda —
+    // de ska läsas som ostadighet, inte som två släckningar.
+    float shake = 1.0
+      - 0.32 * exp(-pow((p - 0.16) * 26.0, 2.0))
+      - 0.18 * exp(-pow((p - 0.30) * 30.0, 2.0));
+
+    // Linjerna hör till det ostadiga skedet och försvinner med det.
+    float scan = 1.0 - 0.16 * (1.0 - smoothstep(0.0, 0.7, p))
+      * (0.5 + 0.5 * sin(vUv.y * 900.0));
+
+    float glow = (base * 0.16 + band * 0.34 * (1.0 - p * 0.6) + strike * 0.9)
+      * shake * scan * uBoot.y;
+
+    // Kallt i slaget, neutralt när det lagt sig — som en panel som svalnar
+    // in mot sin egen vitpunkt.
+    lit = mix(vec3(0.72, 0.84, 1.0), vec3(0.92, 0.90, 0.87), base);
+    boot = clamp(glow, 0.0, 1.0) * isKey;
+  }
+
+  gl_FragColor = vec4(tex.rgb * a + lit * boot, min(a + boot, 1.0));
 }`
 
 /**
@@ -117,6 +163,7 @@ export function KeyedVideo({
   softness = 0.12,
   /** Returnerar 0–1: var i klippet vi ska stå. */
   progress,
+  boot,
   className = '',
   onReady,
   onFail,
@@ -128,6 +175,19 @@ export function KeyedVideo({
   tolerance?: number
   softness?: number
   progress: (f: Frame) => number
+  /**
+   * När skärmen i klippet ska tändas, räknat i klippets egna sekunder.
+   *
+   * `from`–`to` är själva tändningen; efter den ligger ett svagt, jämnt
+   * bakgrundsljus kvar. `out` är de två sekunder där ljuset lämnas över
+   * till sidan som tonas in bakom rutan — annars skulle glöden ligga kvar
+   * ovanpå texten.
+   *
+   * Tiderna gäller klippet och inte scrollen, för det är klippet som visar
+   * kamerarörelsen: drar man långsamt tänds skärmen långsamt, i takt med
+   * att man närmar sig.
+   */
+  boot?: { from: number; to: number; out: [number, number] }
   className?: string
   onReady?: () => void
   /** Anropas om filmen inte går att visa alls, så sidan kan klara sig utan. */
@@ -151,6 +211,7 @@ export function KeyedVideo({
     gl: WebGLRenderingContext
     tex: WebGLTexture
     uFit: WebGLUniformLocation
+    uBoot: WebGLUniformLocation
   } | null>(null)
   /** Uppspelningspunkten som redan ligger på duken. */
   const drawn = useRef(-1)
@@ -253,7 +314,12 @@ export function KeyedVideo({
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
-    glRef.current = { gl, tex, uFit: gl.getUniformLocation(prog, 'uFit')! }
+    glRef.current = {
+      gl,
+      tex,
+      uFit: gl.getUniformLocation(prog, 'uFit')!,
+      uBoot: gl.getUniformLocation(prog, 'uBoot')!,
+    }
     } catch (err) {
       console.warn('Filmen kunde inte startas:', err)
       glRef.current = null
@@ -342,12 +408,24 @@ export function KeyedVideo({
     if (!resized && video.currentTime === drawn.current) return
     drawn.current = video.currentTime
 
-    const { gl, tex, uFit } = ctx
+    const { gl, tex, uFit, uBoot } = ctx
     gl.viewport(0, 0, w, h)
 
     // Hela bildrutan ritas. Att den ryms i fönstret utan att beskäras
     // sköts av ramen i CSS, inte här.
     gl.uniform4f(uFit, 1, 1, 0, 0)
+
+    // Tändningen följer bildrutan som ligger på duken, inte den scrollen bad
+    // om. De två skiljer sig med några hundradelar medan uppspelningen
+    // hinner ikapp, och den skillnaden syns direkt som en glöd som glider
+    // mot bilden.
+    if (boot) {
+      const second = video.currentTime
+      const p = second < boot.from ? -1 : mapRange(second, boot.from, boot.to)
+      gl.uniform2f(uBoot, p, 1 - mapRange(second, boot.out[0], boot.out[1]))
+    } else {
+      gl.uniform2f(uBoot, -1, 0)
+    }
 
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video)
