@@ -111,6 +111,7 @@ export function KeyedVideo({
   className = '',
   onReady,
   onFail,
+  timeRef,
 }: {
   /** Samma klipp i flera format — se kommentaren vid uppspelningen. */
   sources: { src: string; type: string }[]
@@ -122,6 +123,15 @@ export function KeyedVideo({
   onReady?: () => void
   /** Anropas om filmen inte går att visa alls, så sidan kan klara sig utan. */
   onFail?: () => void
+  /**
+   * Skrivs varje bildruta med den sekund som faktiskt ligger på duken.
+   *
+   * Klippet ligger nästan alltid någon hundradel efter det scrollen ber om
+   * — det är så uppspelningen hinner ikapp mjukt. Allt som ska sitta fast
+   * på bilden måste därför följa den här tiden och inte scrollens, annars
+   * glider det mot bilden så fort takten ändras.
+   */
+  timeRef?: { current: number }
 }) {
   const [keyR, keyG, keyB] = keyColor
   // Stabil identitet för listan, så effekten inte körs om vid varje rendering.
@@ -269,6 +279,7 @@ export function KeyedVideo({
     // den är bra på: att backa, och att ta igen ett långt hopp.
     const target = clamp01(progress(f)) * d
     const diff = target - video.currentTime
+    if (timeRef) timeRef.current = video.currentTime
 
     if (diff < -0.03 || diff > JUMP) {
       // Bakåt, eller så långt efter att uppspelning aldrig hinner ikapp.

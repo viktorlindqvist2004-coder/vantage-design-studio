@@ -1,7 +1,6 @@
 # Vantage Design Studio
 
-Webbplats för Vantage Design Studio — designstudio för webbplatser, grundad 2026 av
-Viktor Lindqvist.
+Webbplats för Vantage Design Studio — designstudio för webbplatser, grundad 2026.
 
 Sidans idé: besökaren möter ett fotografi av ett skrivbord, lätt oskarpt. När
 man scrollar åker kameran framåt in i bildskärmen på fotot — och innanför

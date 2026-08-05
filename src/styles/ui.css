@@ -2,40 +2,6 @@
    GRÄNSSNITT OVANPÅ ALLT
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Muspekare ───────────────────────────────────────────────────────── */
-
-.cursor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 95;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.cursor__dot {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  margin: -2.5px 0 0 -2.5px;
-  border-radius: 50%;
-  background: var(--bone);
-}
-
-.cursor__ring {
-  position: absolute;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border: 1px solid color-mix(in srgb, var(--bone) 40%, transparent);
-  border-radius: 50%;
-  will-change: transform;
-}
-
-@media (hover: none), (pointer: coarse) {
-  .cursor { display: none; }
-}
-
 /* ── Toppmeny ────────────────────────────────────────────────────────── */
 
 .nav {

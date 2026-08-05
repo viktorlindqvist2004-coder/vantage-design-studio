@@ -85,7 +85,7 @@ export function Contact({
         </div>
         <div className="contact__col">
           <h4>Studion</h4>
-          <p>{STUDIO.founder}, grundare</p>
+          <p>Grundad {STUDIO.founded}</p>
         </div>
       </div>
 

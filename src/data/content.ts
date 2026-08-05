@@ -3,15 +3,17 @@
  *
  * OBS: Arbetsexemplen nedan är konceptarbeten som visar upp studions
  * formspråk — de presenteras som just koncept i gränssnittet. Byt ut dem mot
- * riktiga uppdrag när de finns. Detsamma gäller kontaktuppgifterna.
+ * riktiga uppdrag när de finns.
+ *
+ * Studion talar i vi-form. Inga namn på enskilda personer.
  */
 
 export const STUDIO = {
   name: 'Vantage Design Studio',
-  founder: 'Viktor Lindqvist',
   founded: 2026,
-  email: 'hej@vantagestudio.se',
-  phone: '+46 (0)70 000 00 00',
+  email: 'Viktor.vantage@gmail.com',
+  /** Skrivet för läsbarhet; tel-länken rensar bort mellanslagen. */
+  phone: '070 790 48 76',
   location: 'Sverige',
 } as const
 
@@ -139,7 +141,7 @@ export const STATS = [
   { value: '2026', label: 'Året studion grundades — vi är nya, hungriga och väljer uppdrag med omsorg.' },
   { value: '0', label: 'Mallar. Varje sajt ritas och kodas från ett tomt ark.' },
   { value: '100%', label: 'Handskriven kod. Inga sidbyggare, ingen plugin-soppa.' },
-  { value: '1:1', label: 'Du pratar alltid direkt med den som gör jobbet.' },
+  { value: '1:1', label: 'Du pratar alltid direkt med dem som gör jobbet.' },
 ]
 
 export const MANIFEST = [

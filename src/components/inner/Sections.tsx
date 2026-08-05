@@ -212,19 +212,20 @@ export function About() {
 
       <div className="about__body" ref={bodyRef}>
         <p className="body">
-          {STUDIO.name} grundades {STUDIO.founded} av {STUDIO.founder}. Idén var
-          enkel: de flesta webbplatser ser likadana ut för att de byggs likadant.
-          Vi börjar i stället varje projekt med ett tomt ark, och slutar med
-          något som bara kan tillhöra just din verksamhet.
+          {STUDIO.name} grundades {STUDIO.founded}. Idén var enkel: de flesta
+          webbplatser ser likadana ut för att de byggs likadant. Vi börjar i
+          stället varje projekt med ett tomt ark, och slutar med något som
+          bara kan tillhöra just din verksamhet.
         </p>
         <p className="body">
-          Vi tar få uppdrag åt gången. Det gör att du alltid pratar direkt med
-          den som ritar och kodar, och att varje detalj hinner bli genomtänkt —
+          Vi är ett litet team av designers och utvecklare, och vi tar få
+          uppdrag åt gången. Det gör att du alltid pratar direkt med dem som
+          ritar och kodar, och att varje detalj hinner bli genomtänkt —
           typografin, rörelsen, laddtiden och allt däremellan.
         </p>
         <div className="about__sign">
-          <span className="about__name">{STUDIO.founder}</span>
-          <span className="label">Grundare &amp; designer</span>
+          <span className="about__name">{STUDIO.name}</span>
+          <span className="label">Design &amp; utveckling</span>
         </div>
       </div>
     </section>

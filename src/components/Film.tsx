@@ -2,7 +2,8 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp, clamp01, lerp, mapRange } from '../lib/math'
-import { CLIP, SCROLL_PER_SECOND, SHOTS } from '../data/film'
+import { CLIP, CROSSFADE, SCROLL_PER_SECOND, SHOTS } from '../data/film'
+import { RoomFilm } from './RoomFilm'
 import { SCREEN_TRACK, type ScreenSample } from '../data/screen-track'
 import { About, Services } from './inner/Sections'
 import { Process } from './inner/Process'
@@ -22,13 +23,26 @@ export const secondsToPx = (seconds: number, vh: number) =>
 /** Scrollsträckan för inflygningen fram till skärmen. */
 export const approachLength = (vh: number) => secondsToPx(CLIP.enter, vh)
 
-/** Scrollsträckan för utflygningen — inflygningen baklänges. */
-export const exitLength = (vh: number) =>
-  secondsToPx(CLIP.enter - CLIP.exit, vh)
+/**
+ * Scrollsträckan för utflygningen — inflygningen baklänges.
+ *
+ * Den får gott om väg. Inflygningen har man framför sig och vet vart den
+ * ska; utflygningen är det ögonblick man lämnar sidan, och den tål att ta
+ * tid. Kameran går alltså långsammare ut än in, över samma sträcka film.
+ */
+const EXIT_SCROLL_SCALE = 1.9
 
-/** Scrollsträckan för kameraresan genom rummet. */
+export const exitLength = (vh: number) =>
+  secondsToPx(CLIP.enter - CLIP.exit, vh) * EXIT_SCROLL_SCALE
+
+/**
+ * Scrollsträckan för resan genom rummet.
+ *
+ * Den räknas inte i filmsekunder, för rumsklippen rullar i sin egen takt.
+ * Varje plats får den sträcka den behöver för sitt innehåll.
+ */
 export const roomLength = (vh: number) =>
-  secondsToPx(CLIP.duration - CLIP.room, vh)
+  SHOTS.reduce((sum, s) => sum + s.hold, 0) * vh
 
 /**
  * Klippets ram i fönstret, och sidans ram i samma fönster.
@@ -136,24 +150,22 @@ const SECTIONS: Record<string, ReactNode> = {
 }
 
 /**
- * Vilken sekund i klippet vi står på just nu.
+ * Vilken sekund i skärmklippet vi står på just nu.
  *
- * Fyra skeden:
+ * Tre skeden:
  *   1. kameran åker in mot skärmen           0 → enter
  *   2. den står stilla medan sidan rullar    enter
  *   3. den backar ut ur skärmen igen         enter → exit  (baklänges)
- *   4. rumsresan, inklippt                   room → slut
  *
  * Pausen i mitten finns för att kameran annars skulle åka vidare medan man
  * läser. Utflygningen finns för att man ska komma ut ur skärmen på samma
- * väg man kom in — materialet klipper rakt från skärmen till rummet, så
- * den rörelsen finns bara om vi spelar inflygningen baklänges.
+ * väg man kom in. Sedan tar rummet över, och det är inte längre det här
+ * klippet — se RoomFilm.
  */
 function clipSecond(f: Frame) {
   if (f.act1 < 1) return f.act1 * CLIP.enter
   if (f.act3 < 1) return lerp(CLIP.enter, CLIP.exit, f.act3)
-  if (f.filmMax <= 0) return CLIP.room
-  return CLIP.room + (f.film / f.filmMax) * (CLIP.duration - CLIP.room)
+  return CLIP.exit
 }
 
 const clipProgress = (f: Frame) => clipSecond(f) / CLIP.duration
@@ -163,26 +175,43 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
 
   const { w: frameW, h: frameH, pageW, pageH } = frameSize(vw, vh)
   const pageRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
+  /** Sekunden som faktiskt ligger på duken — skrivs av KeyedVideo. */
+  const shown = useRef(0)
 
+  // Platserna ligger kant i kant längs rumsresan; den enas slut är den
+  // andras början, så övertoningen mellan dem blir en korsning.
   const ranges = useMemo(() => {
     const map: Record<string, ShotRange> = {}
+    let at = 0
     for (const s of SHOTS) {
-      map[s.id] = {
-        start: secondsToPx(s.from - CLIP.room, vh),
-        length: secondsToPx(s.to - s.from, vh),
-      }
+      map[s.id] = { start: at, length: s.hold * vh }
+      at += s.hold * vh
     }
     return map
   }, [vh])
 
   useFrame((f) => {
-    // Skärmen finns i bild under in- och utflygningen. När rumsresan väl
-    // klippts in finns ingen skärm att ligga på, och sidan behöver inte
-    // ritas alls.
+    // Skärmklippet lämnar över till rummet med en övertoning. Skrivbordet
+    // ligger kvar under den första platsen medan den träder fram, så
+    // övergången blir en korsning och inte ett hopp.
+    const handover = mapRange(f.film, 0, CROSSFADE * f.vh)
+    if (frameRef.current) {
+      frameRef.current.style.opacity = (1 - handover).toFixed(3)
+      frameRef.current.style.visibility = handover >= 1 ? 'hidden' : 'visible'
+    }
+
+    // Skärmen finns i bild under in- och utflygningen. När rummet tagit
+    // över finns ingen skärm att ligga på, och sidan behöver inte ritas.
     if (pageRef.current) {
       const gone = f.act3 >= 1
+      // Opaciteten, inte `visibility`: sidans egna lager sätter sin
+      // synlighet själva, och ett barn som säger `visible` slår ut en
+      // förälder som säger `hidden`. Genomskinlighet går inte att ta
+      // tillbaka underifrån.
+      pageRef.current.style.opacity = gone ? '0' : '1'
       pageRef.current.style.visibility = gone ? 'hidden' : 'visible'
 
       // Sidan läggs exakt där skärmen står och krymps till dess storlek.
@@ -190,7 +219,13 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
       // sitter på skärmen, och texten växer i takt med att kameran kommer
       // närmare, precis som den skulle göra på riktigt. Samma mått bär
       // utflygningen: sidan krymper tillbaka ned på skärmen.
-      const p = placeScreen(clipSecond(f), vw, vh, frameW, frameH, pageW, pageH)
+      //
+      // Måttet tas ur den bildruta som ligger på duken, inte ur den scrollen
+      // ber om. Klippet ligger nästan alltid någon hundradel efter — det är
+      // så uppspelningen hinner ikapp mjukt — och sidan måste ligga lika
+      // långt efter. Annars glider den mot skärmen varje gång takten ändras,
+      // och det syns som att innehållet skakar.
+      const p = placeScreen(shown.current, vw, vh, frameW, frameH, pageW, pageH)
       pageRef.current.style.transform =
         `translate(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px) scale(${p.scale.toFixed(5)})`
     }
@@ -214,6 +249,9 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
 
   return (
     <div className="film">
+      {/* Rummet ligger underst och rullar för sig självt. */}
+      <RoomFilm ranges={ranges} />
+
       {/* Webbplatsen — syns genom den bortnycklade skärmen. Den ligger i
           fönstret, inte i bildrutan: bildrutan får vara bredare än fönstret
           och beskäras, men sidan ska aldrig hamna utanför kanten. */}
@@ -231,6 +269,7 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
 
       <div
         className="film__frame"
+        ref={frameRef}
         style={{ width: `${frameW}px`, height: `${frameH}px` }}
       >
         <KeyedVideo
@@ -242,6 +281,7 @@ export function Film({ page, onFail }: { page: ReactNode; onFail?: () => void })
           keyColor={CLIP.key}
           progress={clipProgress}
           onFail={onFail}
+          timeRef={shown}
         />
       </div>
 

@@ -1,80 +1,82 @@
 #!/usr/bin/env node
 /**
- * KODAR OM ETT KLIPP FÖR ATT KUNNA DRAS MED SCROLLEN
- * ══════════════════════════════════════════════════
- * Klippet spelas aldrig av sig självt — scrollen bestämmer takten. Det
- * ställer två krav som drar åt olika håll:
+ * KLIPPER UPP RÅMATERIALET TILL SIDANS KLIPP
+ * ══════════════════════════════════════════
+ * Sidan använder materialet på två helt olika sätt, och de vill ha varsin
+ * kodning.
  *
- *   1. Det ska gå att hoppa i klippet, för när man scrollar bakåt går det
- *      inte att spela. Ju tätare nyckelbildrutor, desto snabbare hopp.
- *   2. Det ska gå att spela upp i flerdubbel hastighet utan att avkodningen
- *      tappar bilder. Ju glesare nyckelbildrutor, desto mindre att avkoda.
+ * SKÄRMKLIPPET är inflygningen mot bildskärmen. Det spelas aldrig av sig
+ * självt — scrollen sätter uppspelningspunkten, och samma bit spelas
+ * baklänges när man tar sig ut ur skärmen igen. Baklänges går bara att
+ * göra med hopp, så här kodas varje bildruta som en nyckelbildruta. Filen
+ * blir stor per sekund, men den är bara ett par sekunder lång.
  *
- * En nyckelbildruta varannan sekund (webbläsarens standard) gör hoppen
- * ryckiga. Varje bildruta som nyckelbildruta (-g 1) gör filen flera gånger
- * så stor och avkodningen tung. En halv sekund emellan (-g 12 vid 24 b/s)
- * träffar mitten: hoppen känns direkta, och filen är liten nog att kunna
- * avkodas snabbare än realtid när man drar fort.
+ * RUMSKLIPPEN är platserna kameran besöker efteråt. De rullar av sig
+ * själva och byts ut när man scrollat vidare, så de behöver varken sökas
+ * i eller vara skarpa — de ligger bakom text och är lätt oskarpa. Låg
+ * bredd, gles nyckelbildruta, liten fil.
  *
- *   node scripts/prepare-clip.mjs <in.mp4> <ut-utan-ändelse> [bredd] [fps]
+ * Varje rumsklipp läggs ihop med sig självt baklänges. Ett kort klipp som
+ * loopar rakt av hoppar till utgångsläget varje varv; går det i stället
+ * fram och tillbaka finns ingen skarv att se.
  *
- * Utan argument körs alla filer i clips-raw/ till public/clips/. Varje
- * klipp skrivs i två format: Chromium utan patentbelagda kodekar spelar
- * inte H.264, och Safari spelar inte VP9.
+ *   node scripts/prepare-clip.mjs <råfil.mp4>
  */
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readdirSync, statSync } from 'node:fs'
-import { basename, extname, join } from 'node:path'
+import { mkdirSync, statSync } from 'node:fs'
+import { basename } from 'node:path'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const ffmpeg = require('@ffmpeg-installer/ffmpeg').path
 
-const WIDTH = 1280
+const OUT = 'public/clips'
 const FPS = 24
-/** Bildrutor mellan nyckelbildrutorna — se resonemanget överst. */
-const GOP = 12
-/**
- * Fram till den här sekunden får varje bildruta vara en nyckelbildruta.
- * Inflygningen mot skärmen spelas nämligen också baklänges, när man tar sig
- * ut ur den igen, och baklängesrörelse kan bara göras med hopp. Just den
- * biten måste alltså vara billig att hoppa i — resten spelas framåt.
- */
-const ALL_KEY_UNTIL = 1.75
+
+/** Inflygningen: sekund 0 fram till strax efter att skärmen fyllt rutan. */
+const SCREEN = { name: 'studio', to: 1.75, width: 1280 }
+
+/** Platserna i rummet, avlästa ur materialet. */
+const ROOMS = [
+  { name: 'room-window', from: 1.9, to: 3.2 },
+  { name: 'room-shelf', from: 3.4, to: 5.4 },
+  { name: 'room-lamp', from: 5.8, to: 7.5 },
+  { name: 'room-samples', from: 7.7, to: 9.02 },
+]
+const ROOM_WIDTH = 960
 
 const run = (args) =>
   execFileSync(ffmpeg, args, { stdio: ['ignore', 'ignore', 'inherit'] })
 
 function report(file) {
-  const mb = (statSync(file).size / 1024 / 1024).toFixed(1)
-  console.log(`${basename(file).padEnd(28)} ${mb} MB`)
+  const kb = Math.round(statSync(file).size / 1024)
+  console.log(`  ${basename(file).padEnd(24)} ${String(kb).padStart(5)} kB`)
 }
 
-function encode(input, out, width = WIDTH, fps = FPS) {
-  // `-an`: klippet är stumt på sidan, ljudet fyller bara plats.
-  const common = ['-y', '-i', input, '-an',
-    '-vf', `scale=${width}:-2:flags=lanczos,fps=${fps}`,
-    '-force_key_frames', `expr:lt(t,${ALL_KEY_UNTIL})`]
+/** Skriver samma filter i H.264 och VP9. Chromium utan patentbelagda
+    kodekar spelar inte H.264, och Safari spelar inte VP9. */
+function write(inputArgs, filter, out, { gop, crf, vp9crf }) {
+  const common = [...inputArgs, '-an', '-filter_complex', filter, '-map', '[v]']
 
   run([...common,
     '-c:v', 'libx264',
     '-profile:v', 'high',
     '-pix_fmt', 'yuv420p',
-    '-g', String(GOP),
-    '-keyint_min', String(GOP),
-    '-sc_threshold', '0',        // jämnt avstånd, inte scenberoende
-    '-crf', '22',
+    '-g', String(gop),
+    '-keyint_min', String(gop),
+    '-sc_threshold', '0',
+    '-crf', String(crf),
     '-preset', 'slow',
-    '-movflags', '+faststart',   // spelbar innan hela filen laddats
+    '-movflags', '+faststart',
     `${out}.mp4`])
   report(`${out}.mp4`)
 
   run([...common,
     '-c:v', 'libvpx-vp9',
     '-pix_fmt', 'yuv420p',
-    '-g', String(GOP),
-    '-keyint_min', String(GOP),
-    '-crf', '32',
+    '-g', String(gop),
+    '-keyint_min', String(gop),
+    '-crf', String(vp9crf),
     '-b:v', '0',
     '-row-mt', '1',
     '-deadline', 'good',
@@ -83,18 +85,37 @@ function encode(input, out, width = WIDTH, fps = FPS) {
   report(`${out}.webm`)
 }
 
-const [, , inFile, outFile, w, f] = process.argv
+const input = process.argv[2]
+if (!input) {
+  console.error('Ange råfilen: node scripts/prepare-clip.mjs <fil.mp4>')
+  process.exit(1)
+}
 
-if (inFile && outFile) {
-  encode(inFile, outFile.replace(/\.(mp4|webm)$/i, ''), Number(w) || WIDTH, Number(f) || FPS)
-} else {
-  mkdirSync('public/clips', { recursive: true })
-  const files = readdirSync('clips-raw').filter((n) => /\.(mp4|mov|webm)$/i.test(n))
-  if (!files.length) {
-    console.error('Inga klipp i clips-raw/')
-    process.exit(1)
-  }
-  for (const name of files) {
-    encode(join('clips-raw', name), join('public/clips', basename(name, extname(name))))
-  }
+mkdirSync(OUT, { recursive: true })
+
+console.log('Skärmklippet — varje bildruta sökbar:')
+write(
+  ['-y', '-t', String(SCREEN.to), '-i', input],
+  `[0:v]scale=${SCREEN.width}:-2:flags=lanczos,fps=${FPS}[v]`,
+  `${OUT}/${SCREEN.name}`,
+  // -g 1: varje bildruta är en nyckelbildruta, se resonemanget överst.
+  { gop: 1, crf: 22, vp9crf: 30 },
+)
+
+console.log('\nRumsklippen — fram och tillbaka, sömlös loop:')
+for (const r of ROOMS) {
+  const frames = Math.round((r.to - r.from) * FPS)
+  // Vändningen tas utan första och sista bildrutan; annars står bilden
+  // still ett ögonblick i varje ände och loopen får en hicka.
+  const filter =
+    `[0:v]scale=${ROOM_WIDTH}:-2:flags=lanczos,fps=${FPS},split[a][b];`
+    + `[b]reverse,trim=start_frame=1:end_frame=${frames - 1},setpts=PTS-STARTPTS[r];`
+    + `[a][r]concat=n=2:v=1[v]`
+
+  write(
+    ['-y', '-ss', String(r.from), '-t', String(r.to - r.from), '-i', input],
+    filter,
+    `${OUT}/${r.name}`,
+    { gop: FPS, crf: 27, vp9crf: 36 },
+  )
 }

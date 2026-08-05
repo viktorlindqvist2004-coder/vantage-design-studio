@@ -1,17 +1,23 @@
 /**
  * FILMEN
  * ══════
- * Hela sidan ligger på ett enda klipp: kameran åker in i bildskärmen, ut i
- * rummet, förbi fönstret, hyllan, lampan och till sist skrivbordet igen.
- * Klippet spelas aldrig av sig självt — scrollen sätter uppspelningspunkten,
- * så kameran rör sig exakt så långt och så fort som man drar.
+ * Sidan använder rörlig bild på två sätt, och de fungerar tvärtom mot
+ * varandra.
  *
- * Skärmen i klippet är magenta. Den färgen nycklas bort i KeyedVideo, och
- * bakom den ligger den riktiga webbplatsen. När kameran åkt hela vägen in
- * och magentan fyller rutan är det alltså sidan man ser.
+ * SKÄRMKLIPPET spelas aldrig av sig självt. Scrollen sätter
+ * uppspelningspunkten, så kameran åker in mot bildskärmen exakt så långt
+ * och så fort som man drar — och backar ut igen när man drar åt andra
+ * hållet. Skärmen i klippet är magenta; den färgen nycklas bort i
+ * KeyedVideo, och bakom den ligger den riktiga webbplatsen. När kameran
+ * åkt hela vägen in och magentan fyller rutan är det alltså sidan man ser.
  *
- * Tiderna nedan är avlästa ur klippet: magentan täcker 5 % av rutan vid
- * start, 98 % vid 1,4 s, hela rutan vid 1,5 s och är borta vid 1,7 s.
+ * RUMSKLIPPEN rullar tvärtom helt för sig själva, i sin egen takt. Scrollen
+ * bestämmer bara vilket av dem som visas: en plats i taget, med en
+ * övertoning emellan. En plats som stannar när man slutar scrolla vore ett
+ * fotografi, inte ett rum.
+ *
+ * Tiderna nedan är avlästa ur materialet: magentan täcker en femtedel av
+ * rutan vid start, fyller den vid 1,55 s och är borta strax efter.
  */
 
 export const CLIP = {
@@ -21,8 +27,8 @@ export const CLIP = {
     { src: 'clips/studio.webm', type: 'video/webm' },
     { src: 'clips/studio.mp4', type: 'video/mp4' },
   ],
-  /** Klippets längd i sekunder. */
-  duration: 9.04,
+  /** Skärmklippets längd i sekunder. */
+  duration: 1.75,
   /** Klippets proportioner, 1280 × 704. */
   aspect: 1280 / 704,
   /** Sekunden där skärmen fyller rutan och sidan tar över. */
@@ -30,21 +36,17 @@ export const CLIP = {
   /**
    * Sekunden utflygningen backar tillbaka till.
    *
-   * Klippet klipper rakt från den fyllda skärmen till rummet — kameran
-   * backar aldrig ut av sig själv. Utflygningen görs därför genom att
-   * spela inflygningen baklänges hit: skrivbordet och skärmen kommer
-   * tillbaka, sidan krymper ned på skärmen igen, och först därefter
-   * klipps rumsresan in.
+   * Materialet har ingen utflygning — kameran backar aldrig ur skärmen av
+   * sig själv. Rörelsen finns bara om inflygningen spelas baklänges, och
+   * det är vad som händer här.
    */
-  exit: 0.5,
-  /** Sekunden rummet börjar — första bildrutan efter klippet i materialet. */
-  room: 1.62,
+  exit: 0.2,
   /** Skärmens färg i klippet. */
   key: [200, 12, 210] as [number, number, number],
 } as const
 
 /**
- * Hur många fönsterhöjder man scrollar per sekund film.
+ * Hur många fönsterhöjder man scrollar per sekund skärmklipp.
  * Högre värde = långsammare kamera.
  */
 export const SCROLL_PER_SECOND = 1.35
@@ -52,15 +54,19 @@ export const SCROLL_PER_SECOND = 1.35
 export type Shot = {
   id: string
   place: string
-  /** Tidsintervall i klippet, i sekunder. */
-  from: number
-  to: number
+  /** Filnamnet i public/clips, utan ändelse. */
+  clip: string
+  /** Hur många fönsterhöjder platsen får innan nästa tar över. */
+  hold: number
 }
 
-/** Platserna kameran passerar efter skärmen, med sitt innehåll. */
+/** Platserna kameran besöker efter skärmen, med sitt innehåll. */
 export const SHOTS: Shot[] = [
-  { id: 'window', place: 'Mot staden', from: 1.9, to: 3.2 },
-  { id: 'shelf', place: 'Hyllan', from: 3.4, to: 5.4 },
-  { id: 'lamp', place: 'Arbetsljuset', from: 5.8, to: 7.5 },
-  { id: 'samples', place: 'Materialen', from: 7.7, to: 9.04 },
+  { id: 'window', place: 'Mot staden', clip: 'room-window', hold: 2.4 },
+  { id: 'shelf', place: 'Hyllan', clip: 'room-shelf', hold: 2.7 },
+  { id: 'lamp', place: 'Arbetsljuset', clip: 'room-lamp', hold: 2.4 },
+  { id: 'samples', place: 'Materialen', clip: 'room-samples', hold: 2.2 },
 ]
+
+/** Övertoningen mellan två platser, i fönsterhöjder. */
+export const CROSSFADE = 0.55

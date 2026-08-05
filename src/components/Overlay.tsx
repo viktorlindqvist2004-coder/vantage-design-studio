@@ -1,61 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '../lib/hooks'
 import { getMetrics } from '../lib/scroll'
-import { clamp01, damp, mapRange } from '../lib/math'
+import { clamp01, mapRange } from '../lib/math'
 import { STUDIO } from '../data/content'
-
-/* ── Muspekare ───────────────────────────────────────────────────────── */
-
-export function Cursor() {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const ringRef = useRef<HTMLDivElement>(null)
-  const target = useRef({ x: -100, y: -100 })
-  const pos = useRef({ x: -100, y: -100, rx: -100, ry: -100, scale: 1 })
-  const hot = useRef(false)
-
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      target.current.x = e.clientX
-      target.current.y = e.clientY
-    }
-    const onOver = (e: PointerEvent) => {
-      const el = e.target as HTMLElement | null
-      hot.current = !!el?.closest?.('a, button, .card, .srv')
-    }
-    window.addEventListener('pointermove', onMove, { passive: true })
-    window.addEventListener('pointerover', onOver, { passive: true })
-    return () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerover', onOver)
-    }
-  }, [])
-
-  useFrame((f) => {
-    const p = pos.current
-    p.x = damp(p.x, target.current.x, 0.45, f.dt)
-    p.y = damp(p.y, target.current.y, 0.45, f.dt)
-    p.rx = damp(p.rx, target.current.x, 0.12, f.dt)
-    p.ry = damp(p.ry, target.current.y, 0.12, f.dt)
-    p.scale = damp(p.scale, hot.current ? 1.55 : 1, 0.12, f.dt)
-
-    if (wrapRef.current) {
-      wrapRef.current.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`
-    }
-    if (ringRef.current) {
-      const dx = p.rx - p.x
-      const dy = p.ry - p.y
-      ringRef.current.style.transform =
-        `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${p.scale.toFixed(3)})`
-    }
-  })
-
-  return (
-    <div className="cursor" ref={wrapRef} aria-hidden="true">
-      <div className="cursor__ring" ref={ringRef} />
-      <div className="cursor__dot" />
-    </div>
-  )
-}
 
 /* ── Navigering ──────────────────────────────────────────────────────── */
 

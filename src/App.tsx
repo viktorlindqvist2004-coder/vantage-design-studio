@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
-import { Cursor, Hint, Nav, Progress } from './components/Overlay'
+import { Hint, Nav, Progress } from './components/Overlay'
 import { Contact, Preloader, TitlePlate } from './components/Plates'
 import { Film, approachLength, exitLength, frameSize, roomLength } from './components/Film'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
@@ -94,7 +94,6 @@ function Experience() {
         )}
         <Nav />
         <Progress />
-        <Cursor />
       </div>
 
       {/* Själva scrollytan: tom, hög och osynlig. */}

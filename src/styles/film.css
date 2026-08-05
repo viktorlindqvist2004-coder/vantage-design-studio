@@ -11,6 +11,28 @@
   background: var(--ink);
 }
 
+/* ── Rummet ──────────────────────────────────────────────────────────── */
+
+/* Platserna kameran besöker efter skärmen. De rullar för sig själva och
+   ligger underst; scrollen bestämmer bara vilken som syns. Här finns inget
+   att passa in mot, så de fyller rutan och beskärs. */
+.room {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+}
+
+.room__clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 /* Ramen har klippets proportioner och centreras i fönstret. Är den bredare
    än fönstret beskärs den här. */
 .film__frame {
