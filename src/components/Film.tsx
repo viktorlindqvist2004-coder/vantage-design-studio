@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import { KeyedVideo } from './KeyedVideo'
 import { useFrame, useViewport } from '../lib/hooks'
 import { clamp01, lerp, mapRange } from '../lib/math'
-import { APPROACH_HEIGHTS, CLIP, CROSSFADE, SHOTS } from '../data/film'
+import { APPROACH_HEIGHTS, CLIP, CROSSFADE, PAGE_OUT, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
 import { About, Services } from './inner/Sections'
 import { Process } from './inner/Process'
@@ -169,8 +169,8 @@ export function Film({ page, onFail, onReady }: {
         `translate(-50%, -50%) scale(${fit.toFixed(4)})`
     }
 
-    // Sidan tonar in när klippets namnskylt tonar ut, och lämnar över till
-    // rummet med samma övertoning som skärmen. Opaciteten, inte `visibility`: sidans egna
+    // Sidan tonar in när klippets namnskylt tonar ut, och lämnar snabbt när
+    // rummet tar vid — snabbare än skärmklippet, som får korsa i lugn och ro. Opaciteten, inte `visibility`: sidans egna
     // lager sätter sin synlighet själva, och ett barn som säger `visible`
     // slår ut en förälder som säger `hidden`. Genomskinlighet går inte att
     // ta tillbaka underifrån.
@@ -179,7 +179,7 @@ export function Film({ page, onFail, onReady }: {
     // ber om — klippet ligger nästan alltid någon hundradel efter, och
     // tonar sidan in före bilden syns skarven.
     if (pageRef.current) {
-      const o = pageIn(shown.current) * (1 - handover)
+      const o = pageIn(shown.current) * (1 - mapRange(f.film, 0, PAGE_OUT * f.vh))
       pageRef.current.style.opacity = o.toFixed(3)
       pageRef.current.style.visibility = o <= 0.002 ? 'hidden' : 'visible'
     }

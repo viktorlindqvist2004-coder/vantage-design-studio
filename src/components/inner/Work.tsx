@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
-import { clamp, clamp01 } from '../../lib/math'
+import { clamp, clamp01, lerp } from '../../lib/math'
 import { OFFERINGS } from '../../data/content'
 import { OfferingMedia } from '../OfferingMedia'
 
@@ -27,8 +27,17 @@ export function Work() {
     const rail = trackRef.current
     if (!rail) return
 
-    const distance = Math.max(rail.scrollWidth - f.vw, 0)
-    const x = -t.pin * distance
+    // Bandet ställs så att ett kort står mitt i rutan vid varje läge.
+    // Räknades förflyttningen i stället som en andel av hela banans längd
+    // skulle korten hamna där de råkade hamna — nära kanten i ena änden,
+    // halvt utanför i den andra — och lägena kändes godtyckliga.
+    const pos = clamp(t.pin * (OFFERINGS.length - 1), 0, OFFERINGS.length - 1)
+    const centre = (i: number) => {
+      const card = cardRefs.current[clamp(Math.round(i), 0, OFFERINGS.length - 1)]
+      return card ? card.offsetLeft + card.offsetWidth / 2 - f.vw / 2 : 0
+    }
+    const lo = Math.floor(pos)
+    const x = -lerp(centre(lo), centre(lo + 1), pos - lo)
     rail.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`
 
     // Bilden zoomar in medan kortet vandrar mot mitten och ut igen, och rör
@@ -46,7 +55,7 @@ export function Work() {
     })
 
     if (countRef.current) {
-      const i = Math.round(clamp(t.pin * (OFFERINGS.length - 1), 0, OFFERINGS.length - 1)) + 1
+      const i = Math.round(pos) + 1
       const label = String(i).padStart(2, '0')
       if (countRef.current.textContent !== label) countRef.current.textContent = label
     }

@@ -116,3 +116,13 @@ export const SHOTS: Shot[] = [
  * till lägena i vardera änden.
  */
 export const CROSSFADE = 1.7
+
+/**
+ * Hur långt in i rumsresan webbplatsen är helt borta, i fönsterhöjder.
+ *
+ * Kortare än övertoningen mellan två rum, och det med flit. Skärmklippet
+ * och rummet får korsa varandra i lugn och ro, men sidan måste vara borta
+ * innan man står på första platsen — annars läser man om vad vi bygger
+ * genom texten om vad vi gör.
+ */
+export const PAGE_OUT = 0.5

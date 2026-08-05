@@ -48,7 +48,7 @@ const WHEEL_THRESHOLD = 40
  * kommer tätt så länge handen är kvar och slutar när den släpper — en paus
  * längre än så här är alltså nästa dragning.
  */
-const GESTURE_GAP_MS = 110
+const GESTURE_GAP_MS = 90
 /**
  * Vad som skiljer ett hjulhack från en svepning.
  *
@@ -63,6 +63,16 @@ const GESTURE_GAP_MS = 110
  * började litet.
  */
 const NOTCH_MIN = 45
+/**
+ * Hur mycket ett utslag ska växa för att räknas som en ny svepning.
+ *
+ * Trögheten efter en svepning klingar av: utslagen blir mindre och mindre,
+ * men de fortsätter komma i nästan en sekund. Utan det här räknas hela den
+ * svansen som samma gest, och drar man igen medan den pågår händer
+ * ingenting — det är precis då man drar igen. En hand som lägger på nytt
+ * ger ett tydligt större utslag än det förra, och det går att se.
+ */
+const NEW_PUSH = 1.4
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -98,6 +108,8 @@ let wheelAt = 0
 let wheelSpent = false
 /** Sant när gesten kommer från ett mushjul och inte från en styrplatta. */
 let wheelNotches = false
+/** Förra utslagets storlek, för att känna igen en ny påläggning. */
+let wheelPrev = 0
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -190,16 +202,28 @@ function onWheel(e: WheelEvent) {
   e.preventDefault()
   const now = performance.now()
 
+  const mag = Math.abs(e.deltaY)
+
   // Ny gest så fort hjulet varit tyst en stund. Sorten avgörs här och
   // gäller sedan hela gesten.
   if (now - wheelAt > GESTURE_GAP_MS) {
     wheelAcc = 0
     wheelSpent = false
-    wheelNotches = Math.abs(e.deltaY) >= NOTCH_MIN
+    wheelNotches = mag >= NOTCH_MIN
+    wheelPrev = 0
   }
   wheelAt = now
 
-  // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt.
+  // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt —
+  // men lägger handen på igen mitt i svansen är det en ny svepning, och
+  // den ska räknas. Trögheten avtar; en ny påläggning gör tvärtom.
+  const pushedAgain = mag > wheelPrev * NEW_PUSH + 2
+  wheelPrev = mag
+  if (wheelSpent && pushedAgain) {
+    wheelSpent = false
+    wheelAcc = 0
+  }
+
   // Ett hjul ger ett steg per hack, för varje hack är en egen handling.
   if (wheelSpent && !wheelNotches) return
 
