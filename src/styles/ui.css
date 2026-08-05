@@ -212,3 +212,120 @@
   width: 0%;
   background: var(--bone);
 }
+
+/* ── Loggan ──────────────────────────────────────────────────────────────
+   Märket ritas i vektor och ärver textens färg, så det har ingen egen
+   platta som kan lysa igenom mot den mörka sidan. Se Logo.tsx. */
+.logo {
+  display: inline-flex;
+  color: var(--bone);
+}
+
+.logo__mark {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+
+.logo__type {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Namnet i logotypen är satt tätare och tyngre än sidans löptext — det är
+   ett märke, inte en mening. */
+.logo__name {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.logo__sub {
+  font-family: var(--mono);
+  font-weight: 400;
+  text-transform: uppercase;
+  /* Vit som namnet, men nedtonad — i loggan är underraden tunn och spärrad
+     och läser därför ljusare än den är. Grå gör den till en bildtext. */
+  color: var(--bone);
+  opacity: 0.72;
+  line-height: 1;
+}
+
+/* Stående: märket över namnet, allt centrerat — loggan som den är gjord. */
+.logo--stacked {
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.1rem, 2.6vh, 1.9rem);
+  text-align: center;
+}
+
+.logo--stacked .logo__mark {
+  /* Märket är knappt två tredjedelar av namnets bredd, som i loggan. */
+  width: clamp(4.2rem, 9vw, 7rem);
+}
+
+.logo--stacked .logo__type {
+  gap: clamp(0.45rem, 1vh, 0.7rem);
+}
+
+.logo--stacked .logo__name {
+  font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+}
+
+.logo--stacked .logo__sub {
+  font-size: clamp(0.6rem, 1vw, 0.75rem);
+  letter-spacing: 0.42em;
+  /* Spärrningen lägger luft även efter sista tecknet, och det drar hela
+     raden ur mitten. Marginalen tar tillbaka den. */
+  margin-left: 0.42em;
+}
+
+/* Liggande: på rad, för lister där höjden är knapp. */
+.logo--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logo--inline .logo__mark {
+  width: 1.75em;
+}
+
+.logo--inline .logo__type {
+  gap: 0.18em;
+}
+
+.logo--inline .logo__name {
+  font-size: 0.9375rem;
+}
+
+.logo--inline .logo__sub {
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+}
+
+@media (max-width: 620px) {
+  /* På en telefon är underraden i listen bara brus — märket och namnet
+     räcker för att säga vems sidan är. */
+  .logo--inline .logo__sub {
+    display: none;
+  }
+}
+
+/* Startskärmen: loggan står ensam medan sidan laddar. */
+.preloader__logo {
+  margin-bottom: clamp(2rem, 5vh, 3.5rem);
+}
+
+/* Kontaktplattan: märket ensamt vid raden längst ned, som en signatur. */
+.colophon {
+  align-items: center;
+}
+
+.colophon__mark {
+  display: flex;
+  width: 1.4rem;
+  color: var(--dim);
+  margin-right: auto;
+}

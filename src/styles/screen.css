@@ -614,3 +614,17 @@
   }
   .srv__desc { grid-column: 2; }
 }
+
+/* Skärmens viloläge: loggan står mitt i rutan innan sidan tar över. */
+.wake__logo {
+  margin-bottom: clamp(2rem, 5vh, 3.2rem);
+}
+
+/* Studion: märket vid signaturen. */
+.about__logo {
+  width: 1.5rem;
+  /* Märket ligger över rörlig bild och måste hålla även mot en ljus ruta i
+     ett fönster — dämpat, men inte så dämpat att det försvinner. */
+  color: var(--dim);
+  align-self: center;
+}

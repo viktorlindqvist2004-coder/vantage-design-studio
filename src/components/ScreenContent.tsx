@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
+import { Logo } from './Logo'
 import { Hero, Manifest, Numbers, Why } from './inner/Sections'
 import { Work } from './inner/Work'
 import { Contact } from './Plates'
@@ -69,7 +70,7 @@ export function ScreenContent({
 
       {!reduced && (
         <div className="wake" ref={wakeRef} aria-hidden="true">
-          <span className="wake__mark">Vantage Design Studio</span>
+          <Logo variant="stacked" className="wake__logo" />
           <div className="wake__bar">
             <span ref={barRef} />
           </div>

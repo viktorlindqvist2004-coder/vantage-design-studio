@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '../lib/hooks'
 import { findStation, goTo } from '../lib/deck'
 import { mapRange } from '../lib/math'
-import { STUDIO } from '../data/content'
+import { Logo } from './Logo'
 
 /* ── Navigering ──────────────────────────────────────────────────────── */
 
@@ -26,10 +26,7 @@ export function Nav() {
   return (
     <header className="nav" ref={ref}>
       <a className="nav__mark" href="#start" onClick={(e) => { e.preventDefault(); goTo(0) }}>
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M6 10h13l13 34 13-34h13L40 58H24z" fill="currentColor" />
-        </svg>
-        {STUDIO.name}
+        <Logo variant="inline" />
       </a>
 
       {/* En enda väg vidare. Fem genvägar till sektioner man ändå passerar

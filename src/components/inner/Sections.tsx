@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { LogoMark } from '../Logo'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
@@ -340,6 +341,7 @@ export function About() {
           det är, utan hur väl vi förstår vad ni försöker göra.
         </p>
         <div className="about__sign">
+          <LogoMark className="about__logo" />
           <span className="about__name">{STUDIO.name}</span>
           <span className="label">Design &amp; utveckling</span>
         </div>

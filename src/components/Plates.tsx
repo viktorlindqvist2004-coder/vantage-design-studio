@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '../lib/hooks'
 import { clamp01, easeOutCubic, mapRange } from '../lib/math'
 import { STUDIO } from '../data/content'
+import { Logo, LogoMark } from './Logo'
 
 /* ── Kontakt, efter utzoomningen ─────────────────────────────────────── */
 
@@ -57,6 +58,7 @@ export function Contact({
       </div>
 
       <div className="colophon label">
+        <span className="colophon__mark"><LogoMark /></span>
         <span>© {STUDIO.founded} {STUDIO.name}</span>
         <span>Formgiven och handkodad</span>
       </div>
@@ -79,7 +81,7 @@ export function Preloader({ done }: { done: boolean }) {
 
   return (
     <div className={`preloader ${done ? 'preloader--done' : ''}`} aria-hidden={done}>
-      <span className="preloader__mark">{STUDIO.name}</span>
+      <Logo variant="stacked" className="preloader__logo" />
       <div className="preloader__bar">
         <i ref={barRef} />
       </div>
