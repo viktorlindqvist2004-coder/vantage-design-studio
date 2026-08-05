@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp, clamp01, lerp } from '../../lib/math'
@@ -15,6 +15,7 @@ export function Work() {
   const trackRef = useRef<HTMLDivElement>(null)
   const countRef = useRef<HTMLSpanElement>(null)
   const cardRefs = useRef<(HTMLElement | null)[]>([])
+  const cards = useCardMetrics(cardRefs, trackRef)
   const track = useTrack(secRef)
 
   useFrame((f) => {
@@ -25,34 +26,28 @@ export function Work() {
     }
 
     const rail = trackRef.current
-    if (!rail) return
+    if (!rail || !cards.current.length) return
 
     // Bandet ställs så att ett kort står mitt i rutan vid varje läge.
     // Räknades förflyttningen i stället som en andel av hela banans längd
     // skulle korten hamna där de råkade hamna — nära kanten i ena änden,
     // halvt utanför i den andra — och lägena kändes godtyckliga.
-    const pos = clamp(t.pin * (OFFERINGS.length - 1), 0, OFFERINGS.length - 1)
-    const centre = (i: number) => {
-      const card = cardRefs.current[clamp(Math.round(i), 0, OFFERINGS.length - 1)]
-      return card ? card.offsetLeft + card.offsetWidth / 2 - f.vw / 2 : 0
-    }
+    const last = cards.current.length - 1
+    const pos = clamp(t.pin * last, 0, last)
+    const mid = (i: number) => cards.current[clamp(i, 0, last)].mid - f.vw / 2
     const lo = Math.floor(pos)
-    const x = -lerp(centre(lo), centre(lo + 1), pos - lo)
+    const x = -lerp(mid(lo), mid(lo + 1), pos - lo)
     rail.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`
 
     // Bilden zoomar in medan kortet vandrar mot mitten och ut igen, och rör
     // sig samtidigt långsammare i sidled än kortet självt.
-    cardRefs.current.forEach((el) => {
-      if (!el) return
-      const art = el.querySelector<HTMLElement>('.card__art')
-      if (!art) return
-      const center = el.offsetLeft + el.offsetWidth / 2 + x
-      const away = (center - f.vw / 2) / f.vw
+    for (const card of cards.current) {
+      const away = (card.mid + x - f.vw / 2) / f.vw
       const zoom = 1.02 + Math.min(Math.abs(away), 1.2) * 0.3
-      art.style.transform =
+      card.art.style.transform =
         `translate3d(${(away * -6).toFixed(2)}%, 0, 0) scale(${zoom.toFixed(3)})`
-      el.style.opacity = (1 - clamp01(Math.abs(away) - 0.6) * 1.4).toFixed(3)
-    })
+      card.el.style.opacity = (1 - clamp01(Math.abs(away) - 0.6) * 1.4).toFixed(3)
+    }
 
     if (countRef.current) {
       const i = Math.round(pos) + 1
@@ -105,4 +100,54 @@ export function Work() {
       </div>
     </section>
   )
+}
+
+/**
+ * Kortens mått, uppmätta en gång i stället för varje bildruta.
+ *
+ * Bandet flyttas med en transform, och läser man sedan tillbaka kortens
+ * lägen ur layouten tvingar man webbläsaren att räkna om den mitt i
+ * bildrutan — en gång per kort. Skriv, läs, skriv, läs: det är den
+ * ordningen som gör rörelse hackig, och den märks först på en långsammare
+ * maskin än den man bygger på.
+ *
+ * Lägena beror bara på fönstrets bredd och kortens egen storlek, så de
+ * mäts när något ändrar storlek och läses ur minnet däremellan.
+ */
+type CardMetric = { el: HTMLElement; art: HTMLElement; mid: number }
+
+function useCardMetrics(
+  cardRefs: React.RefObject<(HTMLElement | null)[]>,
+  railRef: React.RefObject<HTMLElement | null>,
+) {
+  const metrics = useRef<CardMetric[]>([])
+
+  useEffect(() => {
+    const rail = railRef.current
+    if (!rail) return
+
+    const measure = () => {
+      const next: CardMetric[] = []
+      for (const el of cardRefs.current) {
+        const art = el?.querySelector<HTMLElement>('.card__art')
+        if (!el || !art) continue
+        next.push({ el, art, mid: el.offsetLeft + el.offsetWidth / 2 })
+      }
+      metrics.current = next
+    }
+
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(rail)
+    window.addEventListener('resize', measure)
+    // Måtten beror på typsnittet: laddas det efter första mätningen ändras
+    // korthöjden och därmed radbrytningen, och lägena med den.
+    document.fonts?.ready.then(measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [cardRefs, railRef])
+
+  return metrics
 }

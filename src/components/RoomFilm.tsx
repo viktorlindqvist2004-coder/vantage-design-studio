@@ -5,6 +5,11 @@ import { CROSSFADE, ROOM_RATE, SHOTS, roomFraming } from '../data/film'
 import type { ShotRange } from './Film'
 import type { Frame } from '../lib/scroll'
 
+/** Hur många fönsterhöjder innan en plats dess klipp börjar hämtas. */
+const FETCH_AHEAD = 3.5
+/** Hur många fönsterhöjder innan och efter klippet får rulla igång. */
+const WARMUP = 1.2
+
 /**
  * RUMMET
  * ══════
@@ -33,9 +38,9 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
       const range = ranges[shot.id]
       if (!el || !range) return
 
-      // Varje plats hämtas när den är ungefär en fönsterhöjd bort — långt
-      // innan den syns, men först när man är på väg dit.
-      if (!fetched.current.has(shot.id) && f.film > range.start - f.vh * 1.4) {
+      // Varje plats hämtas i god tid innan den syns, men först när man är
+      // på väg dit — filerna är för stora för att hämtas allihop på en gång.
+      if (!fetched.current.has(shot.id) && f.film > range.start - f.vh * FETCH_AHEAD) {
         fetched.current.add(shot.id)
         el.preload = 'auto'
         el.load()
@@ -43,14 +48,23 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
 
       const o = shotOpacity(f, range, i === 0, i === SHOTS.length - 1)
       el.style.opacity = o.toFixed(3)
+      el.style.visibility = o > 0.004 ? 'visible' : 'hidden'
 
-      // Ett klipp som inte syns ska inte heller avkodas.
-      const live = o > 0.004
-      el.style.visibility = live ? 'visible' : 'hidden'
-      if (live && el.paused && el.readyState >= 2) {
+      // Avkodningen startas innan platsen syns.
+      //
+      // Att sätta igång en video kostar mer än att låta den rulla: kodaren
+      // ska upp, de första bildrutorna avkodas, och görs det i samma
+      // ögonblick som platsen tonas in blir just den övergången ryckig —
+      // det var mätbart en tredjedels sekund vid varje platsbyte. Klippet
+      // får därför börja rulla en bit innan det syns, och stängs av lika
+      // sent. Som mest är det två klipp igång, och bara under bytet.
+      const warm = WARMUP * f.vh
+      const near = f.film > range.start - warm
+        && f.film < range.start + range.length + warm
+      if (near && el.paused && el.readyState >= 2) {
         el.playbackRate = ROOM_RATE
         el.play().catch(() => {})
-      } else if (!live && !el.paused) {
+      } else if (!near && !el.paused) {
         el.pause()
       }
     })

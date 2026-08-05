@@ -23,8 +23,14 @@ import { clamp, easeInOutCubic } from './math'
 /** En hållplats: ett läge i den gamla scrollskalan, med ett namn. */
 export type Station = { id: string; y: number }
 
-/** Så länge tar en vanlig förflyttning mellan två grannar. */
-const STEP_MS = 850
+/**
+ * Så länge tar en vanlig förflyttning mellan två grannar.
+ *
+ * Kort nog att sidan svarar direkt på handen — ett steg som tar närmare en
+ * sekund läses som tröghet, inte som lugn, och det är samma sekund varje
+ * gång man tar sig någonstans. Långt nog att man ser vad som rör sig.
+ */
+const STEP_MS = 620
 /** Kortaste tid ett steg får ta, hur bråttom man än har. */
 const MIN_STEP_MS = 320
 /**
@@ -36,7 +42,7 @@ const MIN_STEP_MS = 320
  */
 const ENTRY_MS = 2800
 /** Steget ut ur skärmen är en övertoning, och tål att ta lite längre tid. */
-const LEAVE_MS = 1500
+const LEAVE_MS = 1150
 
 /** Hur mycket hjul som krävs för att räknas som en dragning. */
 const WHEEL_THRESHOLD = 40
@@ -84,6 +90,38 @@ const NEW_PUSH = 1.8
 const NEW_PUSH_FLOOR = 6
 /** Så långt under toppen utslagen ska ha fallit innan svansen räknas börjad. */
 const FALLEN = 0.55
+/**
+ * Hur nära toppen utslagen ska ligga för att handen ska räknas som kvar.
+ *
+ * Ett drag håller sig kring sin topp så länge fingrarna för plattan.
+ * Trögheten efteråt faller undan snabbt. Gränsen skiljer de två utan att
+ * behöva veta när handen släppte.
+ */
+const DRIVEN = 0.5
+/**
+ * Hur långt man ska hinna dra för varje steg efter det första.
+ *
+ * Ett långt drag är inte en knuff som får rulla — man ligger kvar och för
+ * plattan, och då ska sidan fortsätta stega. Utan det här gav ett drag på
+ * två sekunder ett enda steg, och sidan kändes död mitt under handen.
+ * Sträckan är rundlig med flit: ett kort, försiktigt drag ska fortfarande
+ * ge precis ett steg.
+ */
+const SUSTAIN = 320
+/**
+ * Hur länge utslagen ska ha hållit sig uppe innan draget räknas som ett drag.
+ *
+ * Här sitter hela skillnaden mellan en hand som ligger kvar och en knuff som
+ * rullar vidare, och den är svårare än den låter: sträckan säger ingenting,
+ * för det är just en lång sträcka som gör en flick till en flick, och de
+ * första tiondelarna av en tröghet ser likadana ut som ett drag.
+ *
+ * Det som skiljer dem är hur länge. En tröghet klingar av under sin halva
+ * topp inom ett par tiondelar och kommer aldrig tillbaka. En hand håller
+ * uppe utslagen så länge den ligger kvar. Tiden över halva toppen räknas
+ * därför, och först när den passerat den här gränsen börjar sidan stega med.
+ */
+const HELD_MS = 700
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -125,6 +163,12 @@ let wheelPeak = 0
 let wheelLow = 0
 /** Sant när utslagen fallit tydligt från toppen, alltså när svansen börjat. */
 let wheelFell = false
+/** Hur länge utslagen hållit sig uppe sedan gestens första steg gick. */
+let wheelHeldMs = 0
+/** När förra hjulhändelsen kom, för att kunna mäta tiden ovan. */
+let wheelPrevAt = 0
+/** När sidan senast tog ett steg, för att inte stega fortare än den hinner. */
+let steppedAt = 0
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -190,6 +234,7 @@ export function goTo(next: number, immediate = false) {
 
 function step(dir: number) {
   const now = performance.now()
+  steppedAt = now
 
   if (!moving(now)) {
     queued = 0
@@ -218,6 +263,7 @@ function freshGesture(mag: number) {
   wheelPeak = mag
   wheelLow = mag
   wheelFell = false
+  wheelHeldMs = 0
 }
 
 function onWheel(e: WheelEvent) {
@@ -247,6 +293,13 @@ function onWheel(e: WheelEvent) {
   }
   if (mag < wheelPeak * FALLEN) wheelFell = true
 
+  // Tiden utslagen hållit sig uppe, räknad först efter att gesten gett sitt
+  // steg. Mellanrummet takas, så att en paus mellan två händelser inte
+  // räknas som tid med handen på plattan.
+  const held = mag > wheelPeak * DRIVEN
+  if (wheelSpent && held) wheelHeldMs += Math.min(now - wheelPrevAt, 100)
+  wheelPrevAt = now
+
   // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt —
   // men lägger handen på igen mitt i svansen är det en ny svepning, och den
   // ska räknas. En ny påläggning är ett tydligt uppsving ur svansens botten,
@@ -262,7 +315,22 @@ function onWheel(e: WheelEvent) {
   }
 
   // Ett hjul ger ett steg per hack, för varje hack är en egen handling.
-  if (wheelSpent && !wheelNotches) return
+  // En styrplatta som redan gett sitt steg får däremot fortsätta — men bara
+  // så länge handen ligger kvar och driver den. Trögheten efteråt ska tiga,
+  // annars rullar sidan vidare av sig själv.
+  if (wheelSpent && !wheelNotches) {
+    if (!held || wheelHeldMs < HELD_MS) return
+    wheelAcc += e.deltaY
+    // Ett drag ska föra sidan framåt i den takt den faktiskt rör sig, inte
+    // fortare. En styrplatta lämnar tusentals bildpunkter i sekunden, och
+    // enbart på sträckan blev det ett dussin lägen per sekund — man drog
+    // en stund och stod plötsligt någon helt annanstans.
+    if (Math.abs(wheelAcc) < SUSTAIN || now - steppedAt < STEP_MS) return
+    const onward = Math.sign(wheelAcc)
+    wheelAcc = 0
+    step(onward)
+    return
+  }
 
   wheelAcc += e.deltaY
   if (Math.abs(wheelAcc) < WHEEL_THRESHOLD) return

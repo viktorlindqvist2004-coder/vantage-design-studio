@@ -137,12 +137,12 @@ const GAIN = 10
 /**
  * Snabbaste uppspelning.
  *
- * Inflygningen är en dragning lång, så en snabb svep ber om flera sekunder
- * film på en bråkdel av en sekund. Taket måste rymma det — annars faller
- * klippet efter, tröskeln ovan löser ut, och den mjuka åkningen blir ett
- * hopp precis i det ögonblick den syns bäst.
+ * Inflygningen spelas i en bestämd takt — knappt en och en halv gång
+ * normalhastighet — så taket behöver bara rymma en inhämtning, inte en
+ * genomspelning. Ett högre tak hjälper ingen och kostar avkodning i just
+ * det ögonblick filmen syns bäst.
  */
-const MAX_RATE = 6
+const MAX_RATE = 3.5
 
 function compile(gl: WebGLRenderingContext, type: number, src: string) {
   const s = gl.createShader(type)!
