@@ -9,8 +9,42 @@ import { Process } from './inner/Process'
 import { Contact } from './Plates'
 import type { Frame } from '../lib/scroll'
 
-/** Ett tidsintervall i filmen, uttryckt i scroll-px. */
-export type ShotRange = { start: number; length: number }
+/** En plats sträcka, uttryckt i samma skala som resten av rörelsen. */
+export type ShotRange = {
+  start: number
+  length: number
+  /** Hur många lägen platsen har. */
+  steps: number
+  /** Hur stor del av vardera änden som är övertoning och inte går att stanna i. */
+  margin: number
+}
+
+/**
+ * Platsernas sträckor, i ordning och kant i kant.
+ *
+ * Både hållplatserna och innehållet räknas ur den här listan, så den finns
+ * på ett ställe: räknades de var för sig skulle ett läge kunna hamna någon
+ * procent vid sidan om det innehållet tror är mitten.
+ */
+export function shotRanges(vh: number) {
+  const map: Record<string, ShotRange> = {}
+  let at = 0
+  for (const s of SHOTS) {
+    const length = s.hold * vh
+    const margin = s.steps === 1 ? 0 : (CROSSFADE * vh) / 2 / length + 0.06
+    map[s.id] = { start: at, length, steps: s.steps, margin }
+    at += length
+  }
+  return map
+}
+
+/** Var ett av platsens lägen ligger. */
+export function stationY(range: ShotRange, i: number) {
+  const p = range.steps === 1
+    ? 0.5
+    : range.margin + ((1 - range.margin * 2) * i) / (range.steps - 1)
+  return range.start + range.length * p
+}
 
 const ShotRangeContext = createContext<ShotRange | null>(null)
 export const useShotRange = () => useContext(ShotRangeContext)
@@ -119,15 +153,7 @@ export function Film({ page, onFail, onReady }: {
 
   // Platserna ligger kant i kant längs rumsresan; den enas slut är den
   // andras början, så övertoningen mellan dem blir en korsning.
-  const ranges = useMemo(() => {
-    const map: Record<string, ShotRange> = {}
-    let at = 0
-    for (const s of SHOTS) {
-      map[s.id] = { start: at, length: s.hold * vh }
-      at += s.hold * vh
-    }
-    return map
-  }, [vh])
+  const ranges = useMemo(() => shotRanges(vh), [vh])
 
   useFrame((f) => {
     // Skärmklippet lämnar över till rummet med en övertoning. Skrivbordet
@@ -232,8 +258,8 @@ function ShotStage({
     const p = clamp01((f.film - range.start) / range.length)
     // Texten kommer in tidigt och lämnar innan kameran nått fram, så att
     // rummet får ett ögonblick för sig själv mellan platserna.
-    const inn = mapRange(p, 0.04, 0.2)
-    const out = last ? 0 : mapRange(p, 0.84, 0.99)
+    const inn = mapRange(p, 0.02, 0.14)
+    const out = last ? 0 : mapRange(p, 0.86, 0.99)
     const o = inn * (1 - out)
     el.style.opacity = o.toFixed(3)
     el.style.visibility = o <= 0.005 ? 'hidden' : 'visible'

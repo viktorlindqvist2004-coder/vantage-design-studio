@@ -25,8 +25,14 @@ export type Station = { id: string; y: number }
 
 /** Så länge tar en vanlig förflyttning mellan två grannar. */
 const STEP_MS = 900
-/** Inflygningen får den tid klippet behöver, plus en andhämtning. */
-const ENTRY_MS = 4150
+/**
+ * Inflygningen.
+ *
+ * Kortare än klippets egen längd — klippet spelas alltså raskare än en
+ * gång i sekunden, vilket det tål: kamerarörelsen är gjord med inbromsning
+ * och laddningen i slutet behöver bara hinna läsas, inte inväntas.
+ */
+const ENTRY_MS = 2800
 /** Steget ut ur skärmen är en övertoning, och tål att ta lite längre tid. */
 const LEAVE_MS = 1500
 
@@ -35,7 +41,17 @@ const WHEEL_THRESHOLD = 40
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /** Lugn stund efter en förflyttning, så att slängen inte utlöser nästa. */
-const COOLDOWN_MS = 140
+const COOLDOWN_MS = 60
+/**
+ * Hur tidigt in i en förflyttning nästa får börja.
+ *
+ * Drar man snabbt ska man komma fram snabbt. Ett steg som måste spelas
+ * färdigt innan nästa får börja gör sidan trögare ju mer bråttom man har.
+ * I stället får en ny dragning ta vid efter en kort stund, från där
+ * rörelsen råkar vara — så staplas stegen i den takt handen anger.
+ * Inflygningen är undantagen: den ska rulla klart av sig själv.
+ */
+const RETRIGGER_MS = 240
 
 let stations: Station[] = [{ id: 'start', y: 0 }]
 let index = 0
@@ -104,7 +120,7 @@ export function goTo(next: number, immediate = false) {
   duration = immediate ? 0 : stepTime(findFrom(fromY), index)
   linear = duration === ENTRY_MS
   startedAt = performance.now()
-  readyAt = startedAt + duration + COOLDOWN_MS
+  readyAt = startedAt + (linear ? duration : Math.min(duration, RETRIGGER_MS)) + COOLDOWN_MS
   if (immediate) position = toY
 }
 

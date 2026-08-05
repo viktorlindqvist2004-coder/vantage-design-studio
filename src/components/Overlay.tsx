@@ -8,7 +8,7 @@ import { STUDIO } from '../data/content'
 
 /** Kontaktuppgifterna ligger på den sista platsen i rummet. */
 function goToContact() {
-  const at = findStation('room-samples')
+  const at = findStation('room-samples-0')
   if (at >= 0) goTo(at)
 }
 

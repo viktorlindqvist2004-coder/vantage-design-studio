@@ -70,6 +70,15 @@ export type Shot = {
   /** Hur många fönsterhöjder platsen får innan nästa tar över. */
   hold: number
   /**
+   * Hur många lägen platsen har.
+   *
+   * De flesta platser är en enda vy och har ett läge. Processen är fem steg
+   * som ska gå att stanna på var för sig — annars passerar man alla fem på
+   * en dragning och hinner bara läsa ett. En plats med flera lägen behöver
+   * också mer sträcka, så att lägena får plats mellan övertoningarna.
+   */
+  steps: number
+  /**
    * Hur klippet är beskuret. Två platser som delar klipp får skilda
    * utsnitt, så att de läser som två vyer och inte som samma bild igen.
    */
@@ -79,19 +88,19 @@ export type Shot = {
 /** Platserna kameran besöker efter skärmen, med sitt innehåll. */
 export const SHOTS: Shot[] = [
   {
-    id: 'window', place: 'Mot staden', clip: 'room-a', hold: 2.4,
+    id: 'window', place: 'Mot staden', clip: 'room-a', hold: 2.6, steps: 1,
     framing: { position: '50% 50%', scale: 1 },
   },
   {
-    id: 'shelf', place: 'Skrivbordet', clip: 'room-b', hold: 2.7,
+    id: 'shelf', place: 'Skrivbordet', clip: 'room-b', hold: 6.5, steps: 5,
     framing: { position: '38% 50%', scale: 1.08 },
   },
   {
-    id: 'lamp', place: 'Mot rummet', clip: 'room-a', hold: 2.4,
+    id: 'lamp', place: 'Mot rummet', clip: 'room-a', hold: 2.6, steps: 1,
     framing: { position: '78% 55%', scale: 1.14 },
   },
   {
-    id: 'samples', place: 'Arbetsljuset', clip: 'room-c', hold: 2.2,
+    id: 'samples', place: 'Arbetsljuset', clip: 'room-c', hold: 2.6, steps: 1,
     framing: { position: '50% 45%', scale: 1 },
   },
 ]
@@ -99,9 +108,11 @@ export const SHOTS: Shot[] = [
 /**
  * Övertoningen mellan två platser, i fönsterhöjder.
  *
- * Kort nog att läsas som ett klipp. Dras den ut blir den ett tillstånd i
- * stället — två rum ovanpå varandra under en fjärdedel av sträckan, vilket
- * ser ut som att två filmer spelas samtidigt snarare än att den ena tar
- * över efter den andra.
+ * Den mäts i sträcka, men det är tid den ska motsvara: förflyttningen mellan
+ * två lägen tar en knapp sekund, och övertoningen ska fylla den. Är den för
+ * kort hinner den undan på ett par tiondelar mitt i steget och läses som ett
+ * hårt klipp; är den för lång ligger två rum ovanpå varandra även när man
+ * står stilla. Den här bredden täcker det mesta av ett steg utan att nå fram
+ * till lägena i vardera änden.
  */
-export const CROSSFADE = 0.42
+export const CROSSFADE = 1.7

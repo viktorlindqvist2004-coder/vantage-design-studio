@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
 import { Nav } from './components/Overlay'
 import { Contact, Preloader } from './components/Plates'
-import { Film, approachLength, roomLength } from './components/Film'
+import { Film, approachLength, roomLength, shotRanges, stationY } from './components/Film'
 import { useFrame, usePrefersReducedMotion, useViewport } from './lib/hooks'
 import { setMetrics, start, stop } from './lib/scroll'
 import { setStations, type Station } from './lib/deck'
@@ -64,11 +64,12 @@ function Experience() {
       list.push({ id: `inner-${i}`, y: act1 + Math.min(offset, innerMax) })
     }
 
-    let at = 0
+    const ranges = shotRanges(vh)
     for (const shot of SHOTS) {
-      const length = shot.hold * vh
-      list.push({ id: `room-${shot.id}`, y: act1 + innerMax + at + length / 2 })
-      at += length
+      const range = ranges[shot.id]
+      for (let i = 0; i < shot.steps; i++) {
+        list.push({ id: `room-${shot.id}-${i}`, y: act1 + innerMax + stationY(range, i) })
+      }
     }
 
     // Dubbletter uppstår när innehållet är kortare än fönstret.

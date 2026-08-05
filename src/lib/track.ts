@@ -61,9 +61,13 @@ export function useTrack<T extends HTMLElement>(ref: RefObject<T | null>) {
   return useCallback((f: Frame): Track => {
     if (shot) {
       const p = clamp01((f.film - shot.start) / shot.length)
-      // Platsens läge ligger mitt i intervallet, så rörelsen ska vara klar
-      // en bit dessförinnan.
-      return { enter: p, settle: mapRange(p, 0.02, 0.42), pin: p, offset: 0, top: 0, height: 0 }
+      // `pin` räknas mellan platsens ytterlägen, inte över hela sträckan:
+      // ändarna är övertoning till grannplatserna och går inte att stanna
+      // i, så ett innehåll med flera steg ska fördela sig på det som är
+      // kvar. Då landar varje läge exakt på ett steg.
+      const span = 1 - shot.margin * 2
+      const pin = span > 0 ? clamp01((p - shot.margin) / span) : p
+      return { enter: p, settle: mapRange(p, 0.02, 0.42), pin, offset: 0, top: 0, height: 0 }
     }
 
     // Rutan här inne är filmens ram, inte fönstret — på en telefon är den

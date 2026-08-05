@@ -20,7 +20,9 @@ export function Process() {
     }
 
     // Var i listan vi befinner oss, som ett flyttal: 0 = första steget.
-    const pos = clamp(t.pin * PROCESS.length - 0.5, 0, PROCESS.length - 1)
+    // `pin` går från noll till ett mellan platsens ytterlägen, och det finns
+    // ett läge per steg — så varje läge landar på ett jämnt tal.
+    const pos = clamp(t.pin * (PROCESS.length - 1), 0, PROCESS.length - 1)
     const active = Math.round(pos)
 
     itemRefs.current.forEach((el, i) => {
