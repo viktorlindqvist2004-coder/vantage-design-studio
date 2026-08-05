@@ -53,7 +53,12 @@ function clipProgress(f: Frame) {
 }
 
 export function Film({ page }: { page: ReactNode }) {
-  const { vh } = useViewport()
+  const { vw, vh } = useViewport()
+
+  // Klippet ska rymmas helt i fönstret utan beskärning. Sidan bakom måste
+  // ligga i exakt samma ram, annars hamnar den inte i skärmen i filmen.
+  const frameW = Math.min(vw, vh * CLIP.aspect)
+  const frameH = frameW / CLIP.aspect
   const pageRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
@@ -100,24 +105,34 @@ export function Film({ page }: { page: ReactNode }) {
 
   return (
     <div className="film">
-      {/* Webbplatsen — syns genom den bortnycklade skärmen. */}
-      <div className="film__page" ref={pageRef}>{page}</div>
+      <div
+        className="film__frame"
+        style={{ width: `${frameW}px`, height: `${frameH}px` }}
+      >
+        {/* Webbplatsen — syns genom den bortnycklade skärmen. */}
+        <div className="film__page" ref={pageRef}>{page}</div>
 
-      <KeyedVideo
-        className="film__video"
-        sources={CLIP.sources.map((s) => ({
-          src: `${import.meta.env.BASE_URL}${s.src}`,
-          type: s.type,
-        }))}
-        keyColor={CLIP.key}
-        progress={clipProgress}
-      />
+          <KeyedVideo
+          className="film__video"
+          sources={CLIP.sources.map((s) => ({
+            src: `${import.meta.env.BASE_URL}${s.src}`,
+            type: s.type,
+          }))}
+          keyColor={CLIP.key}
+          progress={clipProgress}
+        />
+      </div>
 
       <div className="film__scrim" ref={scrimRef} />
       <span className="film__place label" ref={labelRef} aria-hidden="true" />
 
-      {SHOTS.map((shot) => (
-        <ShotStage key={shot.id} id={shot.id} range={ranges[shot.id]}>
+      {SHOTS.map((shot, i) => (
+        <ShotStage
+          key={shot.id}
+          id={shot.id}
+          range={ranges[shot.id]}
+          last={i === SHOTS.length - 1}
+        >
           {SECTIONS[shot.id]}
         </ShotStage>
       ))}
@@ -129,10 +144,13 @@ export function Film({ page }: { page: ReactNode }) {
 function ShotStage({
   id,
   range,
+  last = false,
   children,
 }: {
   id: string
   range: ShotRange
+  /** Sista tagningen bär kontaktuppgifterna och ska stanna kvar. */
+  last?: boolean
   children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -144,7 +162,7 @@ function ShotStage({
     // Texten kommer in tidigt och lämnar innan kameran nått fram, så att
     // rummet får ett ögonblick för sig själv mellan platserna.
     const inn = mapRange(p, 0.04, 0.2)
-    const out = mapRange(p, 0.84, 0.99)
+    const out = last ? 0 : mapRange(p, 0.84, 0.99)
     const o = inn * (1 - out)
     el.style.opacity = o.toFixed(3)
     el.style.visibility = o <= 0.005 ? 'hidden' : 'visible'

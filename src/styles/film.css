@@ -11,6 +11,17 @@
   background: var(--ink);
 }
 
+/* Ramen har klippets proportioner och centreras i fönstret, så att hela
+   bildrutan syns. Sidan bakom ligger i samma ram — annars hamnar den inte
+   i skärmen i filmen. */
+.film__frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+}
+
 /* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. */
 .film__page {
   position: absolute;

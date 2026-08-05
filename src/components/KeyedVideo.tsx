@@ -88,6 +88,8 @@ export function KeyedVideo({
   softness = 0.12,
   /** Returnerar 0–1: var i klippet vi ska stå. */
   progress,
+  /** Klippets bildfrekvens — sökningen rundas till närmaste bildruta. */
+  fps = 24,
   className = '',
   onReady,
 }: {
@@ -97,6 +99,7 @@ export function KeyedVideo({
   tolerance?: number
   softness?: number
   progress: (f: Frame) => number
+  fps?: number
   className?: string
   onReady?: () => void
 }) {
@@ -159,6 +162,10 @@ export function KeyedVideo({
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
 
     const tex = gl.createTexture()!
+    // En videobildruta har origo i övre vänstra hörnet, en textur i nedre.
+    // Utan det här kommer filmen upp och ner.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
@@ -192,17 +199,23 @@ export function KeyedVideo({
     const d = video.duration
     if (!d || !isFinite(d)) return
 
-    // Scrollen är enda drivkraften.
+    // Scrollen är enda drivkraften. Sökningen måste dock hushållas:
+    // currentTime är asynkront, och skriver man varje bildruta köas
+    // sökningar upp snabbare än de hinner utföras. Resultatet blir hackigt.
+    // Genom att runda till närmaste bildruta och vänta tills föregående
+    // sökning är klar begärs bara sådant som faktiskt går att visa.
     const t = clamp01(progress(f)) * d
-    if (Math.abs(t - lastTime.current) > 1 / 240) {
-      lastTime.current = t
-      video.currentTime = t
+    const snapped = Math.round(t * fps) / fps
+    if (snapped !== lastTime.current && !video.seeking) {
+      lastTime.current = snapped
+      video.currentTime = snapped
     }
 
-    // Rita bara i den upplösning skärmen faktiskt har.
+    // Rita bara i den upplösning duken faktiskt har på skärmen.
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const w = Math.round(f.vw * dpr)
-    const h = Math.round(f.vh * dpr)
+    const w = Math.round(canvas.clientWidth * dpr)
+    const h = Math.round(canvas.clientHeight * dpr)
+    if (!w || !h) return
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w
       canvas.height = h
@@ -211,12 +224,9 @@ export function KeyedVideo({
     const { gl, tex, uFit } = ctx
     gl.viewport(0, 0, w, h)
 
-    // Cover: fyll rutan utan att förvränga bilden.
-    const va = video.videoWidth / video.videoHeight
-    const ca = f.vw / f.vh
-    const sx = va > ca ? ca / va : 1
-    const sy = va > ca ? 1 : va / ca
-    gl.uniform4f(uFit, sx, sy, (1 - sx) / 2, (1 - sy) / 2)
+    // Hela bildrutan ritas. Att den ryms i fönstret utan att beskäras
+    // sköts av ramen i CSS, inte här.
+    gl.uniform4f(uFit, 1, 1, 0, 0)
 
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video)

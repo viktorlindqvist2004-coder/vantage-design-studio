@@ -23,6 +23,8 @@ export const CLIP = {
   ],
   /** Klippets längd i sekunder. */
   duration: 9.04,
+  /** Klippets proportioner, 1280 × 704. */
+  aspect: 1280 / 704,
   /** Sekunden där skärmen fyller rutan och sidan tar över. */
   enter: 1.55,
   /** Skärmens färg i klippet. */
@@ -33,7 +35,7 @@ export const CLIP = {
  * Hur många fönsterhöjder man scrollar per sekund film.
  * Högre värde = långsammare kamera.
  */
-export const SCROLL_PER_SECOND = 3.4
+export const SCROLL_PER_SECOND = 2.1
 
 export type Shot = {
   id: string
