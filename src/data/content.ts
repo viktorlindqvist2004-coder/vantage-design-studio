@@ -21,7 +21,9 @@ export type Offering = {
   kind: string
   /** Vad kunden får ut av den. */
   desc: string
-  /** Foto under `public/`. Saknas filen ritas grafiken i OfferingMedia. */
+  /** Vilken skiss som ritas på kortet — se OfferingArt. */
+  sketch: 'site' | 'shop' | 'booking' | 'portfolio' | 'campaign' | 'portal'
+  /** Foto under `public/`. Saknas filen ritas skissen i stället. */
   image: string
   seed: number
   palette: [string, string, string]
@@ -41,6 +43,7 @@ export type Offering = {
 export const OFFERINGS: Offering[] = [
   {
     name: 'Företagswebbplats',
+    sketch: 'site',
     kind: 'Alla branscher',
     desc: 'Sidan som förklarar vad ni gör, för vem, och varför valet ska falla på er.',
     image: 'images/work-01.jpg',
@@ -49,6 +52,7 @@ export const OFFERINGS: Offering[] = [
   },
   {
     name: 'E-handel',
+    sketch: 'shop',
     kind: 'Butik och produkt',
     desc: 'Från produktsida till genomförd kassa, byggt för att sälja utan att stå i vägen.',
     image: 'images/work-02.jpg',
@@ -57,6 +61,7 @@ export const OFFERINGS: Offering[] = [
   },
   {
     name: 'Bokning och tjänster',
+    sketch: 'booking',
     kind: 'Tjänsteföretag',
     desc: 'Era kunder ska kunna boka, beställa eller höra av sig utan att först behöva ringa.',
     image: 'images/work-03.jpg',
@@ -65,6 +70,7 @@ export const OFFERINGS: Offering[] = [
   },
   {
     name: 'Portfölj och galleri',
+    sketch: 'portfolio',
     kind: 'Kreativa verksamheter',
     desc: 'Arbetet i centrum, i en inramning som lyfter det i stället för att konkurrera.',
     image: 'images/work-04.jpg',
@@ -73,6 +79,7 @@ export const OFFERINGS: Offering[] = [
   },
   {
     name: 'Kampanj och lansering',
+    sketch: 'campaign',
     kind: 'Enskild sida',
     desc: 'En sida med ett enda syfte, snabbt uppe och mätt från första dagen.',
     image: 'images/work-05.jpg',
@@ -81,6 +88,7 @@ export const OFFERINGS: Offering[] = [
   },
   {
     name: 'Portal och inloggat',
+    sketch: 'portal',
     kind: 'Kunder och medlemmar',
     desc: 'Konton, inloggning och det som ska finnas innanför — kopplat till era system.',
     image: 'images/work-06.jpg',
@@ -156,6 +164,21 @@ export const MANIFEST = [
   'Vårt', 'arbete', 'går', 'ut', 'på',
   'att', 'de', 'sekunderna', 'räcker.',
 ]
+
+/**
+ * Vad besökaren avgör under de där sekunderna.
+ *
+ * Står påståendet ensamt är det en formulering; med de tre frågorna bredvid
+ * blir det ett resonemang, och läsaren kan pröva sin egen sajt mot det.
+ */
+export const MANIFEST_ASIDE = {
+  lead: 'Tre frågor besvaras, medvetet eller inte:',
+  points: [
+    'Vad är det ni gör?',
+    'Är det till för mig?',
+    'Är det värt att höra av sig?',
+  ],
+}
 
 /**
  * Varför arbetet görs som det görs.

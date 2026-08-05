@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
-import { MANIFEST, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
+import { MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
 
 /** Fördröjer element i en serie så att de rör sig in efter varandra. */
 const stagger = (p: number, i: number, n: number, spread = 0.55) => {
@@ -91,6 +91,7 @@ export function Manifest() {
   const ref = useRef<HTMLElement>(null)
   const track = useTrack(ref)
   const words = useRef<(HTMLSpanElement | null)[]>([])
+  const asideRef = useRef<HTMLDivElement>(null)
 
   useFrame((f) => {
     const p = mapRange(track(f).settle, 0.25, 0.95)
@@ -100,6 +101,14 @@ export function Manifest() {
       el.style.opacity = (0.14 + s * 0.86).toFixed(3)
       el.style.transform = `translate3d(0, ${((1 - s) * 0.12).toFixed(3)}em, 0)`
     })
+
+    // Frågorna kommer efter påståendet, inte samtidigt — de är svaret på
+    // det, och ska läsas i den ordningen.
+    if (asideRef.current) {
+      const q = easeOutCubic(mapRange(track(f).settle, 0.6, 1))
+      asideRef.current.style.opacity = q.toFixed(3)
+      asideRef.current.style.transform = `translate3d(0, ${((1 - q) * 20).toFixed(1)}px, 0)`
+    }
   })
 
   return (
@@ -115,6 +124,18 @@ export function Manifest() {
           </span>
         ))}
       </p>
+
+      <div className="manifest__aside" ref={asideRef}>
+        <span className="label">{MANIFEST_ASIDE.lead}</span>
+        <ol className="manifest__list">
+          {MANIFEST_ASIDE.points.map((q, i) => (
+            <li key={q}>
+              <span className="manifest__num">{String(i + 1).padStart(2, '0')}</span>
+              {q}
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   )
 }
@@ -142,6 +163,7 @@ export function Why() {
       <div className="why__grid">
         {WHY.map((w, i) => (
           <div className="why" key={w.title} ref={(el) => { items.current[i] = el }}>
+            <span className="why__num">{String(i + 1).padStart(2, '0')}</span>
             <h3 className="why__title">{w.title}</h3>
             <p className="body">{w.body}</p>
           </div>

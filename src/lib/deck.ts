@@ -43,13 +43,26 @@ const WHEEL_THRESHOLD = 40
 /**
  * Så lång tystnad som avslutar en dragning.
  *
- * En enda svepning på en styrplatta ger dussintals hjulhändelser, och en
- * setervikt som räknar varje tröskelpassering för sig läser den som fem
- * dragningar. Händelserna kommer tätt så länge handen är kvar och slutar
- * när den släpper — en paus längre än så här är alltså nästa dragning, och
- * ingenting däremellan räknas.
+ * En enda svepning på en styrplatta ger dussintals hjulhändelser, och räknas
+ * varje tröskelpassering för sig läses den som fem dragningar. Händelserna
+ * kommer tätt så länge handen är kvar och slutar när den släpper — en paus
+ * längre än så här är alltså nästa dragning.
  */
 const GESTURE_GAP_MS = 110
+/**
+ * Vad som skiljer ett hjulhack från en svepning.
+ *
+ * De två sorternas inmatning måste hanteras olika, och tiden räcker inte
+ * för att skilja dem åt: en svepning med tröghet kan pågå längre än en
+ * långsam serie hjulhack. Storleken skiljer dem däremot tydligt. Ett hack
+ * på ett mushjul kommer som ett enda stort utslag; en styrplatta börjar
+ * mjukt och skickar många små.
+ *
+ * Sorten avgörs på gestens första händelse och gäller sedan hela gesten —
+ * en snabb svepning kan nämligen växa till stora utslag på vägen, men den
+ * började litet.
+ */
+const NOTCH_MIN = 45
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -83,6 +96,8 @@ let wheelAcc = 0
 let wheelAt = 0
 /** Sant när den pågående dragningen redan gett sitt steg. */
 let wheelSpent = false
+/** Sant när gesten kommer från ett mushjul och inte från en styrplatta. */
+let wheelNotches = false
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -175,20 +190,26 @@ function onWheel(e: WheelEvent) {
   e.preventDefault()
   const now = performance.now()
 
-  // Ny dragning så fort hjulet varit tyst en stund.
+  // Ny gest så fort hjulet varit tyst en stund. Sorten avgörs här och
+  // gäller sedan hela gesten.
   if (now - wheelAt > GESTURE_GAP_MS) {
     wheelAcc = 0
     wheelSpent = false
+    wheelNotches = Math.abs(e.deltaY) >= NOTCH_MIN
   }
   wheelAt = now
 
-  // Resten av dragningen — inklusive stylsläng och tröghet — räknas inte.
-  if (wheelSpent) return
+  // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt.
+  // Ett hjul ger ett steg per hack, för varje hack är en egen handling.
+  if (wheelSpent && !wheelNotches) return
 
   wheelAcc += e.deltaY
   if (Math.abs(wheelAcc) < WHEEL_THRESHOLD) return
+
+  const dir = Math.sign(wheelAcc)
+  wheelAcc = 0
   wheelSpent = true
-  step(Math.sign(wheelAcc))
+  step(dir)
 }
 
 function onTouchStart(e: TouchEvent) {

@@ -186,17 +186,58 @@
 
 .s-manifest {
   min-height: var(--page-h);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   align-items: center;
-  padding: 20vh var(--gutter);
+  gap: clamp(2.5rem, 7vw, 7rem);
+  padding: 18vh var(--gutter);
 }
 
 .manifest__text {
-  font-size: clamp(1.6rem, 4.2vw, 4.2rem);
+  font-size: clamp(1.5rem, 3.7vw, 3.7rem);
   font-weight: 200;
   letter-spacing: -0.03em;
   line-height: 1.24;
-  max-width: 22ch;
+  max-width: 20ch;
+}
+
+/* Frågorna bredvid påståendet. De håller sig små med flit — påståendet är
+   det man ska läsa, det här är det man ska pröva sin egen sajt mot. */
+.manifest__aside {
+  align-self: end;
+  padding-bottom: 0.6rem;
+  will-change: transform, opacity;
+}
+
+.manifest__list {
+  list-style: none;
+  margin-top: clamp(1.4rem, 3vh, 2.2rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.manifest__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 1.1rem;
+  padding: clamp(0.9rem, 2vh, 1.3rem) 0;
+  border-top: var(--rule);
+  font-size: clamp(1rem, 1.3vw, 1.3rem);
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  color: var(--bone);
+}
+
+.manifest__list li:last-child {
+  border-bottom: var(--rule);
+}
+
+.manifest__num {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  color: var(--faint);
+  flex: none;
 }
 
 .manifest__word {
@@ -223,6 +264,17 @@
 
 .why {
   will-change: transform, opacity;
+}
+
+.why__num {
+  display: block;
+  margin-bottom: clamp(2rem, 5vh, 3.5rem);
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .why__title {
@@ -542,6 +594,14 @@
 }
 
 @media (max-width: 900px) {
+  .s-manifest {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: clamp(2rem, 5vh, 3rem);
+  }
+  .manifest__aside { align-self: start; }
+  .why__num { margin-bottom: 1rem; }
+
   .proc {
     grid-template-columns: 1fr;
     align-content: center;
