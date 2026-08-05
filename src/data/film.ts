@@ -121,6 +121,14 @@ export const SHOTS: Shot[] = [
     framing: { x: 38, y: 50, scale: 1.08 },
   },
   {
+    // Samtalet. Klippet är två gestalter mitt emot varandra i tomrummet —
+    // platsen finns för det klippet, inte tvärtom. Utsnittet är orört och
+    // förstoringen är ett, för de två sitter mitt i bild och ska stanna
+    // där: det är dem sidan handlar om här.
+    id: 'dialog', place: 'Samtalet', clip: 'room-d', hold: 3.4, steps: 1,
+    framing: { x: 50, y: 50, scale: 1 },
+  },
+  {
     id: 'lamp', place: 'Mot rummet', clip: 'room-a', hold: 2.6, steps: 1,
     framing: { x: 78, y: 55, scale: 1.14 },
   },

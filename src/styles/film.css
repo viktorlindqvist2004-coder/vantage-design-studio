@@ -201,6 +201,136 @@
   min-height: 30vh;
 }
 
+/* ── Samtalet ────────────────────────────────────────────────────────────
+   Klippet bakom är två gestalter vända mot varandra, mitt i bild. Texten
+   ligger i två spalter med ett tomt fält emellan, och det fältet är
+   gestalternas: sidans starkaste argument här är bilden, och den ska inte
+   behöva titta fram under en textmassa. Mittfältets bredd är avpassad
+   efter var de två faktiskt sitter i rutan. */
+.film__stage .s-dialog {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    clamp(13rem, 31vw, 34rem)
+    minmax(0, 0.86fr);
+  align-content: center;
+  column-gap: clamp(1.5rem, 3vw, 3rem);
+  padding-top: clamp(4.5rem, 9vh, 7rem);
+  padding-bottom: clamp(3rem, 7vh, 5rem);
+}
+
+.dialog__head {
+  grid-column: 1;
+  will-change: transform, opacity;
+}
+
+.dialog__head .label--lead {
+  margin-bottom: clamp(1.2rem, 3vh, 2rem);
+}
+
+.film__stage .s-dialog .dialog__title {
+  margin-bottom: clamp(1.2rem, 3vh, 2rem);
+  max-width: 15ch;
+}
+
+.dialog__head .body {
+  max-width: 36ch;
+}
+
+.dialog__points {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.4rem, 3.2vh, 2.6rem);
+  list-style: none;
+}
+
+.dialog__points li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  row-gap: 0.35rem;
+  will-change: transform, opacity;
+}
+
+.dialog__num {
+  grid-row: 1 / span 2;
+  padding-top: 0.15em;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+
+.dialog__name {
+  font-size: clamp(1rem, 1.35vw, 1.3rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+.dialog__points .body {
+  font-size: clamp(0.8125rem, 0.92vw, 0.95rem);
+  line-height: 1.6;
+}
+
+/* Slöjan behövs bara när spalterna fallit ihop och texten lagt sig över
+   gestalterna. I det breda läget är mittfältet fritt och slöjan bara en
+   grå hinna över det som ska synas. */
+.dialog__veil {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  /* Två spalter, och gestalterna får inte längre något eget fält — då
+     måste texten i stället få något att ligga på. */
+  .film__stage .s-dialog {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    column-gap: clamp(1.5rem, 4vw, 4rem);
+    /* Slöjan är sektionens barn och slutar där sektionen slutar. Den
+       måste alltså sträcka sig över hela rutan, annars syns dess underkant
+       som ett streck tvärs över bilden. */
+    min-height: 100%;
+  }
+  .dialog__points {
+    grid-column: 2;
+  }
+  .dialog__veil {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      120% 78% at 50% 62%,
+      rgba(11, 11, 12, 0) 0%,
+      rgba(11, 11, 12, 0.62) 62%,
+      rgba(11, 11, 12, 0.86) 100%
+    );
+  }
+}
+
+@media (max-width: 760px) {
+  /* En spalt. Punkterna blir tätare för att de och anslaget ska rymmas i
+     rutan tillsammans — här rullar ingenting. */
+  .film__stage .s-dialog {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: clamp(1.6rem, 4vh, 2.6rem);
+  }
+  .dialog__points {
+    grid-column: 1;
+    gap: clamp(0.9rem, 2.2vh, 1.4rem);
+  }
+  .film__stage .s-dialog .dialog__title {
+    max-width: none;
+  }
+  .dialog__veil {
+    background: linear-gradient(
+      180deg,
+      rgba(11, 11, 12, 0.86) 0%,
+      rgba(11, 11, 12, 0.72) 45%,
+      rgba(11, 11, 12, 0.88) 100%
+    );
+  }
+}
+
 @media (max-width: 900px) {
   /* En spalt igen — då måste raderna i stället bli nättare för att rymmas. */
   .film__stage .s-services {

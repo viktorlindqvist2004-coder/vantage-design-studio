@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
-import { MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
+import { DIALOGUE, MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
 
 /** Fördröjer element i en serie så att de rör sig in efter varandra. */
 const stagger = (p: number, i: number, n: number, spread = 0.55) => {
@@ -233,6 +233,68 @@ export function Numbers() {
   )
 }
 
+/* ── Samtalet ────────────────────────────────────────────────────────── */
+
+/**
+ * Platsen som handlar om att man har någon mittemot sig hela vägen.
+ *
+ * Klippet bakom är två gestalter vända mot varandra, mitt i bild. Texten
+ * läggs därför i två spalter — en på var sida om dem — med ett tomt
+ * mittfält som de två får för sig själva. Bilden är argumentet här, och
+ * den ska inte behöva titta fram under en textmassa.
+ *
+ * Ryms inte tre spalter faller de ihop till en, och då lägger sig texten
+ * över klippet. Slöjan i CSS finns för det läget.
+ */
+export function Dialogue() {
+  const ref = useRef<HTMLElement>(null)
+  const track = useTrack(ref)
+  const headRef = useRef<HTMLDivElement>(null)
+  const items = useRef<(HTMLLIElement | null)[]>([])
+
+  useFrame((f) => {
+    const t = track(f)
+
+    // Anslaget kommer först, punkterna efter — man ska hinna läsa löftet
+    // innan det bryts ned i vad det betyder.
+    const p = easeOutCubic(mapRange(t.settle, 0.12, 0.82))
+    if (headRef.current) {
+      headRef.current.style.opacity = p.toFixed(3)
+      headRef.current.style.transform = `translate3d(0, ${((1 - p) * 26).toFixed(1)}px, 0)`
+    }
+
+    const q = mapRange(t.settle, 0.3, 0.98)
+    items.current.forEach((el, i) => {
+      if (!el) return
+      const s = easeOutCubic(stagger(q, i, DIALOGUE.points.length, 0.5))
+      el.style.opacity = s.toFixed(3)
+      el.style.transform = `translate3d(0, ${((1 - s) * 22).toFixed(1)}px, 0)`
+    })
+  })
+
+  return (
+    <section className="sec s-dialog" ref={ref} id="samtalet">
+      <div className="dialog__veil" aria-hidden="true" />
+
+      <div className="dialog__head" ref={headRef}>
+        <span className="label label--lead">{DIALOGUE.lead}</span>
+        <h2 className="h-lg dialog__title">{DIALOGUE.title}</h2>
+        <p className="body">{DIALOGUE.body}</p>
+      </div>
+
+      <ol className="dialog__points">
+        {DIALOGUE.points.map((point, i) => (
+          <li key={point.title} ref={(el) => { items.current[i] = el }}>
+            <span className="dialog__num">{String(i + 1).padStart(2, '0')}</span>
+            <h3 className="dialog__name">{point.title}</h3>
+            <p className="body">{point.body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
 /* ── Om studion ──────────────────────────────────────────────────────── */
 
 export function About() {
@@ -273,9 +335,9 @@ export function About() {
           som delar på den.
         </p>
         <p className="body">
-          Ni pratar direkt med dem som ritar och kodar. Vägen från fråga till
-          svar blir kort, och det blir enkelt att ändra riktning medan det
-          fortfarande är enkelt att ändra riktning.
+          Vi arbetar med företag i alla storlekar och i vilken bransch som
+          helst. Det som avgör om ett uppdrag blir bra är sällan hur stort
+          det är, utan hur väl vi förstår vad ni försöker göra.
         </p>
         <div className="about__sign">
           <span className="about__name">{STUDIO.name}</span>

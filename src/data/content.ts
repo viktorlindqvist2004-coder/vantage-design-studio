@@ -201,3 +201,34 @@ export const WHY = [
   },
 ]
 
+/**
+ * SAMTALET
+ * ════════
+ * Det som skiljer ett litet team från en byrå är inte vad som byggs utan
+ * vem man pratar med medan det byggs. Den som anlitar oss har samma person
+ * mittemot sig hela vägen — det är löftet den här platsen finns för.
+ *
+ * Punkterna är skrivna som sådant man kan bli besviken på om det inte
+ * hålls. Ett löfte som inte går att bryta är inget löfte, bara en trevlig
+ * mening.
+ */
+export const DIALOGUE = {
+  lead: 'Ett samtal, hela vägen',
+  title: 'Ni har samma människa mittemot er, från första samtalet till lansering.',
+  body: 'Inga projektledare emellan, ingen ärendekö, ingen som ska stämma av internt och återkomma. Ni pratar med den som ritar och bygger — och får svar av den som faktiskt vet.',
+  points: [
+    {
+      title: 'Samma personer från start till mål',
+      body: 'Den ni pratar med första gången är den ni pratar med sista gången. Ingen överlämning, och inget som går förlorat i den.',
+    },
+    {
+      title: 'Ni ser arbetet medan det växer',
+      body: 'Vi visar var vi står under tiden, inte när allt är klart. Det ni tycker till om hinner alltså påverka resultatet.',
+    },
+    {
+      title: 'Ni bestämmer takten',
+      body: 'Fast tid varje vecka om ni vill ha det, eller bara när något dyker upp. Hör ni av er mellan gångerna svarar vi ändå.',
+    },
+  ],
+}
+

@@ -4,7 +4,7 @@ import { useFrame, useViewport } from '../lib/hooks'
 import { clamp01, lerp, mapRange } from '../lib/math'
 import { APPROACH_HEIGHTS, BOOT, CLIP, CROSSFADE, PAGE_OUT, SHOTS } from '../data/film'
 import { RoomFilm } from './RoomFilm'
-import { About, Services } from './inner/Sections'
+import { About, Dialogue, Services } from './inner/Sections'
 import { Process } from './inner/Process'
 import { Contact } from './Plates'
 import type { Frame } from '../lib/scroll'
@@ -105,6 +105,7 @@ export function frameSize(vw: number, vh: number) {
 const SECTIONS: Record<string, ReactNode> = {
   window: <Services />,
   shelf: <Process />,
+  dialog: <Dialogue />,
   lamp: <About />,
   samples: <Contact variant="film" />,
 }
