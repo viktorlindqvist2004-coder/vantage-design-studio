@@ -1,7 +1,7 @@
 import { useRef } from 'react'
-import { useFrame } from '../lib/hooks'
+import { useFrame, useViewport } from '../lib/hooks'
 import { mapRange } from '../lib/math'
-import { CROSSFADE, ROOM_RATE, SHOTS } from '../data/film'
+import { CROSSFADE, ROOM_RATE, SHOTS, roomFraming } from '../data/film'
 import type { ShotRange } from './Film'
 import type { Frame } from '../lib/scroll'
 
@@ -22,6 +22,7 @@ import type { Frame } from '../lib/scroll'
  * första tonar in över skärmen man just lämnat.
  */
 export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
+  const { vw, vh } = useViewport()
   const els = useRef<Record<string, HTMLVideoElement | null>>({})
   /** Klipp som fått order att börja hämtas. */
   const fetched = useRef(new Set<string>())
@@ -57,24 +58,27 @@ export function RoomFilm({ ranges }: { ranges: Record<string, ShotRange> }) {
 
   return (
     <div className="room" aria-hidden="true">
-      {SHOTS.map((shot) => (
-        <video
-          key={shot.id}
-          className="room__clip"
-          ref={(el) => { els.current[shot.id] = el }}
-          style={{
-            objectPosition: shot.framing.position,
-            transform: `scale(${shot.framing.scale})`,
-          }}
-          muted
-          loop
-          playsInline
-          preload="none"
-        >
-          <source src={`${import.meta.env.BASE_URL}clips/${shot.clip}.webm`} type="video/webm" />
-          <source src={`${import.meta.env.BASE_URL}clips/${shot.clip}.mp4`} type="video/mp4" />
-        </video>
-      ))}
+      {SHOTS.map((shot) => {
+        const view = roomFraming(shot, vw, vh)
+        return (
+          <video
+            key={shot.id}
+            className="room__clip"
+            ref={(el) => { els.current[shot.id] = el }}
+            style={{
+              objectPosition: `${view.x}% ${view.y}%`,
+              transform: `scale(${view.scale})`,
+            }}
+            muted
+            loop
+            playsInline
+            preload="none"
+          >
+            <source src={`${import.meta.env.BASE_URL}clips/${shot.clip}.webm`} type="video/webm" />
+            <source src={`${import.meta.env.BASE_URL}clips/${shot.clip}.mp4`} type="video/mp4" />
+          </video>
+        )
+      })}
     </div>
   )
 }

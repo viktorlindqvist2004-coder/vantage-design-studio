@@ -24,6 +24,8 @@
  * Tiderna nedan är avlästa ur materialet.
  */
 
+import { clamp01, lerp } from '../lib/math'
+
 export const CLIP = {
   /** Samma klipp i två format. Chromium utan patentbelagda kodekar spelar
       inte H.264, och Safari spelar inte VP9 — tillsammans täcker de allt. */
@@ -97,31 +99,66 @@ export type Shot = {
    */
   steps: number
   /**
-   * Hur klippet är beskuret. Två platser som delar klipp får skilda
-   * utsnitt, så att de läser som två vyer och inte som samma bild igen.
+   * Hur klippet är beskuret, i procent av bildrutan. Två platser som delar
+   * klipp får skilda utsnitt, så att de läser som två vyer och inte som
+   * samma bild igen.
+   *
+   * Siffrorna är valda för ett liggande fönster, där det finns bredd över
+   * att flytta utsnittet i. På en stående telefon finns den bredden inte —
+   * se `roomFraming` nedan.
    */
-  framing: { position: string; scale: number }
+  framing: { x: number; y: number; scale: number }
 }
 
 /** Platserna kameran besöker efter skärmen, med sitt innehåll. */
 export const SHOTS: Shot[] = [
   {
     id: 'window', place: 'Mot staden', clip: 'room-a', hold: 2.6, steps: 1,
-    framing: { position: '50% 50%', scale: 1 },
+    framing: { x: 50, y: 50, scale: 1 },
   },
   {
     id: 'shelf', place: 'Skrivbordet', clip: 'room-b', hold: 6.5, steps: 5,
-    framing: { position: '38% 50%', scale: 1.08 },
+    framing: { x: 38, y: 50, scale: 1.08 },
   },
   {
     id: 'lamp', place: 'Mot rummet', clip: 'room-a', hold: 2.6, steps: 1,
-    framing: { position: '78% 55%', scale: 1.14 },
+    framing: { x: 78, y: 55, scale: 1.14 },
   },
   {
     id: 'samples', place: 'Arbetsljuset', clip: 'room-c', hold: 2.6, steps: 1,
-    framing: { position: '50% 45%', scale: 1 },
+    framing: { x: 50, y: 45, scale: 1 },
   },
 ]
+
+/**
+ * Utsnittet anpassat efter fönstret.
+ *
+ * Klippen är liggande och fyller alltid rutan. I ett liggande fönster går
+ * nästan hela bredden åt, och då finns det plats att flytta utsnittet i
+ * sidled — det är så två platser kan dela klipp utan att se likadana ut.
+ *
+ * På en stående telefon är det tvärtom: höjden fyller, och bara en dryg
+ * fjärdedel av klippets bredd får plats. Då kostar varje procent åt sidan
+ * en procent av det lilla som syns, och motivet hamnar utanför rutan — kvar
+ * blir en fönsterkarm eller en suddig bakgrund. Utsnitten dras därför mot
+ * mitten ju smalare fönstret blir.
+ *
+ * Men två platser delar klipp, och skillnaden mellan dem satt just i
+ * sidledsflytten. Dras båda till mitten blir de samma bild, och övertoningen
+ * mellan dem läser som en dubbelexponering i stället för ett klipp. Därför
+ * tar djupet över där bredden tar slut: skillnaden i förstoring växer när
+ * fönstret smalnar, så att platserna skiljs åt av hur nära man står i
+ * stället för av åt vilket håll man tittar. Det senare finns det inte plats
+ * för på en telefon; det förra fungerar i vilken form som helst.
+ */
+export function roomFraming(shot: Shot, vw: number, vh: number) {
+  const narrow = clamp01((1.15 - vw / vh) / 0.55)
+  return {
+    x: lerp(shot.framing.x, 50, narrow),
+    y: lerp(shot.framing.y, 50, narrow),
+    scale: 1 + (shot.framing.scale - 1) * lerp(1, 1.6, narrow),
+  }
+}
 
 /**
  * Övertoningen mellan två platser, i fönsterhöjder.
