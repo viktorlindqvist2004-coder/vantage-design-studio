@@ -24,7 +24,9 @@ import { clamp, easeInOutCubic } from './math'
 export type Station = { id: string; y: number }
 
 /** Så länge tar en vanlig förflyttning mellan två grannar. */
-const STEP_MS = 900
+const STEP_MS = 850
+/** Kortaste tid ett steg får ta, hur bråttom man än har. */
+const MIN_STEP_MS = 320
 /**
  * Inflygningen.
  *
@@ -40,18 +42,19 @@ const LEAVE_MS = 1500
 const WHEEL_THRESHOLD = 40
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
-/** Lugn stund efter en förflyttning, så att slängen inte utlöser nästa. */
-const COOLDOWN_MS = 60
 /**
- * Hur tidigt in i en förflyttning nästa får börja.
+ * Hur många dragningar som får ligga och vänta.
  *
- * Drar man snabbt ska man komma fram snabbt. Ett steg som måste spelas
- * färdigt innan nästa får börja gör sidan trögare ju mer bråttom man har.
- * I stället får en ny dragning ta vid efter en kort stund, från där
- * rörelsen råkar vara — så staplas stegen i den takt handen anger.
- * Inflygningen är undantagen: den ska rulla klart av sig själv.
+ * En dragning är alltid ett steg — aldrig två, aldrig noll. Drar man igen
+ * medan ett steg pågår kastas det inte om till nästa läge, för då skulle
+ * det mellanliggande aldrig visas och det ser ut som att sidan hoppar
+ * förbi. I stället ställer sig dragningen i kö: det pågående steget snabbas
+ * på och nästa tar vid direkt när det är framme. Man passerar alltså varje
+ * läge, bara fortare.
  */
-const RETRIGGER_MS = 240
+const MAX_QUEUE = 3
+/** Hur mycket ett pågående steg snabbas på av en ny dragning. */
+const HURRY = 0.55
 
 let stations: Station[] = [{ id: 'start', y: 0 }]
 let index = 0
@@ -64,10 +67,11 @@ let linear = false
 /** Positionen just nu, i samma skala som den gamla scrollen. */
 let position = 0
 
+/** Dragningar som väntar på tur, med tecken för riktningen. */
+let queued = 0
 let wheelAcc = 0
 let touchStartY = 0
 let touchLocked = false
-let readyAt = 0
 let attached = false
 
 const moving = (now: number) => now < startedAt + duration
@@ -110,45 +114,52 @@ export function findStation(id: string) {
   return stations.findIndex((s) => s.id === id)
 }
 
-/** Flyttar till en hållplats. `now` gör steget omedelbart. */
+/** Flyttar till en hållplats. `immediate` gör steget utan rörelse. */
 export function goTo(next: number, immediate = false) {
   const target = clamp(Math.round(next), 0, stations.length - 1)
   if (target === index && !immediate) return
+  const from = index
   index = target
   fromY = position
   toY = stations[index].y
-  duration = immediate ? 0 : stepTime(findFrom(fromY), index)
-  linear = duration === ENTRY_MS
+  linear = !immediate && stepTime(from, index) === ENTRY_MS
+  // Ju fler som väntar, desto kortare får varje steg vara — men aldrig så
+  // kort att läget hinner passera obemärkt.
+  const base = immediate ? 0 : stepTime(from, index)
+  duration = linear || immediate
+    ? base
+    : Math.max(base * HURRY ** Math.abs(queued), MIN_STEP_MS)
   startedAt = performance.now()
-  readyAt = startedAt + (linear ? duration : Math.min(duration, RETRIGGER_MS)) + COOLDOWN_MS
   if (immediate) position = toY
-}
-
-/** Vilken hållplats en position ligger närmast — bara för speltiden. */
-function findFrom(y: number) {
-  let best = 0
-  let bestGap = Infinity
-  stations.forEach((s, i) => {
-    const gap = Math.abs(s.y - y)
-    if (gap < bestGap) { bestGap = gap; best = i }
-  })
-  return best
 }
 
 function step(dir: number) {
   const now = performance.now()
-  if (now < readyAt) return
-  goTo(index + dir)
+
+  if (!moving(now)) {
+    queued = 0
+    goTo(index + dir)
+    return
+  }
+
+  // Inflygningen spelar klart av sig själv; den ska inte gå att jäkta.
+  if (linear) return
+
+  // Byter man riktning mitt i faller kön — det man ville var att vända.
+  if (queued !== 0 && Math.sign(queued) !== dir) queued = 0
+  if (Math.abs(queued) >= MAX_QUEUE) return
+  queued += dir
+
+  // Det pågående steget snabbas på utan att bilden hoppar: andelen som
+  // spelats hålls konstant medan speltiden kortas.
+  const t = clamp((now - startedAt) / duration, 0, 1)
+  const next = Math.max(duration * HURRY, MIN_STEP_MS)
+  startedAt = now - t * next
+  duration = next
 }
 
 function onWheel(e: WheelEvent) {
   e.preventDefault()
-  const now = performance.now()
-  if (now < readyAt) {
-    // Slängen efter en dragning ska inte räknas som nästa dragning.
-    wheelAcc = 0
-    return
-  }
   wheelAcc += e.deltaY
   if (Math.abs(wheelAcc) < WHEEL_THRESHOLD) return
   const dir = Math.sign(wheelAcc)
@@ -207,12 +218,21 @@ export function detach() {
 export function advance(now: number) {
   if (duration <= 0) {
     position = toY
-    return position
+  } else {
+    const t = clamp((now - startedAt) / duration, 0, 1)
+    // Inflygningen går rakt igenom: klippet har sin egen inbromsning
+    // inbyggd, och lägger man en till ovanpå blir slutet sirapigt.
+    position = fromY + (toY - fromY) * (linear ? t : easeInOutCubic(t))
   }
-  const t = clamp((now - startedAt) / duration, 0, 1)
-  // Inflygningen går rakt igenom: klippet har sin egen inbromsning inbyggd,
-  // och lägger man en till ovanpå blir slutet sirapigt.
-  position = fromY + (toY - fromY) * (linear ? t : easeInOutCubic(t))
+
+  // Framme, och någon står på tur: nästa steg tar vid direkt. Läget vi just
+  // nådde har alltså hunnit visas, om än kort.
+  if (queued !== 0 && !moving(now)) {
+    const dir = Math.sign(queued)
+    queued -= dir
+    goTo(index + dir)
+  }
+
   return position
 }
 
