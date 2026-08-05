@@ -110,6 +110,7 @@ export function KeyedVideo({
   progress,
   className = '',
   onReady,
+  onFail,
 }: {
   /** Samma klipp i flera format — se kommentaren vid uppspelningen. */
   sources: { src: string; type: string }[]
@@ -119,6 +120,8 @@ export function KeyedVideo({
   progress: (f: Frame) => number
   className?: string
   onReady?: () => void
+  /** Anropas om filmen inte går att visa alls, så sidan kan klara sig utan. */
+  onFail?: () => void
 }) {
   const [keyR, keyG, keyB] = keyColor
   // Stabil identitet för listan, så effekten inte körs om vid varje rendering.
@@ -150,18 +153,49 @@ export function KeyedVideo({
     video.playsInline = true
     video.preload = 'auto'
     video.crossOrigin = 'anonymous'
+    // Attributen behövs vid sidan av egenskaperna: iOS läser dem när
+    // elementet sätts in i dokumentet, inte efteråt.
+    video.setAttribute('muted', '')
+    video.setAttribute('playsinline', '')
+    video.setAttribute('webkit-playsinline', '')
+
+    // Videon måste sitta i dokumentet. En löst skapad video avkodar inte i
+    // Safari på iOS — den ger inga bildrutor att lägga i texturen, och då
+    // blir duken tom fastän allt annat ser rätt ut. Den göms med storlek
+    // och genomskinlighet i stället för display:none, som stoppar
+    // avkodningen på samma sätt.
+    video.className = 'film__source'
+    canvas.parentElement?.appendChild(video)
     videoRef.current = video
 
     // iOS avkodar inte en video som aldrig rörts vid, och vägrar då söka i
     // den. Ett tyst play/pause direkt gör den sökbar utan att något syns.
     const prime = () => {
-      video.play().then(() => { video.pause(); video.currentTime = 0 }).catch(() => {})
-      onReady?.()
+      video.play().then(() => { video.pause() }).catch(() => {})
     }
-    video.addEventListener('loadeddata', prime, { once: true })
+    video.addEventListener('loadeddata', () => { prime(); onReady?.() }, { once: true })
+    // Nekas uppspelning utan handpåläggning tas första bästa beröring.
+    const onTouch = () => prime()
+    window.addEventListener('pointerdown', onTouch, { once: true, passive: true })
+    window.addEventListener('touchstart', onTouch, { once: true, passive: true })
+
+    // Går klippet inte att spela alls — fel kodek, fel filtyp, nekad hämtning
+    // — ska sidan säga till så att den kan visas utan film i stället för att
+    // stå kvar och zooma i ett tomt rum.
+    const fail = () => onFail?.()
+    video.addEventListener('error', fail)
+    const watchdog = window.setTimeout(() => {
+      if (video.readyState < 2) fail()
+    }, 12000)
 
     const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true })
-    if (!gl) return
+    if (!gl) {
+      fail()
+      return () => {
+        window.clearTimeout(watchdog)
+        video.remove()
+      }
+    }
 
     // Saknas WebGL, eller vägrar shadern kompilera, ska sidan fortsätta
     // fungera utan filmen i stället för att bli svart.
@@ -199,14 +233,20 @@ export function KeyedVideo({
     } catch (err) {
       console.warn('Filmen kunde inte startas:', err)
       glRef.current = null
+      fail()
     }
 
     return () => {
+      window.clearTimeout(watchdog)
+      video.removeEventListener('error', fail)
+      window.removeEventListener('pointerdown', onTouch)
+      window.removeEventListener('touchstart', onTouch)
+      video.remove()
       video.innerHTML = ''
       video.load()
       glRef.current = null
     }
-  }, [key, keyR, keyG, keyB, tolerance, softness, onReady])
+  }, [key, keyR, keyG, keyB, tolerance, softness, onReady, onFail])
 
   useFrame((f) => {
     const canvas = canvasRef.current
@@ -250,8 +290,14 @@ export function KeyedVideo({
       video.playbackRate = clamp(diff * GAIN, 0.25, 4)
     }
 
-    // Rita bara i den upplösning duken faktiskt har på skärmen.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // Rita aldrig i fler bildpunkter än klippet självt har. Duken kan vara
+    // långt bredare än fönstret — på en stående telefon fyller bildrutan
+    // höjden och skjuter ut åt sidorna — och varje extra bildpunkt är en
+    // textur som ska laddas upp till grafikkortet varje bildruta, utan att
+    // det finns någon skärpa kvar att hämta.
+    const source = (video.videoWidth || 1280) * 1.15
+    const css = canvas.clientWidth || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5, source / css)
     const w = Math.round(canvas.clientWidth * dpr)
     const h = Math.round(canvas.clientHeight * dpr)
     if (!w || !h) return

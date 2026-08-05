@@ -11,15 +11,27 @@
   background: var(--ink);
 }
 
-/* Ramen har klippets proportioner och centreras i fönstret, så att hela
-   bildrutan syns. Sidan bakom ligger i samma ram — annars hamnar den inte
-   i skärmen i filmen. */
+/* Ramen har klippets proportioner och centreras i fönstret. Är den bredare
+   än fönstret beskärs den här. */
 .film__frame {
   position: absolute;
   left: 50%;
   top: 50%;
+  z-index: 2;
   transform: translate(-50%, -50%);
   overflow: hidden;
+}
+
+/* Videon som texturen läses ur. Den måste sitta i dokumentet för att
+   avkodas i Safari på iOS, men ska aldrig synas — det är duken som visas. */
+.film__source {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0.001;
+  pointer-events: none;
 }
 
 /* Webbplatsen, bakom filmen. Syns bara där skärmen nycklats bort. Storleken
@@ -30,7 +42,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  /* Film.tsx placerar och skalar den direkt i bildrutans koordinater —
+  z-index: 1;
+  /* Film.tsx placerar och skalar den direkt i fönstrets koordinater —
      därför origo i hörnet, inte i mitten. */
   transform-origin: 0 0;
   will-change: transform;
@@ -100,6 +113,16 @@
 .film__stage a,
 .film__stage button {
   pointer-events: auto;
+}
+
+/* Sidan utan film — reducerad rörelse, eller en webbläsare som inte kan
+   visa klippet. Då fyller den fönstret och står stilla. */
+.film__page--plain {
+  inset: 0;
+  width: auto;
+  height: auto;
+  transform: none;
+  z-index: auto;
 }
 
 /* Sektionerna är byggda för att ligga i en rullande sida. Här står de

@@ -13,6 +13,12 @@ const stagger = (p: number, i: number, n: number, spread = 0.55) => {
 /* ── Hjältesektionen inne i skärmen ──────────────────────────────────── */
 
 const WORDMARK = 'Vantage Design Studio'
+const WORDS = WORDMARK.split(' ')
+/** Var i ordmärket varje ord börjar — bokstäverna trappas i en följd. */
+const WORD_START = WORDS.reduce<number[]>(
+  (acc, _, i) => [...acc, i === 0 ? 0 : acc[i - 1] + WORDS[i - 1].length + 1],
+  [],
+)
 
 export function Hero() {
   const chars = useRef<(HTMLSpanElement | null)[]>([])
@@ -43,15 +49,23 @@ export function Hero() {
     <section className="s-hero" id="start">
       <div className="s-hero__glow" aria-hidden="true" />
 
+      {/* Varje bokstav rör sig för sig, men orden måste hålla ihop — annars
+          bryts raden mitt inne i ett ord när den inte får plats. */}
       <h1 className="wordmark" aria-label={`${STUDIO.name} — designstudio`}>
-        {WORDMARK.split('').map((c, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            ref={(el) => { chars.current[i] = el }}
-            className="wordmark__char"
-          >
-            {c === ' ' ? ' ' : c}
+        {WORDS.map((word, w) => (
+          <span className="wordmark__word" key={word} aria-hidden="true">
+            {word.split('').map((c, j) => {
+              const i = WORD_START[w] + j
+              return (
+                <span
+                  key={j}
+                  ref={(el) => { chars.current[i] = el }}
+                  className="wordmark__char"
+                >
+                  {c}
+                </span>
+              )
+            })}
           </span>
         ))}
       </h1>

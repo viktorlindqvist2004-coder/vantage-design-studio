@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenContent } from './components/ScreenContent'
 import { Cursor, Hint, Nav, Progress } from './components/Overlay'
 import { Contact, Preloader, TitlePlate } from './components/Plates'
@@ -17,19 +17,25 @@ function Experience() {
   const [contentHeight, setContentHeight] = useState(0)
   const [loaded, setLoaded] = useState(false)
   const [showPreloader, setShowPreloader] = useState(true)
+  // Klippet kan vara omöjligt att visa: ingen WebGL, en kodek webbläsaren
+  // inte har, en hämtning som nekas. Då ska sidan bli en vanlig sida i
+  // stället för att stå kvar och zooma i ett tomt rum.
+  const [filmBroken, setFilmBroken] = useState(false)
+  const filmDown = useCallback(() => setFilmBroken(true), [])
 
   const viewportRef = useRef<HTMLDivElement>(null)
 
   // Utan filmen startar sidan direkt vid innehållet och blir en helt vanlig
   // sida — ingen kamerarörelse alls.
-  const act1 = reduced ? 0 : approachLength(vh)
+  const plain = reduced || filmBroken
+  const act1 = plain ? 0 : approachLength(vh)
   // Sidan rullar i sin egen ruta inne i filmen, som är lägre än fönstret
   // när klippet är beskuret. Mäter man mot fönstret i stället rullar den
   // för långt och slutar med en tom yta.
-  const pageH = reduced ? vh : frameSize(vw, vh).pageH
+  const pageH = plain ? vh : frameSize(vw, vh).pageH
   const innerMax = Math.max(contentHeight - pageH, 0)
-  const act3 = reduced ? 0 : exitLength(vh)
-  const filmMax = reduced ? 0 : roomLength(vh)
+  const act3 = plain ? 0 : exitLength(vh)
+  const filmMax = plain ? 0 : roomLength(vh)
 
   // Sidans höjd är summan av skedena — det är den enda scrollytan.
   const total = act1 + innerMax + act3 + filmMax + vh
@@ -71,14 +77,17 @@ function Experience() {
       <a className="skip-link" href="#kontakt">Hoppa till kontaktuppgifter</a>
 
       <div className="viewport" ref={viewportRef}>
-        {reduced ? (
-          <div className="film__page">
+        {plain ? (
+          <div className="film__page film__page--plain">
             <ScreenContent onHeight={setContentHeight} reduced />
             <Contact variant="static" />
           </div>
         ) : (
           <>
-            <Film page={<ScreenContent onHeight={setContentHeight} />} />
+            <Film
+              page={<ScreenContent onHeight={setContentHeight} />}
+              onFail={filmDown}
+            />
             <TitlePlate />
             <Hint />
           </>

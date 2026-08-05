@@ -153,14 +153,20 @@
 
 .wordmark {
   position: relative;
-  /* Tre ord som får radbrytas — storleken är satt så att det blir två rader
-     på en vanlig skärm, inte tre. */
-  font-size: clamp(2.4rem, 8vw, 8.5rem);
+  /* Tre ord som får radbrytas — storleken är satt så att det blir en eller
+     två rader, aldrig tre. Radbrytningen sker mellan orden; mellanrummet
+     är gapet, inte ett blanksteg. */
+  font-size: clamp(2.1rem, 7.4vw, 8.5rem);
   font-weight: 200;
   letter-spacing: -0.045em;
-  line-height: 1;
+  line-height: 1.04;
   display: flex;
   flex-wrap: wrap;
+  column-gap: 0.26em;
+}
+
+.wordmark__word {
+  display: inline-flex;
 }
 
 .wordmark__char {
