@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { Logo } from './Logo'
-import { Faq, Hero, Manifest, Numbers, Stills, Why } from './inner/Sections'
+import { Faq, Hero, Manifest, Numbers, Why } from './inner/Sections'
 import { Work } from './inner/Work'
 import { Contact } from './Plates'
 
@@ -62,7 +62,6 @@ export function ScreenContent({
       <div className="screen-scroll" ref={scrollRef}>
         <Hero />
         <Manifest />
-        <Stills />
         <Why />
         <Numbers />
         <Work />

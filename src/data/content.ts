@@ -202,25 +202,6 @@ export const FAQ = [
   },
 ]
 
-/**
- * RUMMET, I STILLBILD
- * ═══════════════════
- * Tre plåtar ur sidans egen film. Att låta dem stå still en stund gör något
- * som rörlig bild i bakgrunden inte gör: man hinner titta.
- *
- * Bildtexterna är platsernas namn och ingenting mer. Varje sektion som redan
- * finns säger något om hur vi arbetar, och en fjärde som säger samma sak en
- * gång till hade varit en upprepning med bilder till.
- */
-export const ROOM_STILLS = [
-  { src: 'images/rum-1', caption: 'Mot staden' },
-  { src: 'images/rum-2', caption: 'Skrivbordet' },
-  { src: 'images/rum-3', caption: 'Arbetsljuset' },
-]
-
-export const STILLS_LEAD =
-  'Ett skrivbord, en sajt i taget, och tid nog att göra den ordentligt.'
-
 export const STATS = [
   { value: '2026', label: 'Året studion grundades. Vi är nya, tar få uppdrag och ger dem hela vår uppmärksamhet.' },
   { value: '0', label: 'Mallar. Er webbplats byggs för er verksamhet, inte anpassad från någon annans.' },

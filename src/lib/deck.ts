@@ -31,8 +31,6 @@ export type Station = { id: string; y: number }
  * gång man tar sig någonstans. Långt nog att man ser vad som rör sig.
  */
 const STEP_MS = 620
-/** Kortaste tid ett steg får ta, hur bråttom man än har. */
-const MIN_STEP_MS = 320
 /**
  * Inflygningen.
  *
@@ -59,73 +57,6 @@ const WHEEL_THRESHOLD = 40
  * gest; en hand som lägger om gör en betydligt längre paus än så.
  */
 const GESTURE_GAP_MS = 140
-/**
- * Vad som skiljer ett hjulhack från en svepning.
- *
- * De två sorternas inmatning måste hanteras olika, och tiden räcker inte
- * för att skilja dem åt: en svepning med tröghet kan pågå längre än en
- * långsam serie hjulhack. Storleken skiljer dem däremot tydligt. Ett hack
- * på ett mushjul kommer som ett enda stort utslag; en styrplatta börjar
- * mjukt och skickar många små.
- *
- * Sorten avgörs på gestens första händelse och gäller sedan hela gesten —
- * en snabb svepning kan nämligen växa till stora utslag på vägen, men den
- * började litet.
- */
-const NOTCH_MIN = 45
-/**
- * Hur mycket ett utslag ska växa över svansens botten för att räknas som en
- * ny svepning.
- *
- * Trögheten efter en svepning klingar av: utslagen blir mindre och mindre,
- * men de fortsätter komma i nästan en sekund. Utan det här räknas hela den
- * svansen som samma gest, och drar man igen medan den pågår händer
- * ingenting — det är precis då man drar igen.
- *
- * Jämförelsen måste dock gå mot svansens botten och inte mot förra
- * utslaget. En svepning växer nämligen fortfarande när dess första steg
- * går: fingret drar på, utslagen tredubblas mellan händelserna, och varje
- * sådan ökning ser ut som en ny påläggning. En enda snabb flick blev då
- * ett dussin steg. Först när utslagen börjat falla från sin topp finns det
- * en svans att lägga på i.
- */
-const NEW_PUSH = 1.8
-/** Golv under NEW_PUSH, så att skakningar i en döende svans inte räcker. */
-const NEW_PUSH_FLOOR = 6
-/** Så långt under toppen utslagen ska ha fallit innan svansen räknas börjad. */
-const FALLEN = 0.55
-/**
- * Hur nära toppen utslagen ska ligga för att handen ska räknas som kvar.
- *
- * Ett drag håller sig kring sin topp så länge fingrarna för plattan.
- * Trögheten efteråt faller undan snabbt. Gränsen skiljer de två utan att
- * behöva veta när handen släppte.
- */
-const DRIVEN = 0.5
-/**
- * Hur långt man ska hinna dra för varje steg efter det första.
- *
- * Ett långt drag är inte en knuff som får rulla — man ligger kvar och för
- * plattan, och då ska sidan fortsätta stega. Utan det här gav ett drag på
- * två sekunder ett enda steg, och sidan kändes död mitt under handen.
- * Sträckan är rundlig med flit: ett kort, försiktigt drag ska fortfarande
- * ge precis ett steg.
- */
-const SUSTAIN = 320
-/**
- * Hur länge utslagen ska ha hållit sig uppe innan draget räknas som ett drag.
- *
- * Här sitter hela skillnaden mellan en hand som ligger kvar och en knuff som
- * rullar vidare, och den är svårare än den låter: sträckan säger ingenting,
- * för det är just en lång sträcka som gör en flick till en flick, och de
- * första tiondelarna av en tröghet ser likadana ut som ett drag.
- *
- * Det som skiljer dem är hur länge. En tröghet klingar av under sin halva
- * topp inom ett par tiondelar och kommer aldrig tillbaka. En hand håller
- * uppe utslagen så länge den ligger kvar. Tiden över halva toppen räknas
- * därför, och först när den passerat den här gränsen börjar sidan stega med.
- */
-const HELD_MS = 700
 /** Hur långt fingret ska föras för att räknas som en dragning. */
 const TOUCH_THRESHOLD = 48
 /**
@@ -134,13 +65,22 @@ const TOUCH_THRESHOLD = 48
  * En dragning är alltid ett steg — aldrig två, aldrig noll. Drar man igen
  * medan ett steg pågår kastas det inte om till nästa läge, för då skulle
  * det mellanliggande aldrig visas och det ser ut som att sidan hoppar
- * förbi. I stället ställer sig dragningen i kö: det pågående steget snabbas
- * på och nästa tar vid direkt när det är framme. Man passerar alltså varje
- * läge, bara fortare.
+ * förbi. I stället ställer sig dragningen i kö och tar vid när den
+ * pågående är framme.
+ *
+ * Bara en får vänta. Med tre i kö kunde tre lägen passera på drygt en
+ * sekund, och hur riktigt det än var — tre dragningar, tre steg — såg det
+ * ut som att sidan skenade.
  */
-const MAX_QUEUE = 3
-/** Hur mycket ett pågående steg snabbas på av en ny dragning. */
-const HURRY = 0.55
+const MAX_QUEUE = 2
+/**
+ * Så länge efter en landning innan nästa steg får börja.
+ *
+ * Varje läge ska vara ett eget parti, inte en punkt man far förbi. Utan
+ * pausen kan steg följa på steg tätt nog att resan läses som en enda lång
+ * rörelse, och då hjälper det inte att räkningen är riktig.
+ */
+const SETTLE_MS = 140
 
 let stations: Station[] = [{ id: 'start', y: 0 }]
 let index = 0
@@ -159,20 +99,8 @@ let wheelAcc = 0
 let wheelAt = 0
 /** Sant när den pågående dragningen redan gett sitt steg. */
 let wheelSpent = false
-/** Sant när gesten kommer från ett mushjul och inte från en styrplatta. */
-let wheelNotches = false
-/** Största utslaget i den pågående gesten. */
-let wheelPeak = 0
-/** Minsta utslaget sedan toppen — svansens botten just nu. */
-let wheelLow = 0
-/** Sant när utslagen fallit tydligt från toppen, alltså när svansen börjat. */
-let wheelFell = false
-/** Hur länge utslagen hållit sig uppe sedan gestens första steg gick. */
-let wheelHeldMs = 0
-/** När förra hjulhändelsen kom, för att kunna mäta tiden ovan. */
-let wheelPrevAt = 0
-/** När sidan senast tog ett steg, för att inte stega fortare än den hinner. */
-let steppedAt = 0
+/** När den senaste förflyttningen landade, för pausen mellan partierna. */
+let landedAt = 0
 let touchStartY = 0
 let touchLocked = false
 let attached = false
@@ -226,21 +154,19 @@ export function goTo(next: number, immediate = false) {
   fromY = position
   toY = stations[index].y
   linear = !immediate && stepTime(from, index) === ENTRY_MS
-  // Ju fler som väntar, desto kortare får varje steg vara — men aldrig så
-  // kort att läget hinner passera obemärkt.
-  const base = immediate ? 0 : stepTime(from, index)
-  duration = linear || immediate
-    ? base
-    : Math.max(base * HURRY ** Math.abs(queued), MIN_STEP_MS)
+  // Varje steg tar sin fulla tid, också när fler står på tur. Kortades de
+  // ned när kön växte flöt de ihop till en enda rörelse, och då spelade det
+  // ingen roll att antalet steg var riktigt — det såg ut som ett skutt.
+  duration = immediate ? 0 : stepTime(from, index)
   startedAt = performance.now()
   if (immediate) position = toY
 }
 
 function step(dir: number) {
   const now = performance.now()
-  steppedAt = now
 
-  if (!moving(now)) {
+  // Står sidan stilla och har hunnit vila: gå direkt.
+  if (!moving(now) && now - landedAt >= SETTLE_MS) {
     queued = 0
     goTo(index + dir)
     return
@@ -249,25 +175,13 @@ function step(dir: number) {
   // Inflygningen spelar klart av sig själv; den ska inte gå att jäkta.
   if (linear) return
 
-  // Byter man riktning mitt i faller kön — det man ville var att vända.
+  // Annars ställer sig dragningen i kö — antingen för att ett steg pågår,
+  // eller för att det just landat och partiet ska få stå kvar ett ögonblick.
+  // Kön ska läggas till, inte skrivas över: två hjulhack i rad medan sidan
+  // vilar är två handlingar och ska bli två steg.
   if (queued !== 0 && Math.sign(queued) !== dir) queued = 0
   if (Math.abs(queued) >= MAX_QUEUE) return
   queued += dir
-
-  // Det pågående steget snabbas på utan att bilden hoppar: andelen som
-  // spelats hålls konstant medan speltiden kortas.
-  const t = clamp((now - startedAt) / duration, 0, 1)
-  const next = Math.max(duration * HURRY, MIN_STEP_MS)
-  startedAt = now - t * next
-  duration = next
-}
-
-/** Börjar om formmätningen — ny gest, eller ny påläggning i en gammal. */
-function freshGesture(mag: number) {
-  wheelPeak = mag
-  wheelLow = mag
-  wheelFell = false
-  wheelHeldMs = 0
 }
 
 function onWheel(e: WheelEvent) {
@@ -287,67 +201,23 @@ function onWheel(e: WheelEvent) {
   // som performance.now(), så de går att jämföra med varandra.
   const now = e.timeStamp || performance.now()
 
-  const mag = Math.abs(e.deltaY)
-
   // Ny gest så fort hjulet varit tyst en stund. Sorten avgörs här och
   // gäller sedan hela gesten.
   if (now - wheelAt > GESTURE_GAP_MS) {
     wheelAcc = 0
     wheelSpent = false
-    wheelNotches = mag >= NOTCH_MIN
-    freshGesture(mag)
   }
   wheelAt = now
 
-  // Följ gestens form: hur högt den nådde, och hur långt ned svansen gått
-  // sedan dess. Det är de två som skiljer en hand som drar på från en
-  // tröghet som klingar av.
-  if (mag > wheelPeak) {
-    wheelPeak = mag
-    wheelLow = mag
-  } else if (mag < wheelLow) {
-    wheelLow = mag
-  }
-  if (mag < wheelPeak * FALLEN) wheelFell = true
-
-  // Tiden utslagen hållit sig uppe, räknad först efter att gesten gett sitt
-  // steg. Mellanrummet takas, så att en paus mellan två händelser inte
-  // räknas som tid med handen på plattan.
-  const held = mag > wheelPeak * DRIVEN
-  if (wheelSpent && held) wheelHeldMs += Math.min(now - wheelPrevAt, 100)
-  wheelPrevAt = now
-
-  // En svepning ger ett steg, hur länge trögheten än fortsätter efteråt —
-  // men lägger handen på igen mitt i svansen är det en ny svepning, och den
-  // ska räknas. En ny påläggning är ett tydligt uppsving ur svansens botten,
-  // inte vilken ökning som helst: under uppdraget växer utslagen också, och
-  // den växten är samma svepning.
-  const pushedAgain = wheelFell
-    && mag > wheelLow * NEW_PUSH + NEW_PUSH_FLOOR
-    && mag > wheelPeak * 0.25
-  if (wheelSpent && pushedAgain) {
-    wheelSpent = false
-    wheelAcc = 0
-    freshGesture(mag)
-  }
-
-  // Ett hjul ger ett steg per hack, för varje hack är en egen handling.
-  // En styrplatta som redan gett sitt steg får däremot fortsätta — men bara
-  // så länge handen ligger kvar och driver den. Trögheten efteråt ska tiga,
-  // annars rullar sidan vidare av sig själv.
-  if (wheelSpent && !wheelNotches) {
-    if (!held || wheelHeldMs < HELD_MS) return
-    wheelAcc += e.deltaY
-    // Ett drag ska föra sidan framåt i den takt den faktiskt rör sig, inte
-    // fortare. En styrplatta lämnar tusentals bildpunkter i sekunden, och
-    // enbart på sträckan blev det ett dussin lägen per sekund — man drog
-    // en stund och stod plötsligt någon helt annanstans.
-    if (Math.abs(wheelAcc) < SUSTAIN || now - steppedAt < STEP_MS) return
-    const onward = Math.sign(wheelAcc)
-    wheelAcc = 0
-    step(onward)
-    return
-  }
+  // En gest ger ett steg. Punkt.
+  //
+  // Det här är hela regeln, och den gäller lika för styrplatta och hjul.
+  // Tidigare fick ett hjul stega per hack och ett långt drag stega vidare
+  // så länge handen låg kvar — båda riktiga var för sig, men tillsammans
+  // gjorde de att en och samma rörelse ibland gav ett steg och ibland fyra.
+  // Vill man vidare lyfter man och drar igen; det tar en tiondels sekund
+  // och gör vartenda steg till något man bestämt.
+  if (wheelSpent) return
 
   wheelAcc += e.deltaY
   if (Math.abs(wheelAcc) < WHEEL_THRESHOLD) return
@@ -416,12 +286,17 @@ export function advance(now: number) {
     position = fromY + (toY - fromY) * (linear ? t : easeInOutCubic(t))
   }
 
-  // Framme, och någon står på tur: nästa steg tar vid direkt. Läget vi just
-  // nådde har alltså hunnit visas, om än kort.
-  if (queued !== 0 && !moving(now)) {
-    const dir = Math.sign(queued)
-    queued -= dir
-    goTo(index + dir)
+  // Framme: notera när, så att nästa steg kan hålla sin paus.
+  if (!moving(now)) {
+    if (landedAt < startedAt) landedAt = startedAt + duration
+
+    // Någon står på tur. Steget tar vid när pausen är över, så att läget vi
+    // just nådde hinner läsas som ett eget parti.
+    if (queued !== 0 && now - landedAt >= SETTLE_MS) {
+      const dir = Math.sign(queued)
+      queued -= dir
+      goTo(index + dir)
+    }
   }
 
   return position
