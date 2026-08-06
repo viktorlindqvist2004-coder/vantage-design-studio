@@ -685,3 +685,75 @@
   line-height: 1.65;
   max-width: 46ch;
 }
+
+/* ── Rummet i stillbild ──────────────────────────────────────────────────
+   Tre plåtar ur filmen. Ramen är en tunn linje och ingenting mer — bilderna
+   är redan mörka, och en kraftigare inramning hade blivit möbel. */
+.s-stills {
+  min-height: var(--page-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14vh var(--gutter);
+}
+
+.stills__head {
+  max-width: 42ch;
+  margin-bottom: clamp(2rem, 5vh, 3.5rem);
+}
+
+.stills__lead {
+  margin-top: clamp(0.9rem, 2.2vh, 1.4rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.stills__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1rem, 2.5vw, 2.5rem);
+}
+
+.still {
+  will-change: transform, opacity;
+}
+
+.still picture {
+  display: block;
+  overflow: hidden;
+  border: var(--rule);
+}
+
+.still img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Plåtarna kommer ur samma film som ligger bakom sidan. Lite nedtonade
+     lägger de sig i samma ljus som resten i stället för att lysa upp. */
+  opacity: 0.88;
+}
+
+.still figcaption {
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 700px) {
+  /* Tre porträtt bredvid varandra blir tre strimlor på en telefon. Den
+     första får hela bredden, de två andra delar på en rad. */
+  .stills__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .still:first-child {
+    grid-column: 1 / -1;
+  }
+  .still:first-child picture {
+    aspect-ratio: 16 / 10;
+  }
+  .still:first-child img {
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 62%;
+  }
+}

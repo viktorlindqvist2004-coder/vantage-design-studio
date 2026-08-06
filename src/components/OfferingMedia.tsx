@@ -10,7 +10,7 @@ import type { Offering } from '../data/content'
 export function OfferingMedia({ offering, index }: { offering: Offering; index: number }) {
   const [missing, setMissing] = useState(false)
 
-  if (missing) return <OfferingArt offering={offering} index={index} />
+  if (missing || !offering.image) return <OfferingArt offering={offering} index={index} />
 
   return (
     <img

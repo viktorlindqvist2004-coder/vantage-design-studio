@@ -3,7 +3,10 @@ import { LogoMark } from '../Logo'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
-import { DIALOGUE, FAQ, MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY, WHY_LEAD } from '../../data/content'
+import {
+  DIALOGUE, FAQ, MANIFEST, MANIFEST_ASIDE, ROOM_STILLS, SERVICES, STATS,
+  STILLS_LEAD, STUDIO, WHY, WHY_LEAD,
+} from '../../data/content'
 
 /** Fördröjer element i en serie så att de rör sig in efter varandra. */
 const stagger = (p: number, i: number, n: number, spread = 0.55) => {
@@ -133,6 +136,63 @@ export function Manifest() {
             <li key={q}>{q}</li>
           ))}
         </ol>
+      </div>
+    </section>
+  )
+}
+
+/* ── Rummet i stillbild ──────────────────────────────────────────────── */
+
+/**
+ * Tre plåtar ur filmen, stillastående.
+ *
+ * Bilderna ligger på plats i markeringen med sina mått angivna, så att raden
+ * har sin höjd innan de laddats — annars hoppar allt under dem när de
+ * kommer in. WebP först, JPEG för den som inte klarar den.
+ */
+export function Stills() {
+  const ref = useRef<HTMLElement>(null)
+  const track = useTrack(ref)
+  const items = useRef<(HTMLElement | null)[]>([])
+
+  useFrame((f) => {
+    const p = mapRange(track(f).settle, 0.2, 0.95)
+    items.current.forEach((el, i) => {
+      if (!el) return
+      const s = easeOutCubic(stagger(p, i, ROOM_STILLS.length, 0.45))
+      el.style.opacity = s.toFixed(3)
+      el.style.transform = `translate3d(0, ${((1 - s) * 26).toFixed(1)}px, 0)`
+    })
+  })
+
+  return (
+    <section className="sec s-stills" id="rummet" data-station ref={ref}>
+      <div className="stills__head">
+        <span className="label">Där arbetet blir till</span>
+        <p className="stills__lead">{STILLS_LEAD}</p>
+      </div>
+
+      <div className="stills__row">
+        {ROOM_STILLS.map((still, i) => (
+          <figure
+            className="still"
+            key={still.src}
+            ref={(el) => { items.current[i] = el }}
+          >
+            <picture>
+              <source srcSet={`${import.meta.env.BASE_URL}${still.src}.webp`} type="image/webp" />
+              <img
+                src={`${import.meta.env.BASE_URL}${still.src}.jpg`}
+                alt=""
+                width={760}
+                height={950}
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+            <figcaption className="label">{still.caption}</figcaption>
+          </figure>
+        ))}
       </div>
     </section>
   )

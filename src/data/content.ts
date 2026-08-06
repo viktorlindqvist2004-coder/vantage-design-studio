@@ -23,8 +23,15 @@ export type Offering = {
   desc: string
   /** Vilken skiss som ritas på kortet — se OfferingArt. */
   sketch: 'site' | 'shop' | 'booking' | 'portfolio' | 'campaign' | 'portal'
-  /** Foto under `public/`. Saknas filen ritas skissen i stället. */
-  image: string
+  /**
+   * Foto under `public/`, om det finns ett.
+   *
+   * Korten visar sorters webbplats, inte utförda uppdrag, och ritningen är
+   * det ärligaste vi kan visa tills det finns riktiga skärmbilder att sätta
+   * dit. Utan fältet görs ingen hämtning alls — ett foto som saknas är en
+   * misslyckad hämtning på varje besök och en skiss som byter plats efteråt.
+   */
+  image?: string
   seed: number
   palette: [string, string, string]
 }
@@ -46,7 +53,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'site',
     kind: 'Alla branscher',
     desc: 'Sidan som förklarar vad ni gör, för vem, och varför valet ska falla på er.',
-    image: 'images/work-01.jpg',
     seed: 11,
     palette: ['#8d97a5', '#565e6a', '#131519'],
   },
@@ -55,7 +61,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'shop',
     kind: 'Butik och produkt',
     desc: 'Från produktsida till genomförd kassa, byggt för att sälja utan att stå i vägen.',
-    image: 'images/work-02.jpg',
     seed: 27,
     palette: ['#cabfad', '#7d7263', '#191613'],
   },
@@ -64,7 +69,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'booking',
     kind: 'Tjänsteföretag',
     desc: 'Era kunder ska kunna boka, beställa eller höra av sig utan att först behöva ringa.',
-    image: 'images/work-03.jpg',
     seed: 43,
     palette: ['#bcbab5', '#68665f', '#141415'],
   },
@@ -73,7 +77,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'portfolio',
     kind: 'Kreativa verksamheter',
     desc: 'Arbetet i centrum, i en inramning som lyfter det i stället för att konkurrera.',
-    image: 'images/work-04.jpg',
     seed: 58,
     palette: ['#a89579', '#655a49', '#161310'],
   },
@@ -82,7 +85,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'campaign',
     kind: 'Enskild sida',
     desc: 'En sida med ett enda syfte, snabbt uppe och mätt från första dagen.',
-    image: 'images/work-05.jpg',
     seed: 71,
     palette: ['#a39aa8', '#635d6b', '#141216'],
   },
@@ -91,7 +93,6 @@ export const OFFERINGS: Offering[] = [
     sketch: 'portal',
     kind: 'Kunder och medlemmar',
     desc: 'Konton, inloggning och det som ska finnas innanför — kopplat till era system.',
-    image: 'images/work-06.jpg',
     seed: 89,
     palette: ['#9db0b4', '#5e6d70', '#101415'],
   },
@@ -200,6 +201,25 @@ export const FAQ = [
     a: 'Vi finns kvar. Små ändringar, mätning av hur sajten faktiskt används, och justeringar utifrån det. Ni väljer om ni vill ha en löpande överenskommelse eller bara höra av er när något dyker upp.',
   },
 ]
+
+/**
+ * RUMMET, I STILLBILD
+ * ═══════════════════
+ * Tre plåtar ur sidans egen film. Att låta dem stå still en stund gör något
+ * som rörlig bild i bakgrunden inte gör: man hinner titta.
+ *
+ * Bildtexterna är platsernas namn och ingenting mer. Varje sektion som redan
+ * finns säger något om hur vi arbetar, och en fjärde som säger samma sak en
+ * gång till hade varit en upprepning med bilder till.
+ */
+export const ROOM_STILLS = [
+  { src: 'images/rum-1', caption: 'Mot staden' },
+  { src: 'images/rum-2', caption: 'Skrivbordet' },
+  { src: 'images/rum-3', caption: 'Arbetsljuset' },
+]
+
+export const STILLS_LEAD =
+  'Ett skrivbord, en sajt i taget, och tid nog att göra den ordentligt.'
 
 export const STATS = [
   { value: '2026', label: 'Året studion grundades. Vi är nya, tar få uppdrag och ger dem hela vår uppmärksamhet.' },
