@@ -53,8 +53,12 @@ const WHEEL_THRESHOLD = 40
  * varje tröskelpassering för sig läses den som fem dragningar. Händelserna
  * kommer tätt så länge handen är kvar och slutar när den släpper — en paus
  * längre än så här är alltså nästa dragning.
+ *
+ * Rundligt tilltaget. En styrplatta skickar sextio till hundratjugo
+ * händelser i sekunden och kommer aldrig i närheten av gränsen mitt i en
+ * gest; en hand som lägger om gör en betydligt längre paus än så.
  */
-const GESTURE_GAP_MS = 90
+const GESTURE_GAP_MS = 140
 /**
  * Vad som skiljer ett hjulhack från en svepning.
  *
@@ -268,7 +272,20 @@ function freshGesture(mag: number) {
 
 function onWheel(e: WheelEvent) {
   e.preventDefault()
-  const now = performance.now()
+  // Händelsens egen tid, inte den tid koden råkar köra på.
+  //
+  // Gestgränsen är en tystnad: kommer inget hjul på en stund är nästa
+  // händelse en ny gest. Men en bildruta som tar för lång tid ger också
+  // tystnad — hjulet fortsätter komma medan huvudtråden är upptagen, och
+  // händelserna körs alla på en gång när den blir fri. Mätt på klockan i
+  // hanteraren såg det ut som en paus mitt i svepningen, och en enda
+  // svepning blev två gester och därmed två steg. Det var det som fick
+  // sidan att hoppa dubbelt just där den hackade.
+  //
+  // Tidsstämpeln sätts när webbläsaren skapar händelsen, alltså innan kön.
+  // Den visar mellanrummen som handen faktiskt gjorde dem. Samma nollpunkt
+  // som performance.now(), så de går att jämföra med varandra.
+  const now = e.timeStamp || performance.now()
 
   const mag = Math.abs(e.deltaY)
 
