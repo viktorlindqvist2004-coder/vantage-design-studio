@@ -45,6 +45,30 @@ const LEAVE_MS = 1150
 /** Hur mycket hjul som krävs för att räknas som en dragning. */
 const WHEEL_THRESHOLD = 40
 /**
+ * Hur trögheten klingar av, uttryckt som halveringstid i millisekunder.
+ *
+ * Det här är det enda som skiljer en hand från en eftersläng, och det går
+ * att räkna på. När fingrarna lämnar plattan fortsätter webbläsaren skicka
+ * hjulhändelser i en till två sekunder, med utslag som halveras ungefär var
+ * fjärdedels sekund. Kurvan är förutsägbar och den vänder aldrig uppåt.
+ *
+ * Sidan följer därför med i den kurvan och vet vad trögheten *borde* ge
+ * härnäst. Kommer det något betydligt större än så är det en hand.
+ */
+const TAIL_HALFLIFE = 500
+/** Hur mycket över den väntade trögheten ett utslag ska ligga för att räknas. */
+const RISE = 1.5
+/** Golv under RISE, så att en döende svans inte triggar på ren avrundning. */
+const RISE_FLOOR = 5
+/**
+ * Hur långt under toppen utslagen ska ha fallit innan svansen räknas börjad.
+ *
+ * Före toppen finns ingen svans att lägga på i — då stiger utslagen för att
+ * handen fortfarande drar på, och varje sådan ökning skulle annars läsas som
+ * en ny svepning. En enda hård flick blev då tre steg.
+ */
+const FALLEN = 0.7
+/**
  * Så lång tystnad som avslutar en dragning.
  *
  * En enda svepning på en styrplatta ger dussintals hjulhändelser, och räknas
@@ -99,6 +123,12 @@ let wheelAcc = 0
 let wheelAt = 0
 /** Sant när den pågående dragningen redan gett sitt steg. */
 let wheelSpent = false
+/** Största utslaget i den pågående gesten. */
+let wheelPeak = 0
+/** Sant när utslagen fallit från toppen, alltså när svansen börjat. */
+let wheelFell = false
+/** Var trögheten borde ligga just nu. Bara nedåt — aldrig uppåt. */
+let wheelEnv = 0
 /** När den senaste förflyttningen landade, för pausen mellan partierna. */
 let landedAt = 0
 let touchStartY = 0
@@ -184,6 +214,15 @@ function step(dir: number) {
   queued += dir
 }
 
+/** Börjar om mätningen — ny gest, eller en hand som lagt på i svansen. */
+function freshGesture(mag: number) {
+  wheelAcc = 0
+  wheelSpent = false
+  wheelPeak = mag
+  wheelFell = false
+  wheelEnv = 0
+}
+
 function onWheel(e: WheelEvent) {
   e.preventDefault()
   // Händelsens egen tid, inte den tid koden råkar köra på.
@@ -201,22 +240,38 @@ function onWheel(e: WheelEvent) {
   // som performance.now(), så de går att jämföra med varandra.
   const now = e.timeStamp || performance.now()
 
-  // Ny gest så fort hjulet varit tyst en stund. Sorten avgörs här och
-  // gäller sedan hela gesten.
-  if (now - wheelAt > GESTURE_GAP_MS) {
-    wheelAcc = 0
-    wheelSpent = false
-  }
+  const mag = Math.abs(e.deltaY)
+  const since = now - wheelAt
   wheelAt = now
 
-  // En gest ger ett steg. Punkt.
-  //
-  // Det här är hela regeln, och den gäller lika för styrplatta och hjul.
-  // Tidigare fick ett hjul stega per hack och ett långt drag stega vidare
-  // så länge handen låg kvar — båda riktiga var för sig, men tillsammans
-  // gjorde de att en och samma rörelse ibland gav ett steg och ibland fyra.
-  // Vill man vidare lyfter man och drar igen; det tar en tiondels sekund
-  // och gör vartenda steg till något man bestämt.
+  // Ny gest så fort hjulet varit tyst en stund.
+  if (since > GESTURE_GAP_MS) freshGesture(mag)
+
+  if (!wheelFell) {
+    // Före svansen: följ med uppåt. Så länge utslagen växer drar handen
+    // fortfarande på, och det är samma svepning hur mycket den än växer.
+    if (mag > wheelPeak) wheelPeak = mag
+    if (wheelSpent && mag < wheelPeak * FALLEN) {
+      wheelFell = true
+      wheelEnv = mag
+    }
+  } else {
+    // I svansen: kurvan går bara nedåt, och den vet vi hur den ser ut.
+    // Kommer något betydligt över den är det en hand som lagt på igen.
+    //
+    // Kurvan får inte följa med uppåt här. Gjorde den det skulle en ny
+    // svepning aldrig hinna över sin egen kurva — den stiger mjukt, och
+    // kurvan steg med den. Sidan blev stendöv i just den sekund då man
+    // faktiskt drar igen, vilket är precis då man gör det.
+    const expected = wheelEnv * Math.pow(0.5, since / TAIL_HALFLIFE)
+    if (mag > expected * RISE + RISE_FLOOR) {
+      freshGesture(mag)
+    } else {
+      wheelEnv = expected
+    }
+  }
+
+  // En gest ger ett steg. En eftersläng ger inget.
   if (wheelSpent) return
 
   wheelAcc += e.deltaY

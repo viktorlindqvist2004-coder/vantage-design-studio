@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { LogoMark } from '../Logo'
+import { Backdrop } from '../Backdrop'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
@@ -116,6 +117,7 @@ export function Manifest() {
 
   return (
     <section className="s-manifest" ref={ref} id="manifest" data-station>
+      <Backdrop kind="boge" />
       <p className="manifest__text">
         {MANIFEST.map((w, i) => (
           <span
@@ -159,6 +161,7 @@ export function Why() {
 
   return (
     <section className="sec s-why" id="varfor" data-station ref={ref}>
+      <Backdrop kind="raster" />
       <div className="why__head">
         <span className="label">Varför vi arbetar som vi gör</span>
         <p className="why__lead">{WHY_LEAD}</p>
@@ -224,6 +227,7 @@ export function Numbers() {
 
   return (
     <section className="sec s-numbers" data-station ref={ref}>
+      <Backdrop kind="horisont" />
       {STATS.map((s, i) => (
         <div className="stat" key={s.label} ref={(el) => { items.current[i] = el }}>
           <div className="stat__value">{s.value}</div>
@@ -260,6 +264,7 @@ export function Faq() {
 
   return (
     <section className="sec s-faq" id="fragor" data-station ref={ref}>
+      <Backdrop kind="stralar" />
       <span className="label label--lead">Vanliga frågor</span>
       <div className="faq__grid">
         {FAQ.map((item, i) => (

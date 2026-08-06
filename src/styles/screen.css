@@ -685,3 +685,44 @@
   line-height: 1.65;
   max-width: 46ch;
 }
+
+/* ── Bakgrunderna ────────────────────────────────────────────────────────
+   Ritade former bakom de sektioner där texten är kort och svärtan lång. De
+   ligger underst, tar inte emot pekaren, och är så dova att de läses som
+   ljus i rummet snarare än som bild. Se Backdrop.tsx. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Varje form har sin egen styrka. Rutnätet är många tunna linjer och blir
+   starkt av att vara tätt; bågen är tre streck och tål mer. */
+.backdrop--raster { opacity: 0.05; }
+.backdrop--boge { opacity: 0.14; }
+.backdrop--stralar { opacity: 0.045; }
+.backdrop--horisont { opacity: 0.14; }
+
+/* Sektionerna behöver vara egna stapelplan för att bakgrunden ska kunna
+   ligga bakom innehållet utan att hamna bakom sidans svarta botten. */
+.s-manifest,
+.s-why,
+.s-faq,
+.s-numbers {
+  position: relative;
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Formerna rör sig inte, men de är ändå utsmyckning. Den som bett om
+     lugn får en ren yta. */
+  .backdrop { display: none; }
+}
