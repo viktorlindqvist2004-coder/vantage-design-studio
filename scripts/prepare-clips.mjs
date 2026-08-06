@@ -22,6 +22,13 @@
  * bildrutor som liknar varandra mest; `--skarvar` gör den mätningen och
  * skriver ut kandidaterna i stället för att koda något.
  *
+ * Övertoningens längd går att sätta som ett tredje tal: `fil@start:slut:längd`.
+ * Ett klipp som driver hela vägen — där ingen sträcka går ihop — behöver en
+ * längre övertoning för att skarven ska försvinna.
+ *
+ * Ett utropstecken före filnamnet betyder fin linjekonst mot mörker, som
+ * varken tål hård kodning eller uppskalning. Sådana klipp kodas rikligare.
+ *
  *   node scripts/prepare-clips.mjs <skärm> <rum-a> <rum-b> <rum-c> <rum-d@0.75:5.88>
  *   node scripts/prepare-clips.mjs --skarvar <fil>
  */
@@ -66,8 +73,8 @@ function write(input, filter, out, { gop, crf, vp9crf }) {
   report(`${out}.webm`)
 }
 
-/** Så lång är övertoningen som döljer skarven i ett loopande klipp. */
-const SEAM = 0.4
+/** Så lång är övertoningen som döljer skarven, när inget annat anges. */
+const SEAM_DEFAULT = 0.4
 
 /**
  * Filtret för ett rumsklipp.
@@ -77,7 +84,7 @@ const SEAM = 0.4
  * följer mitten orörd. Sista bildrutan blir då samma bild som den första,
  * och varvet går ihop.
  */
-function roomFilter(from, to) {
+function roomFilter(from, to, SEAM = SEAM_DEFAULT) {
   if (from === undefined) return `[0:v]${scale}[v]`
 
   // Bildpunktsformatet skrivs ut innan strömmen delas: `blend` och `concat`
@@ -122,7 +129,7 @@ function seams(input) {
 
   const found = []
   // Kortare än så här blir loopen märkbar som en loop.
-  const shortest = FPS * 4
+  const shortest = FPS * 2.2
   for (let a = 0; a < count; a++) {
     for (let b = a + shortest; b < count; b++) found.push([a / FPS, b / FPS, apart(frames[a], frames[b])])
   }
@@ -163,9 +170,11 @@ write(screen, `[0:v]${scale}[v]`, `${OUT}/screen`, reel)
 
 console.log('\nRumsklippen:')
 rooms.forEach((arg, i) => {
-  // `fil@start:slut` klipper ut sträckan och syr ihop varvet.
-  const [input, span] = arg.split('@')
-  const [from, to] = span ? span.split(':').map(Number) : []
+  // `!` först: klippet är fin linjekonst. `fil@start:slut[:övertoning]`
+  // klipper ut sträckan och syr ihop varvet.
+  const fine = arg.startsWith('!')
+  const [input, span] = (fine ? arg.slice(1) : arg).split('@')
+  const [from, to, seam] = span ? span.split(':').map(Number) : []
   const name = `room-${String.fromCharCode(97 + i)}`
 
   // Rummen är dämpad, suddig film där kompressionen inte har mycket att
@@ -174,9 +183,9 @@ rooms.forEach((arg, i) => {
   // hårt, och eftersom klippet dessutom skalas upp mot en tät skärm syns
   // varje utsmetad linje. Det får därför kosta det det kostar; klippet
   // hämtas ändå först när man närmar sig platsen.
-  const quality = span
+  const quality = fine
     ? { gop: FPS, crf: 20, vp9crf: 26 }
     : { gop: FPS, crf: 24, vp9crf: 33 }
 
-  write(input, roomFilter(from, to), `${OUT}/${name}`, quality)
+  write(input, roomFilter(from, to, seam || SEAM_DEFAULT), `${OUT}/${name}`, quality)
 })
