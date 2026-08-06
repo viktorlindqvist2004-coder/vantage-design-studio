@@ -124,26 +124,80 @@ export const SERVICES = [
   },
 ]
 
+/**
+ * Stegen i arbetet.
+ *
+ * `gives` är vad ni håller i handen när steget är klart. Ett steg utan
+ * något att lämna över är svårt att veta när det är färdigt — och lika
+ * svårt att ha åsikter om.
+ */
 export const PROCESS = [
   {
     title: 'Kartläggning',
     body: 'Vi börjar med att förstå er verksamhet, era kunder och vad som faktiskt ska hända när någon hittar hit. Vi gissar inte åt er.',
+    gives: 'Ett kort underlag om vad sajten ska göra, och för vem.',
+    takes: 'Ett till två samtal',
   },
   {
     title: 'Riktning',
     body: 'Ett tydligt förslag på form och innehåll, med tidplan och pris. Ni vet vart vi är på väg innan vi bygger något — och kan ändra er medan det är enkelt.',
+    gives: 'Ett förslag med form, omfattning, tidplan och fast pris.',
+    takes: 'Cirka en vecka',
   },
   {
     title: 'Design',
     body: 'Vi ritar varje vy i detalj, för dator, surfplatta och mobil. Ni ser allt och tycker till innan en rad kod skrivs.',
+    gives: 'Färdiga vyer för dator, surfplatta och mobil.',
+    takes: 'Ett par veckor',
   },
   {
     title: 'Bygge',
     body: 'Handkodat, komponent för komponent, testat i riktiga webbläsare på riktiga enheter. Tillgänglighet är med från början, inte tillagt sist.',
+    gives: 'En adress ni kan klicka runt i medan arbetet pågår.',
+    takes: 'Två till fyra veckor',
   },
   {
     title: 'Lansering',
     body: 'Vi flyttar upp, mäter och justerar, och lämnar över koden till er. Sedan finns vi kvar för det som behöver ses om när verkligheten möter planen.',
+    gives: 'Sajten uppe, koden överlämnad och mätningen på plats.',
+    takes: 'En dag, och tiden efter',
+  },
+]
+
+/**
+ * VANLIGA FRÅGOR
+ * ══════════════
+ * De frågor någon faktiskt har innan de hör av sig — pris, tid, vad de
+ * själva måste bidra med, och vad som händer sedan. Att svara på dem här
+ * kostar ingenting och sparar ett mejl för båda parter.
+ *
+ * Svaren är hållna i vad vi kan lova utan att veta något om uppdraget.
+ * Ett spann är ärligare än en siffra som ändå spricker.
+ */
+export const FAQ = [
+  {
+    q: 'Vad kostar en webbplats?',
+    a: 'Det beror på omfattningen, och vi säger ingen siffra innan vi vet vad ni behöver. Efter ett första samtal får ni ett fast pris för hela arbetet, uppdelat per steg, så att ni ser vad varje del kostar innan ni tackar ja.',
+  },
+  {
+    q: 'Hur lång tid tar det?',
+    a: 'En mindre webbplats tar oftast tre till fem veckor från start till lansering, en större längre. Ni får datum i samband med förslaget, och hör av er från oss i tid om något behöver flyttas.',
+  },
+  {
+    q: 'Vad behöver ni av oss?',
+    a: 'Framför allt en timme eller två i början, då ni berättar om verksamheten. Sedan texter och bilder — och saknas de hjälper vi till att ta fram dem. Ni behöver inte kunna något om webb.',
+  },
+  {
+    q: 'Äger vi sajten efteråt?',
+    a: 'Ja. Ni får koden och alla konton, utan licenser att förnya och utan att vi sitter på nycklarna. Vill ni byta leverantör längre fram går det utan att bygga om från början.',
+  },
+  {
+    q: 'Kan ni ta över en sajt som redan finns?',
+    a: 'Ofta ja. Vi ser över det som finns och säger rakt ut om det är klokare att bygga vidare eller börja om — även när svaret är att ni klarar er utan oss ett tag till.',
+  },
+  {
+    q: 'Vad händer efter lansering?',
+    a: 'Vi finns kvar. Små ändringar, mätning av hur sajten faktiskt används, och justeringar utifrån det. Ni väljer om ni vill ha en löpande överenskommelse eller bara höra av er när något dyker upp.',
   },
 ]
 
@@ -186,6 +240,10 @@ export const MANIFEST_ASIDE = {
  * Tre skäl, formulerade som löften till den som ska anlita oss — inte som
  * en beskrivning av hur vi tycker om att jobba.
  */
+/** Ingressen som binder ihop punkterna nedan. */
+export const WHY_LEAD =
+  'Fyra saker avgör om en webbplats gör nytta. Inget av dem handlar om smak, och alla fyra går att ha åsikter om innan vi bygger något.'
+
 export const WHY = [
   {
     title: 'Att bli förstådd är det svåraste',
@@ -194,6 +252,10 @@ export const WHY = [
   {
     title: 'Ni ska aldrig behöva gissa',
     body: 'Ni ser riktningen innan vi bygger, och vet vad varje steg kostar i tid och pengar. Vill ni ändra er gör ni det medan det fortfarande är enkelt och billigt.',
+  },
+  {
+    title: 'Snabbt är en del av formen',
+    body: 'En sida som laddar långsamt tappar besökare innan de hunnit se något alls. Vi bygger lätt från början i stället för att försöka optimera bort tyngden efteråt.',
   },
   {
     title: 'Det ska hålla efter lansering',

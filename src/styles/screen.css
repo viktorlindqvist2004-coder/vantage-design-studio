@@ -232,14 +232,6 @@
   border-bottom: var(--rule);
 }
 
-.manifest__num {
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.16em;
-  color: var(--faint);
-  flex: none;
-}
-
 .manifest__word {
   display: inline-block;
   margin-right: 0.26em;
@@ -256,25 +248,42 @@
   padding: 16vh var(--gutter);
 }
 
+/* Rubriken med en ingress under sig. Ensam blev etiketten en överskrift
+   till tomrum; med ingressen har sektionen något att stå på. */
+.why__head {
+  max-width: 46ch;
+  margin-bottom: clamp(2.5rem, 6vh, 4.5rem);
+}
+
+.why__lead {
+  margin-top: clamp(1rem, 2.5vh, 1.6rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+/* Fyra punkter på en rad blir fyra smala spalter. Två och två fyller rutan
+   bättre och ger raderna en läsbar längd. */
 .why__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: clamp(2.5rem, 5vw, 5rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 27rem), 1fr));
+  column-gap: clamp(2.5rem, 5vw, 5rem);
+  row-gap: clamp(2rem, 5vh, 3.5rem);
 }
 
 .why {
   will-change: transform, opacity;
 }
 
-.why__num {
+.why::before {
+  content: '';
   display: block;
-  margin-bottom: clamp(2rem, 5vh, 3.5rem);
-  font-size: clamp(2.2rem, 4vw, 4rem);
-  font-weight: 200;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
+  width: 2.5rem;
+  height: 1px;
+  margin-bottom: clamp(1.6rem, 4vh, 2.6rem);
+  background: var(--bone);
+  opacity: 0.35;
 }
 
 .why__title {
@@ -312,16 +321,24 @@
   color: var(--dim);
 }
 
-.work__count {
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  color: var(--faint);
+/* Var i bandet man är. En sträcka som växer säger samma sak som en siffra
+   och läser sig utan att man behöver räkna. */
+.work__meter {
+  position: relative;
+  align-self: center;
+  width: clamp(3.5rem, 8vw, 7rem);
+  height: 1px;
+  background: var(--line);
+  flex: none;
 }
 
-.work__count b {
-  color: var(--bone);
-  font-weight: 400;
+.work__meter i {
+  position: absolute;
+  inset: 0;
+  background: var(--bone);
+  opacity: 0.55;
+  transform-origin: left center;
+  will-change: transform;
 }
 
 .work__track {
@@ -404,7 +421,7 @@
 .srv {
   position: relative;
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: baseline;
   gap: clamp(1.5rem, 4vw, 4rem);
   padding: clamp(2rem, 4.5vh, 3.5rem) 0;
@@ -414,13 +431,6 @@
 
 .srv:last-child {
   border-bottom: var(--rule);
-}
-
-.srv__num {
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  color: var(--faint);
 }
 
 .srv__name {
@@ -441,6 +451,28 @@
 
 .srv:hover .srv__name {
   color: var(--accent);
+}
+
+/* Vad varje steg lämnar efter sig, och ungefär hur lång tid det tar. Ett
+   steg utan något att lämna över är svårt att veta när det är klart. */
+.proc__facts {
+  margin-top: clamp(1.6rem, 4vh, 2.6rem);
+  padding-top: clamp(1.1rem, 2.5vh, 1.6rem);
+  border-top: var(--rule);
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+
+.proc__facts dt {
+  margin-bottom: 0.5rem;
+}
+
+.proc__facts dd {
+  font-size: clamp(0.875rem, 1vw, 1rem);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--bone);
 }
 
 /* ── Process ─────────────────────────────────────────────────────────── */
@@ -477,19 +509,6 @@
 
 .proc__item--on {
   color: var(--bone);
-}
-
-.proc__item-i {
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.16em;
-  color: var(--faint);
-  transition: color var(--smooth);
-  flex: none;
-}
-
-.proc__item--on .proc__item-i {
-  color: var(--accent);
 }
 
 .proc__panel {
@@ -627,4 +646,42 @@
      ett fönster — dämpat, men inte så dämpat att det försvinner. */
   color: var(--dim);
   align-self: center;
+}
+
+/* ── Vanliga frågor ──────────────────────────────────────────────────────
+   Allt framme på en gång, i två spalter. Sex frågor på höjden ryms inte i
+   en ruta, och det finns ingen rullning här inne att lösa det med. */
+.s-faq {
+  min-height: var(--page-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14vh var(--gutter);
+}
+
+.faq__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  column-gap: clamp(2.5rem, 6vw, 6rem);
+  row-gap: clamp(1.8rem, 4.5vh, 3rem);
+}
+
+.faq {
+  padding-top: clamp(1.1rem, 2.5vh, 1.6rem);
+  border-top: var(--rule);
+  will-change: transform, opacity;
+}
+
+.faq__q {
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.faq .body {
+  font-size: clamp(0.875rem, 1vw, 1rem);
+  line-height: 1.65;
+  max-width: 46ch;
 }

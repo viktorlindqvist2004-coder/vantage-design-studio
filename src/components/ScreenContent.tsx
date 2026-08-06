@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useMeasuredHeight } from '../lib/hooks'
 import { clamp01, mapRange } from '../lib/math'
 import { Logo } from './Logo'
-import { Hero, Manifest, Numbers, Why } from './inner/Sections'
+import { Faq, Hero, Manifest, Numbers, Why } from './inner/Sections'
 import { Work } from './inner/Work'
 import { Contact } from './Plates'
 
@@ -65,6 +65,7 @@ export function ScreenContent({
         <Why />
         <Numbers />
         <Work />
+        <Faq />
         {reduced && <Contact variant="static" />}
       </div>
 
@@ -97,10 +98,27 @@ function useStationOffsets(
     if (!el) return
 
     const measure = () => {
+      // Rutan är filmens ram, inte fönstret. På en telefon är den märkbart
+      // lägre, och mäter man mot fönstret tror man att mer ryms än det gör.
+      const view = el.parentElement?.clientHeight || window.innerHeight
       const offsets: number[] = []
+
       el.querySelectorAll<HTMLElement>('[data-station]').forEach((node) => {
-        const count = Number(node.dataset.stations ?? 1)
-        const span = count > 1 ? node.offsetHeight - window.innerHeight : 0
+        const span = Math.max(node.offsetHeight - view, 0)
+
+        // Hur många lägen sektionen behöver.
+        //
+        // De flesta är precis en ruta höga och har ett läge. Några — bandet
+        // med webbplatstyper, processtegen — säger själva hur många de vill
+        // ha. Resten räknas fram: en sektion som blivit högre än rutan har
+        // innehåll under vikningen, och utan ett läge där nere hoppar nästa
+        // dragning rakt förbi det. Det märks inte på en bred skärm, där allt
+        // ändå får plats, utan först på en telefon där texten radbryts till
+        // dubbla höjden.
+        const asked = Number(node.dataset.stations ?? 0)
+        const needed = Math.ceil(span / (view * 0.9)) + 1
+        const count = Math.max(asked, needed, 1)
+
         for (let i = 0; i < count; i++) {
           offsets.push(node.offsetTop + (span * i) / Math.max(count - 1, 1))
         }

@@ -59,7 +59,6 @@ export function Process() {
                   key={p.title}
                   ref={(el) => { itemRefs.current[i] = el }}
                 >
-                  <span className="proc__item-i">{String(i + 1).padStart(2, '0')}</span>
                   {p.title}
                 </li>
               ))}
@@ -75,6 +74,16 @@ export function Process() {
               >
                 <h3 className="h-lg">{p.title}</h3>
                 <p className="body">{p.body}</p>
+                <dl className="proc__facts">
+                  <div>
+                    <dt className="label">Ni får</dt>
+                    <dd>{p.gives}</dd>
+                  </div>
+                  <div>
+                    <dt className="label">Tar</dt>
+                    <dd>{p.takes}</dd>
+                  </div>
+                </dl>
               </div>
             ))}
           </div>

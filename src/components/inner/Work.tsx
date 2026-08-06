@@ -13,7 +13,7 @@ export function Work() {
   const secRef = useRef<HTMLElement>(null)
   const pinRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
-  const countRef = useRef<HTMLSpanElement>(null)
+  const countRef = useRef<HTMLElement>(null)
   const cardRefs = useRef<(HTMLElement | null)[]>([])
   const cards = useCardMetrics(cardRefs, trackRef)
   const track = useTrack(secRef)
@@ -49,10 +49,9 @@ export function Work() {
       card.el.style.opacity = (1 - clamp01(Math.abs(away) - 0.6) * 1.4).toFixed(3)
     }
 
+    // Var i bandet man är, visat som en sträcka i stället för en siffra.
     if (countRef.current) {
-      const i = Math.round(pos) + 1
-      const label = String(i).padStart(2, '0')
-      if (countRef.current.textContent !== label) countRef.current.textContent = label
+      countRef.current.style.transform = `scaleX(${(0.08 + (pos / last) * 0.92).toFixed(3)})`
     }
   })
 
@@ -74,8 +73,8 @@ export function Work() {
               Behöver ni något som inte står här bygger vi det också.
             </p>
           </div>
-          <span className="work__count">
-            <b ref={countRef}>01</b> — {String(OFFERINGS.length).padStart(2, '0')}
+          <span className="work__meter" aria-hidden="true">
+            <i ref={countRef} />
           </span>
         </div>
 

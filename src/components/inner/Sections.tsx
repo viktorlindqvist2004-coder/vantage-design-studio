@@ -3,7 +3,7 @@ import { LogoMark } from '../Logo'
 import { useFrame } from '../../lib/hooks'
 import { useTrack } from '../../lib/track'
 import { clamp01, easeOutCubic, mapRange } from '../../lib/math'
-import { DIALOGUE, MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY } from '../../data/content'
+import { DIALOGUE, FAQ, MANIFEST, MANIFEST_ASIDE, SERVICES, STATS, STUDIO, WHY, WHY_LEAD } from '../../data/content'
 
 /** Fördröjer element i en serie så att de rör sig in efter varandra. */
 const stagger = (p: number, i: number, n: number, spread = 0.55) => {
@@ -129,11 +129,8 @@ export function Manifest() {
       <div className="manifest__aside" ref={asideRef}>
         <span className="label">{MANIFEST_ASIDE.lead}</span>
         <ol className="manifest__list">
-          {MANIFEST_ASIDE.points.map((q, i) => (
-            <li key={q}>
-              <span className="manifest__num">{String(i + 1).padStart(2, '0')}</span>
-              {q}
-            </li>
+          {MANIFEST_ASIDE.points.map((q) => (
+            <li key={q}>{q}</li>
           ))}
         </ol>
       </div>
@@ -160,11 +157,13 @@ export function Why() {
 
   return (
     <section className="sec s-why" id="varfor" data-station ref={ref}>
-      <span className="label label--lead">Varför vi arbetar som vi gör</span>
+      <div className="why__head">
+        <span className="label">Varför vi arbetar som vi gör</span>
+        <p className="why__lead">{WHY_LEAD}</p>
+      </div>
       <div className="why__grid">
         {WHY.map((w, i) => (
           <div className="why" key={w.title} ref={(el) => { items.current[i] = el }}>
-            <span className="why__num">{String(i + 1).padStart(2, '0')}</span>
             <h3 className="why__title">{w.title}</h3>
             <p className="body">{w.body}</p>
           </div>
@@ -196,7 +195,6 @@ export function Services() {
       <span className="label label--lead">Vad vi gör</span>
       {SERVICES.map((s, i) => (
         <div className="srv" key={s.name} ref={(el) => { rows.current[i] = el }}>
-          <span className="srv__num">{String(i + 1).padStart(2, '0')}</span>
           <h3 className="srv__name">{s.name}</h3>
           <p className="srv__desc">{s.desc}</p>
         </div>
@@ -230,6 +228,45 @@ export function Numbers() {
           <p className="stat__label">{s.label}</p>
         </div>
       ))}
+    </section>
+  )
+}
+
+/* ── Vanliga frågor ──────────────────────────────────────────────────── */
+
+/**
+ * De frågor någon har innan de hör av sig.
+ *
+ * Allt står framme på en gång — ingen dragspelslist att klicka upp. Den som
+ * undrar vad något kostar ska hitta svaret genom att läsa, inte genom att
+ * först gissa vilken rad svaret gömmer sig bakom.
+ */
+export function Faq() {
+  const ref = useRef<HTMLElement>(null)
+  const track = useTrack(ref)
+  const items = useRef<(HTMLDivElement | null)[]>([])
+
+  useFrame((f) => {
+    const p = mapRange(track(f).settle, 0.2, 0.95)
+    items.current.forEach((el, i) => {
+      if (!el) return
+      const s = easeOutCubic(stagger(p, i, FAQ.length, 0.55))
+      el.style.opacity = s.toFixed(3)
+      el.style.transform = `translate3d(0, ${((1 - s) * 22).toFixed(1)}px, 0)`
+    })
+  })
+
+  return (
+    <section className="sec s-faq" id="fragor" data-station ref={ref}>
+      <span className="label label--lead">Vanliga frågor</span>
+      <div className="faq__grid">
+        {FAQ.map((item, i) => (
+          <div className="faq" key={item.q} ref={(el) => { items.current[i] = el }}>
+            <h3 className="faq__q">{item.q}</h3>
+            <p className="body">{item.a}</p>
+          </div>
+        ))}
+      </div>
     </section>
   )
 }
@@ -286,7 +323,6 @@ export function Dialogue() {
       <ol className="dialog__points">
         {DIALOGUE.points.map((point, i) => (
           <li key={point.title} ref={(el) => { items.current[i] = el }}>
-            <span className="dialog__num">{String(i + 1).padStart(2, '0')}</span>
             <h3 className="dialog__name">{point.title}</h3>
             <p className="body">{point.body}</p>
           </li>
