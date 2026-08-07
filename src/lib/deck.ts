@@ -57,9 +57,39 @@ const WHEEL_THRESHOLD = 40
  */
 const TAIL_HALFLIFE = 500
 /** Hur mycket över den väntade trögheten ett utslag ska ligga för att räknas. */
-const RISE = 1.5
+const RISE = 1.15
 /** Golv under RISE, så att en döende svans inte triggar på ren avrundning. */
-const RISE_FLOOR = 5
+const RISE_FLOOR = 4
+/**
+ * Så länge efter gestens topp som svansen inte får läsas som en ny hand.
+ *
+ * Här satt det sista dubbelsteget. När fingrarna lämnar plattan hinner
+ * utslagen ofta dala ett ögonblick precis före lyftet — handen bromsar mot
+ * kanten — och sedan tar tröghetsfasen vid med den fart som rådde vid
+ * lyftet. Det ser ut som ett fall följt av en kraftig ökning, alltså exakt
+ * som en ny svepning, och en enda flick blev två steg. Om det inträffade
+ * berodde på hur fingret råkade lämna plattan, vilket är därför det bara
+ * hände ibland.
+ *
+ * Överlämningen sker inom några hundradelar. En hand som svept färdigt och
+ * sveper igen behöver flera tiondelar. Fönstret ligger mitt emellan.
+ */
+const PEAK_QUIET_MS = 180
+/**
+ * Hur brant ett utslag ska falla för att handen ska räknas tillbaka på
+ * plattan, som andel av föregående utslag.
+ *
+ * Tröghet bromsar mjukt — några få procent per händelse. Den enda gången
+ * strömmen störtar är när fingrarna nuddar plattan igen: då avbryts
+ * tröghetsfasen tvärt och nästa händelser är en ny gest som börjar om från
+ * nästan noll. Det är det säkraste tecknet på en hand som finns, och det
+ * behövs, för en försiktig ny svepning ovanpå en hård flick har utslag långt
+ * under vad trögheten fortfarande ger — den skulle aldrig märkas av
+ * ökningen ensam.
+ */
+const DROP = 0.35
+/** Under det här är utslagen för små för att ett fall ska betyda något. */
+const DROP_FLOOR = 15
 /**
  * Hur långt under toppen utslagen ska ha fallit innan svansen räknas börjad.
  *
@@ -123,12 +153,16 @@ let wheelAcc = 0
 let wheelAt = 0
 /** Sant när den pågående dragningen redan gett sitt steg. */
 let wheelSpent = false
-/** Största utslaget i den pågående gesten. */
+/** Största utslaget i den pågående gesten, och när det senast steg. */
 let wheelPeak = 0
+let wheelPeakAt = 0
 /** Sant när utslagen fallit från toppen, alltså när svansen börjat. */
 let wheelFell = false
-/** Var trögheten borde ligga just nu. Bara nedåt — aldrig uppåt. */
+/** Toppen som svansen mäts från, och tiden den ankrades vid. */
 let wheelEnv = 0
+let wheelEnvAt = 0
+/** Föregående utslag, för att se om strömmen störtar. */
+let wheelPrev = 0
 /** När den senaste förflyttningen landade, för pausen mellan partierna. */
 let landedAt = 0
 let touchStartY = 0
@@ -215,10 +249,11 @@ function step(dir: number) {
 }
 
 /** Börjar om mätningen — ny gest, eller en hand som lagt på i svansen. */
-function freshGesture(mag: number) {
+function freshGesture(mag: number, now: number) {
   wheelAcc = 0
   wheelSpent = false
   wheelPeak = mag
+  wheelPeakAt = now
   wheelFell = false
   wheelEnv = 0
 }
@@ -242,33 +277,51 @@ function onWheel(e: WheelEvent) {
 
   const mag = Math.abs(e.deltaY)
   const since = now - wheelAt
+  const prev = wheelPrev
   wheelAt = now
+  wheelPrev = mag
 
   // Ny gest så fort hjulet varit tyst en stund.
-  if (since > GESTURE_GAP_MS) freshGesture(mag)
+  if (since > GESTURE_GAP_MS) freshGesture(mag, now)
 
   if (!wheelFell) {
     // Före svansen: följ med uppåt. Så länge utslagen växer drar handen
     // fortfarande på, och det är samma svepning hur mycket den än växer.
-    if (mag > wheelPeak) wheelPeak = mag
+    if (mag > wheelPeak) {
+      wheelPeak = mag
+      wheelPeakAt = now
+    }
     if (wheelSpent && mag < wheelPeak * FALLEN) {
+      // Svansen ankras vid toppen, inte vid utslaget som råkade falla
+      // först. Trögheten kan aldrig gå över den fart handen hade när den
+      // släppte, så toppen är ett tak över hela efterslängen — även över
+      // det språng som kommer när tröghetsfasen tar vid efter en dipp.
+      // Ankrades kurvan i stället vid dippen låg taket långt under
+      // språnget, och språnget lästes som en ny svepning.
       wheelFell = true
-      wheelEnv = mag
+      wheelEnv = wheelPeak
+      wheelEnvAt = now
     }
   } else {
-    // I svansen: kurvan går bara nedåt, och den vet vi hur den ser ut.
-    // Kommer något betydligt över den är det en hand som lagt på igen.
+    // I svansen. Kurvan är känd, går bara nedåt, och ligger under toppen.
+    const expected = wheelEnv * Math.pow(0.5, (now - wheelEnvAt) / TAIL_HALFLIFE)
+
+    // En hand känns igen på två sätt, och båda behövs.
     //
-    // Kurvan får inte följa med uppåt här. Gjorde den det skulle en ny
-    // svepning aldrig hinna över sin egen kurva — den stiger mjukt, och
-    // kurvan steg med den. Sidan blev stendöv i just den sekund då man
-    // faktiskt drar igen, vilket är precis då man gör det.
-    const expected = wheelEnv * Math.pow(0.5, since / TAIL_HALFLIFE)
-    if (mag > expected * RISE + RISE_FLOOR) {
-      freshGesture(mag)
-    } else {
-      wheelEnv = expected
-    }
+    // Störtar strömmen är fingrarna tillbaka på plattan: tröghetsfasen
+    // avbryts tvärt när man nuddar, och nästa händelser är en ny gest som
+    // börjar om från nästan noll. Det fångar den försiktiga svepningen
+    // ovanpå en hård flick, vars utslag är alldeles för små för att synas
+    // mot vad trögheten fortfarande ger.
+    //
+    // Stiger utslagen klart över kurvan är det också en hand — men inte
+    // med en gång efter toppen, för då är det bara överlämningen till
+    // tröghetsfasen. Det fångar svepningen sent i svansen, när utslagen
+    // hunnit bli små och inget störtande finns kvar att se.
+    const handenTillbaka = prev >= DROP_FLOOR && mag < prev * DROP
+    const handenPaNytt =
+      mag > expected * RISE + RISE_FLOOR && now - wheelPeakAt > PEAK_QUIET_MS
+    if (handenTillbaka || handenPaNytt) freshGesture(mag, now)
   }
 
   // En gest ger ett steg. En eftersläng ger inget.
