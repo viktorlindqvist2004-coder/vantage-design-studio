@@ -307,26 +307,27 @@ export function Pulse() {
 /**
  * Två personer vid ett bord, med en skärm emellan sig.
  *
- * Partiet handlar om att ni pratar direkt med den som bygger. Det gick att
- * säga med två prickar och en linje, och det gjorde sidan förut — men två
- * prickar är en symbol, och det här ska handla om människor.
- *
- * Ritade i linje och inte fotograferade, av två skäl. Ett foto på två
- * främlingar är ett foto på två främlingar; en teckning är tydlig med att
- * den föreställer situationen och inte personerna. Och studion har inga
- * bilder på riktiga möten att visa — då är en teckning ärligare än ett
- * köpt fotografi som låtsas vara ett.
+ * Partiet handlar om att ni pratar direkt med den som bygger, och det ska
+ * synas att det är människor och inte en symbol för människor.
  *
  * FORMEN
- * Första försöket var en cirkel på en kupol och en böjd arm, och det såg
- * ut som en skylt på en toalettdörr. Skillnaden mot något man tror på
- * ligger i tre saker, och alla tre finns här: en hals, så att huvudet
- * sitter på kroppen i stället för att sväva ovanför den; armbågar, så att
- * armarna kan göra något; och två kroppar som inte är samma kropp
- * speglad — den ena lutar sig fram och lyssnar, den andra visar något.
+ * Fyllda silhuetter, inte konturer. Det är hela skillnaden mellan en
+ * teckning och en skylt: en streckgubbe är en linje runt ingenting, medan
+ * en fylld form har massa och därmed tyngd. Ansiktena är utsparade i
+ * papprets färg, håret är en egen form ovanpå, och händerna är utsparade
+ * på samma sätt — det är de ljusa ytorna mot de mörka som gör att man
+ * läser en person.
  *
- * De andas i olika takt. Det är den lilla osynkade rörelsen som gör att
- * man läser två personer och inte två former.
+ * Bordet ritas efter kropparna och döljer där de slutar, så att de sitter
+ * bakom det i stället för att vara avklippta vid det.
+ *
+ * De två är inte samma kropp speglad. Den till vänster lutar sig fram med
+ * handen på bordet och lyssnar; den till höger sitter upprätt och visar
+ * något på skärmen. De andas i olika takt.
+ *
+ * Ritade och inte fotograferade, och det är ett val: ett foto på två
+ * främlingar är ett foto på två främlingar, medan en teckning är tydlig
+ * med att den föreställer situationen och inte personerna.
  */
 export function Figures() {
   const ref = useReveal<SVGSVGElement>()
@@ -335,59 +336,76 @@ export function Figures() {
     <svg
       className="folk"
       ref={ref}
-      viewBox="0 0 560 252"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      viewBox="0 0 560 300"
       role="img"
       aria-label="Två personer i samtal vid ett bord med en skärm emellan sig"
     >
-      {/* Rummet: bord och två stolar. Stolarna finns för att kropparna ska
-          ha något att sitta på — utan dem svävar de. */}
-      <g opacity="0.28">
-        <path d="M26 198h508" />
-        <path d="M96 198v42M464 198v42" />
-        <path d="M74 198v-52M74 152h30" />
-        <path d="M486 198v-52M486 152h-30" />
+      {/* Stolsryggarna, längst bak. */}
+      <g stroke="currentColor" strokeWidth="1.6" fill="none" opacity="0.22">
+        <path d="M74 246v-70q0-10 10-10h34q10 0 10 10v22" />
+        <path d="M486 246v-70q0-10-10-10h-34q-10 0-10 10v22" />
       </g>
 
-      {/* Personen till vänster: lutar sig fram, lyssnar, handen på bordet. */}
+      {/* Personen till vänster: lutar sig fram, handen på bordet. */}
       <g className="folk__en">
-        <ellipse cx="150" cy="66" rx="16.5" ry="18.5" />
-        <path d="M133 62c0-13 7-22 17-22s17 9 17 21c-3-5-9-9-17-9s-14 5-17 10z" />
-        <path d="M142 83v11M158 83v10" />
-        <path d="M112 198c0-46 9-79 20-90 10-7 20-7 30 0 11 11 20 44 20 90" />
-        {/* Armen mot bordet, med armbåge. */}
-        <path d="M161 112c17 9 29 24 37 39 4 8 13 13 23 14" />
-        {/* Den bortre armen, delvis skymd av kroppen. */}
-        <path d="M129 116c-9 14-13 33-13 50" opacity="0.55" />
+        <path d="M139 96q1 12-2 22h26q-3-10-2-22z" fill="currentColor" />
+        <ellipse cx="150" cy="80" rx="21" ry="25"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
+        {/* Håret ligger ovanpå ansiktet och ger huvudet dess form. */}
+        <path d="M126 84q-5-27 24-27t24 27q-4-16-12-19-6-2-12-2t-12 2q-8 3-12 19z"
+          fill="currentColor" />
+        <path d="M150 112q-22 0-27 20-6 22-9 116h96q-3-94-9-116-5-20-27-20z"
+          fill="currentColor" />
+        {/* Armen ut mot bordet, med axel, armbåge och hand. */}
+        <path d="M180 124q26 14 40 46 10 24 12 78h-32q-2-44-10-62-8-18-22-28z"
+          fill="currentColor" />
+        <ellipse cx="216" cy="240" rx="15" ry="10"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
       </g>
 
-      {/* Skärmen dem emellan, på bordet. */}
-      <g className="folk__skarm">
-        <rect x="242" y="120" width="80" height="56" rx="5" opacity="0.55" />
-        <path d="M282 176v14M264 190h36" opacity="0.4" />
-        <path d="M252 134h30" stroke="var(--flame)" strokeWidth="4" />
-        <path d="M252 146h56" opacity="0.34" />
-        <path d="M252 156h40" opacity="0.26" />
-        <path d="M252 166h48" opacity="0.2" />
-      </g>
-
-      {/* Personen till höger: sitter uppräten och visar något på skärmen. */}
+      {/* Personen till höger: upprätt, visar något på skärmen. */}
       <g className="folk__tva">
-        <ellipse cx="410" cy="62" rx="16.5" ry="18.5" />
-        <path d="M393 60c0-13 8-22 18-22 9 0 15 6 16 15" />
-        <circle cx="432" cy="48" r="7.5" />
-        <path d="M402 79v11M418 79v10" />
-        <path d="M370 198c0-48 9-81 20-92 10-7 20-7 30 0 11 11 20 46 20 92" />
-        {/* Armen som pekar mot skärmen. Egen grupp, så att den kan röra sig
+        <path d="M399 90q1 12-2 22h26q-3-10-2-22z" fill="currentColor" />
+        <ellipse cx="410" cy="74" rx="21" ry="25"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M387 76q-3-27 23-27 22 0 24 21-6-13-16-15-8-2-16 0-11 3-15 21z"
+          fill="currentColor" />
+        <circle cx="437" cy="60" r="13" fill="currentColor" />
+        <path d="M410 106q-22 0-27 20-6 22-9 120h96q-3-98-9-120-5-20-27-20z"
+          fill="currentColor" />
+        <path d="M436 118q22 16 28 48 4 22 4 80h-30q0-46-6-66-6-20-18-32z"
+          fill="currentColor" opacity="0.55" />
+        {/* Den pekande armen är en egen grupp så att den kan röra sig
             för sig — det är den som gör att någon visar något. */}
         <g className="folk__arm">
-          <path d="M390 110c-16 7-28 20-36 33-4 7-11 11-19 12" />
+          <path d="M384 120q-24 10-38 34-10 17-14 34l30 8q5-18 13-30 8-13 20-20z"
+            fill="currentColor" />
+          <ellipse cx="356" cy="196" rx="14" ry="10"
+            fill="var(--paper)" stroke="currentColor" strokeWidth="1.6"
+            transform="rotate(-18 356 196)" />
         </g>
-        <path d="M431 114c9 15 13 35 13 52" opacity="0.55" />
+      </g>
+
+      {/* Bordet, ritat efter kropparna så att det döljer där de slutar. */}
+      <g>
+        <rect x="34" y="244" width="492" height="13" rx="4"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M92 257v36M468 257v36"
+          stroke="currentColor" strokeWidth="1.7" opacity="0.35" fill="none" />
+      </g>
+
+      {/* Skärmen står på bordet. */}
+      <g className="folk__skarm">
+        <rect x="252" y="152" width="86" height="66" rx="6"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M295 218v16M275 240h40"
+          stroke="currentColor" strokeWidth="1.7" fill="none" opacity="0.5" />
+        <rect x="264" y="166" width="32" height="5" rx="2.5" fill="var(--flame)" />
+        <g fill="currentColor">
+          <rect x="264" y="180" width="62" height="4" rx="2" opacity="0.32" />
+          <rect x="264" y="191" width="46" height="4" rx="2" opacity="0.24" />
+          <rect x="264" y="202" width="54" height="4" rx="2" opacity="0.18" />
+        </g>
       </g>
     </svg>
   )

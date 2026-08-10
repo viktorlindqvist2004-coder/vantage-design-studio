@@ -5,7 +5,7 @@ import {
 } from '../data/content'
 import { clamp01 } from '../lib/math'
 import {
-  onTick, reducedMotion, useCountUp, useFlight, useReveal, useScrub, useTick,
+  onTick, reducedMotion, useFlight, useReveal, useScrub, useTick,
   type FlightKind,
 } from '../lib/motion'
 import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
@@ -14,6 +14,7 @@ import { Cables } from './Cables'
 import { Figures, Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
 import { Beams, Blueprint, Columns, Depth, Dots, Flow, Rings } from './Backdrops'
 import { Screens } from './Screens'
+import { FlapValue } from './Flap'
 import { LogoMark } from './Logo'
 import { OfferingArt } from './OfferingArt'
 
@@ -503,22 +504,17 @@ export function Dialogue() {
 /* ── Talen ────────────────────────────────────────────────────────────── */
 
 /**
- * Ett tal som räknas upp när det kommer in i rutan.
+ * Ett tal på skyltklockan.
  *
- * Bara talet räknas; det som står efter — procenttecken och liknande —
- * hängs på oförändrat. Värden som inte börjar med en siffra, som `1:1`,
- * lämnas i fred: de betyder ett förhållande och skulle bli obegripliga
- * halvvägs upp.
+ * Alla tecken går på brickor, också de som inte är siffror — `%` och `:`
+ * sitter på remsan som allt annat. Förut räknades bara talet upp och
+ * resten hängdes på, vilket betydde att `1:1` inte kunde göra någonting
+ * alls. Nu rullar hela värdet.
  */
 function Stat({ value, label, delay }: { value: string; label: string; delay: number }) {
-  const m = /^(\d+)(.*)$/.exec(value)
-  const [n, ref] = useCountUp(m ? Number(m[1]) : 0)
-
   return (
     <Rise className="stat" delay={delay}>
-      <span className="stat__value" ref={ref}>
-        {m ? `${n}${m[2]}` : value}
-      </span>
+      <FlapValue value={value} />
       <span className="stat__label">{label}</span>
     </Rise>
   )

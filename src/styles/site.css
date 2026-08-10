@@ -1280,9 +1280,9 @@ html[data-tone='dark'] .grain {
 
 /* Vridpunkten ligger vid bordet och inte mitt i figuren: en människa som
    andas eller lutar sig gör det kring höften, inte kring naveln. */
-.folk__en { transform-origin: 150px 198px; }
-.folk__tva { transform-origin: 410px 198px; }
-.folk__arm { transform-origin: 390px 110px; }
+.folk__en { transform-origin: 150px 244px; }
+.folk__tva { transform-origin: 410px 244px; }
+.folk__arm { transform-origin: 388px 120px; }
 
 .folk.in .folk__en { animation: andas 5.2s ease-in-out infinite; }
 .folk.in .folk__tva { animation: andas 6.1s ease-in-out infinite 0.9s; }
@@ -1367,14 +1367,58 @@ html[data-tone='dark'] .grain {
   align-content: start;
 }
 
-.stat__value {
-  font-size: clamp(3rem, 6.5vw, 6rem);
-  font-weight: 300;
-  letter-spacing: -0.05em;
+/* ── Skyltklockan ─────────────────────────────────────────────────────────
+   Talen sitter på brickor som rullar tills rätt tecken står framme, som på
+   en gammal tågstation. Se Flap.tsx. */
+.tavla {
+  display: block;
+  font-size: clamp(2.6rem, 5.6vw, 5rem);
   line-height: 1;
-  /* Siffrorna räknas upp, och proportionella siffror skulle få hela talet
-     att vandra i sidled medan det räknar. */
+}
+
+.tavla__rad {
+  display: flex;
+  gap: 4px;
+}
+
+.bricka {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 1.16em;
+  width: 0.72em;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ink) 9%, var(--paper));
+  border: 1px solid var(--line);
+  /* Brickorna är fysiska föremål och ska ha en ljuskälla ovanifrån. */
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--paper) 60%, transparent) inset;
+}
+
+.bricka__remsa {
+  display: block;
+  will-change: transform;
+}
+
+.bricka__tecken {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.16em;
+  font-weight: 400;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* Skarven tvärs över brickan, med en skugga under sig. Utan den är det en
+   ruta med en siffra; med den är det något som kan vändas. */
+.bricka__skarv {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1px;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 22%, transparent);
+  pointer-events: none;
 }
 
 .stat__label {
