@@ -8,7 +8,12 @@
 export const STUDIO = {
   name: 'Vantage Design Studio',
   founded: 2026,
-  email: 'Viktor.vantage@gmail.com',
+  /**
+   * Båda adresserna gäller lika mycket, och skrivs därför lika stort.
+   * Ingen av dem är huvudadress — den som hör av sig ska inte behöva
+   * gissa vem av oss man helst vänder sig till.
+   */
+  emails: ['Viktor.vantage@gmail.com', 'arvid.vantage@gmail.com'],
   /** Skrivet för läsbarhet; tel-länken rensar bort mellanslagen. */
   phone: '070 790 48 76',
   location: 'Sverige',

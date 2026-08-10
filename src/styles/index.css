@@ -1,6 +1,4 @@
 @import './fonts.css';
 @import './tokens.css';
 @import './base.css';
-@import './film.css';
-@import './screen.css';
-@import './ui.css';
+@import './site.css';

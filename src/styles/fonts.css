@@ -8,14 +8,18 @@
    Bara latin och latin-ext ligger med. Sidan är på svenska; kyrilliska och
    vietnamesiska tecken skulle bara vara vikt att ladda ned.
 
-   Vikten är variabel, 200–500: hela sidans typografiska kontrast ligger i
+   Vikten är variabel, 100–900: hela sidans typografiska kontrast ligger i
    vikten, och en variabel fil ger alla steg däremellan för priset av en.
+
+   Axeln gick förut bara 200–500, vilket räckte när rubrikerna var tunna och
+   filmen bar sidan. Nu bär typografin den, och då behövs den tunga änden.
+   Hela spannet kostade tre kilobyte mer än det halva.
    ═══════════════════════════════════════════════════════════════════════ */
 
 @font-face {
   font-family: 'Geist';
   font-style: normal;
-  font-weight: 200 500;
+  font-weight: 100 900;
   font-display: swap;
   src: url('/fonts/geist-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
@@ -26,7 +30,7 @@
 @font-face {
   font-family: 'Geist';
   font-style: normal;
-  font-weight: 200 500;
+  font-weight: 100 900;
   font-display: swap;
   src: url('/fonts/geist-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,

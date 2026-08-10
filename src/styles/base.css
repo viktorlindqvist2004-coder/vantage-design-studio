@@ -10,29 +10,41 @@
 }
 
 html {
-  /* Hela dramaturgin drivs av window.scrollY — inget smooth-beteende här,
-     utjämningen sker i scrollmotorn. */
-  scroll-behavior: auto;
-  background: var(--ink);
+  /* Sidan rullar med fönstrets egen scroll igen.
+     Den förra sidan tog över scrollen helt och flyttade ett bestämt steg
+     per dragning. Det gav en resa som var svår att göra rätt på varje
+     styrplatta, och lika svår att göra rätt för den som bara vill läsa.
+     Här rullar man som på vilken sida som helst — rörelsen ligger i vad
+     innehållet gör medan man rullar, inte i att sidan tar kommandot. */
+  background: var(--paper);
+  color-scheme: light;
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: auto;
+}
+
+html[data-tone='dark'] {
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--sans);
-  color: var(--bone);
-  background: var(--ink);
-  /* Sidan rullar inte. En dragning flyttar ett helt steg, till nästa
-     bestämda läge — se lib/deck.ts. Rullar fönstret också hamnar man mellan
-     två lägen, vilket är precis det som skulle bort. */
-  overflow: hidden;
-  overscroll-behavior: none;
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Bakgrunden byts när man rullar in i ett mörkt parti. Utan övergången
+     blinkar hela rutan till vid varje gräns — det är själva överfallet man
+     ska se, inte att kroppen bakom byter färg. */
+  transition: background-color 600ms var(--out);
 }
 
 img,
-svg {
+svg,
+video {
   display: block;
   max-width: 100%;
 }
@@ -50,25 +62,26 @@ button {
   cursor: pointer;
 }
 
+h1, h2, h3, h4 {
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
 ::selection {
-  background: var(--accent);
-  color: var(--ink);
+  background: var(--flame);
+  color: #fff;
 }
 
 :focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 4px;
-}
-
-/* Fönstret som allt utspelar sig i. */
-.viewport {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  z-index: 1;
-  /* Isolerar kompositlagren så att jättelika skalade lager inte tvingar fram
-     omritning av hela sidan. */
-  contain: strict;
+  outline: 2px solid var(--flame);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .sr-only {
@@ -77,22 +90,20 @@ button {
   height: 1px;
   padding: 0;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
 
-/* Hoppa-till-innehåll och annan tangentbordsnavigation ska alltid funka
-   även när sidan i övrigt styrs av scrollposition. */
 .skip-link {
-  position: absolute;
+  position: fixed;
   top: 1rem;
   left: 1rem;
   z-index: 999;
   padding: 0.75rem 1.25rem;
-  background: var(--bone);
-  color: var(--ink);
-  font: 400 0.875rem var(--sans);
+  background: var(--ink);
+  color: var(--paper);
+  font: 500 0.875rem var(--sans);
   transform: translateY(-200%);
   transition: transform var(--swift);
 }
@@ -101,6 +112,8 @@ button {
   transform: translateY(0);
 }
 
+/* Den som bett om lugn får sidan stilla. Innehållet står kvar och är
+   fullt läsbart — det slutar bara röra sig. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -108,5 +121,6 @@ button {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

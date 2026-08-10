@@ -1,0 +1,1079 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SIDAN
+   ═══════════════════════════════════════════════════════════════════════
+   Ordningen här följer sidans egen ordning: först det som ligger över allt
+   (list, mätare, korn), sedan byggstenarna för rörelse, sedan partierna
+   uppifrån och ned.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Kornet, ritat en gång som SVG-brus och lagt som bakgrundsbild. En
+     bildfil hade vägt tiotals kilobyte för samma sak. */
+  --grain-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Byggstenar för rörelse ───────────────────────────────────────────── */
+
+/* Stiger och tonar in. Sträckan är kort med flit: långa resor läser som
+   att sidan laddar, korta som att den svarar. */
+.rise {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 760ms var(--out) var(--d, 0ms),
+    transform 760ms var(--out) var(--d, 0ms);
+}
+
+.rise.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Rubriker där orden skjuts upp bakom en kant. */
+.kin {
+  display: block;
+}
+
+.kin__line {
+  display: block;
+}
+
+.kin__word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  /* Bokstäver som g och j går under baslinjen och skulle klippas av
+     spillningen. Rutan är därför något högre än raden, och skjuts ned
+     lika mycket igen. */
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+  margin-right: 0.26em;
+}
+
+.kin__word > span {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0);
+  transition: transform 980ms var(--out) var(--d, 0ms);
+}
+
+.kin.in .kin__word > span {
+  transform: none;
+}
+
+.kin__word--hot {
+  color: var(--flame);
+}
+
+/* En linje som dras ut. */
+.rule {
+  display: block;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 900ms var(--out) var(--d, 0ms);
+}
+
+.rule.in {
+  transform: scaleX(1);
+}
+
+/* Etiketten som inleder ett parti. */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.eyebrow__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--flame);
+  flex: none;
+}
+
+/* ── Sidhuvud ─────────────────────────────────────────────────────────── */
+
+.nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 var(--gutter);
+  /* Listen ärver tonen från <html>, som byts när man rullar in i ett
+     mörkt parti. Färgövergången är samma längd som kroppens. */
+  color: var(--ink);
+  transition: color 600ms var(--out);
+}
+
+/* En hinna bakom listen, så att texten under inte läser rakt igenom den.
+   Genomskinlig oskärpa i stället för en platta: plattan hade dragit en
+   synlig kant tvärs över sidan. */
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  opacity: 0;
+  transition: opacity 400ms var(--out);
+  pointer-events: none;
+}
+
+.nav[data-lifted='true']::before {
+  opacity: 1;
+}
+
+.nav > * {
+  position: relative;
+}
+
+.nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.nav__logo .logo__mark {
+  width: 20px;
+  height: 20px;
+}
+
+.nav__links {
+  display: none;
+  gap: clamp(1.4rem, 2.6vw, 2.6rem);
+  font-size: var(--t-small);
+  font-weight: 450;
+}
+
+@media (min-width: 860px) {
+  .nav__links { display: flex; }
+}
+
+/* Länkar med ett streck som sveper in under. */
+.nav__links a {
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.nav__links a::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: 100% 50%;
+  transition: transform 420ms var(--out);
+}
+
+.nav__links a:hover::after {
+  transform: scaleX(1);
+  transform-origin: 0 50%;
+}
+
+/* ── Knappar ──────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  font-size: var(--t-small);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition:
+    background-color 320ms var(--out),
+    color 320ms var(--out),
+    border-color 320ms var(--out),
+    transform 480ms var(--out);
+  will-change: transform;
+}
+
+.btn--solid {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn--solid:hover {
+  background: var(--flame);
+  color: #fff;
+}
+
+.btn--ghost {
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.btn--ghost:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn__arrow {
+  transition: transform 420ms var(--out);
+}
+
+.btn:hover .btn__arrow {
+  transform: translateX(3px);
+}
+
+/* ── Mätaren överst ───────────────────────────────────────────────────── */
+
+.rail {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 2px;
+  z-index: 70;
+  background: var(--flame);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+/* ── Kornet ───────────────────────────────────────────────────────────────
+   Ett stillastående brus över hela sidan. Stora släta färgytor på en skärm
+   ser digitala ut och band sig i toningarna; ett svagt korn bryter upp dem
+   och ger sidan yta. Det ligger still — brus som rör sig är en effekt man
+   ser, och det här ska bara kännas. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  opacity: 0.2;
+  mix-blend-mode: multiply;
+  background-image: var(--grain-src);
+  background-size: 180px 180px;
+}
+
+/* Mot svart måste kornet ljusna i stället för att mörkna, annars syns det
+   inte alls. Screen tar däremot i betydligt hårdare än multiply gör mot
+   ljust, så styrkan är en tredjedel. */
+html[data-tone='dark'] .grain {
+  mix-blend-mode: screen;
+  opacity: 0.07;
+}
+
+/* ── Markören ─────────────────────────────────────────────────────────────
+   En ring som följer pekaren med eftersläpning och växer över det som går
+   att klicka på. Bara med riktig pekare — se lib/motion.ts. */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 300ms var(--out),
+    width 320ms var(--out),
+    height 320ms var(--out),
+    margin 320ms var(--out),
+    background-color 320ms var(--out),
+    border-color 320ms var(--out);
+}
+
+.cursor[data-on='true'] { opacity: 1; }
+
+.cursor[data-hot='true'] {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  background: color-mix(in srgb, var(--flame) 18%, transparent);
+  border-color: var(--flame);
+}
+
+/* ── Partierna ────────────────────────────────────────────────────────── */
+
+.bay {
+  position: relative;
+  padding: var(--bay) var(--gutter);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Två partier i samma ton efter varandra ska inte lägga sin luft på
+   varandra. Utan det här blir gapet mellan dem dubbelt så stort som
+   överallt annars, och läses som att något fattas där. Byter tonen är
+   dubbelt luft däremot rätt: då finns en kant att andas kring. */
+.bay[data-tone='light'] + .bay[data-tone='light'],
+.bay[data-tone='dark'] + .bay[data-tone='dark'] {
+  padding-top: 0;
+}
+
+.wrap {
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Rubrikhuvudet som inleder de flesta partier. */
+.head {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  margin-bottom: clamp(3rem, 7vh, 6rem);
+}
+
+@media (min-width: 900px) {
+  .head--split {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.head__title {
+  font-size: var(--t-xl);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+}
+
+.head__lead {
+  font-size: var(--t-md);
+  color: var(--muted);
+  max-width: 46ch;
+  line-height: 1.5;
+}
+
+/* ── Hjältebilden ─────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: calc(var(--nav-h) + clamp(2rem, 6vh, 5rem)) var(--gutter) clamp(2rem, 5vh, 3.5rem);
+  overflow: hidden;
+}
+
+/* Ljuset bakom rubriken.
+   Två mjuka fält i accentens färg som driver långsamt. Det ger den ljusa
+   ytan djup utan att lägga något ovanpå den — och det är ritat, inte
+   fotograferat, så det väger ingenting. */
+/* Ligger före `.hero > *` i filen och skulle förlora mot den regelns
+   `position: relative` — därav klassen två gånger, som ger den övertaget
+   utan att flytta om ordningen. */
+.hero .hero__aura {
+  position: absolute;
+  inset: -25% -15% auto;
+  height: 135%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(42% 40% at 80% 16%, color-mix(in srgb, var(--flame) 40%, transparent), transparent 68%),
+    radial-gradient(38% 36% at 12% 56%, color-mix(in srgb, var(--flame) 20%, transparent), transparent 70%),
+    radial-gradient(30% 30% at 58% 88%, color-mix(in srgb, var(--ink) 10%, transparent), transparent 70%);
+  filter: blur(40px);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to   { transform: translate3d(4%, 3%, 0) scale(1.12); }
+}
+
+/* Kablarna ligger mellan ljuset och texten. De tar inte emot pekaren —
+   fönstret lyssnar åt dem — så det går att markera text rakt igenom. */
+.hero .cables {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.hero__services {
+  display: grid;
+  gap: 0.45rem;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero__intro {
+  max-width: 34ch;
+  font-size: var(--t-md);
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+@media (min-width: 720px) {
+  .hero__intro { text-align: right; }
+}
+
+/* Rubriken. Så stor som raden tål, och spärrad hårt ihop — den ska läsas
+   som en skylt, inte som en mening. */
+.hero__title {
+  font-size: var(--t-mega);
+  font-weight: 620;
+  letter-spacing: -0.05em;
+  line-height: 0.94;
+}
+
+.hero__title em {
+  font-style: normal;
+  color: var(--flame);
+}
+
+.hero__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+/* Pilen som säger att det finns mer. Rör sig i sin egen takt, långsamt. */
+.hero__cue {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.hero__cue i {
+  display: block;
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(var(--flame), transparent);
+  animation: cue 2.4s ease-in-out infinite;
+  transform-origin: 50% 0;
+}
+
+@keyframes cue {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.4; }
+  50%      { transform: scaleY(1); opacity: 1; }
+}
+
+/* ── Löpande listen ───────────────────────────────────────────────────── */
+
+.ticker {
+  --speed: 42s;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1rem, 2.4vh, 1.6rem) 0;
+  background: var(--paper);
+  color: var(--ink);
+  border-block: 1px solid var(--line);
+  user-select: none;
+}
+
+.ticker__track {
+  display: flex;
+  width: max-content;
+  animation: slide var(--speed) linear infinite;
+}
+
+.ticker:hover .ticker__track {
+  animation-play-state: paused;
+}
+
+.ticker__group {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.ticker__item {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.4rem, 3vw, 3rem);
+  padding-right: clamp(1.4rem, 3vw, 3rem);
+  font-size: clamp(1.1rem, 2.4vw, 2rem);
+  font-weight: 520;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.ticker__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--flame);
+  flex: none;
+}
+
+@keyframes slide {
+  from { transform: translate3d(0, 0, 0); }
+  /* Två likadana grupper ligger efter varandra; halva sträckan är alltså
+     exakt ett varv, och skarven syns inte. */
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+/* ── Manifestet ───────────────────────────────────────────────────────── */
+
+.manifest__text {
+  font-size: clamp(1.9rem, 5.4vw, 5.4rem);
+  font-weight: 540;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  max-width: 20ch;
+}
+
+/* Varje ord börjar nedtonat och tänds när man rullar förbi. Det är
+   rörelsen som gör att man faktiskt läser meningen i stället för att
+   svepa förbi den. */
+.manifest__word {
+  transition: color 260ms linear, opacity 260ms linear;
+  color: var(--faint);
+  opacity: 0.45;
+}
+
+.manifest__word[data-lit='true'] {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.manifest__aside {
+  margin-top: clamp(2.5rem, 6vh, 5rem);
+  max-width: 40ch;
+}
+
+.manifest__lead {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+
+.manifest__points {
+  list-style: none;
+  display: grid;
+}
+
+.manifest__points li {
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--t-md);
+  color: var(--ink);
+}
+
+.manifest__points li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Varför ───────────────────────────────────────────────────────────── */
+
+.why {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+@media (min-width: 800px) {
+  .why { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .why { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.why__item {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.why__no {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.18em;
+  color: var(--flame);
+}
+
+.why__title {
+  font-size: var(--t-lg);
+  font-weight: 540;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.why__body {
+  color: var(--muted);
+  font-size: var(--t-small);
+  line-height: 1.65;
+}
+
+/* ── Det vi bygger ────────────────────────────────────────────────────── */
+
+.offer {
+  display: grid;
+  gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+@media (min-width: 700px) {
+  .offer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1180px) {
+  .offer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+  transition:
+    transform 620ms var(--out),
+    border-color 420ms var(--out);
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--paper));
+}
+
+.card__art {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  transition: transform 900ms var(--out);
+}
+
+.card:hover .card__art {
+  transform: scale(1.045);
+}
+
+.card__body {
+  padding: 1.4rem 1.5rem 1.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.card__kind {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.card__name {
+  font-size: var(--t-md);
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+.card__desc {
+  color: var(--muted);
+  font-size: var(--t-small);
+  line-height: 1.6;
+}
+
+/* ── Arbetsgången ─────────────────────────────────────────────────────── */
+
+.process {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+@media (min-width: 960px) {
+  .process { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); }
+}
+
+/* Vänsterspalten står kvar medan stegen rullar förbi. Det är det enda
+   stället på sidan där något hakar upp sig, och det är med flit: här ska
+   man se var i ordningen man befinner sig. */
+.process__side {
+  align-self: start;
+}
+
+@media (min-width: 960px) {
+  .process__side {
+    position: sticky;
+    top: calc(var(--nav-h) + 3rem);
+  }
+}
+
+.process__meter {
+  margin-top: 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.process__tick {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  transition: color 380ms var(--out);
+}
+
+.process__tick i {
+  display: block;
+  width: 26px;
+  height: 1px;
+  background: currentColor;
+  transition: width 420ms var(--out), background-color 380ms var(--out);
+}
+
+.process__tick[data-at='true'] {
+  color: var(--ink);
+}
+
+.process__tick[data-at='true'] i {
+  width: 46px;
+  background: var(--flame);
+}
+
+.process__steps {
+  display: grid;
+  gap: clamp(2rem, 5vh, 3.5rem);
+}
+
+.step {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.step__no {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.18em;
+  color: var(--flame);
+}
+
+.step__title {
+  font-size: var(--t-lg);
+  font-weight: 540;
+  letter-spacing: -0.03em;
+}
+
+.step__body {
+  color: var(--muted);
+  max-width: 58ch;
+  line-height: 1.65;
+}
+
+.step__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+/* Små brickor: vad steget lämnar ifrån sig och vad det tar i tid. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 3%, var(--paper));
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.chip b {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+/* ── Samtalet ─────────────────────────────────────────────────────────── */
+
+.dialog {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+@media (min-width: 980px) {
+  .dialog { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+
+.dialog__title {
+  font-size: var(--t-xl);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  max-width: 18ch;
+}
+
+.dialog__body {
+  margin-top: 1.6rem;
+  color: var(--muted);
+  font-size: var(--t-md);
+  line-height: 1.55;
+  max-width: 48ch;
+}
+
+.dialog__points {
+  list-style: none;
+  display: grid;
+  align-content: start;
+}
+
+.dialog__point {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dialog__point:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.dialog__point h3 {
+  font-size: var(--t-md);
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+.dialog__point p {
+  color: var(--muted);
+  font-size: var(--t-small);
+  line-height: 1.65;
+}
+
+/* ── Talen ────────────────────────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+
+@media (min-width: 720px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1120px) {
+  .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.stat {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.stat__value {
+  font-size: clamp(3rem, 6.5vw, 6rem);
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  /* Siffrorna räknas upp, och proportionella siffror skulle få hela talet
+     att vandra i sidled medan det räknar. */
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__label {
+  color: var(--muted);
+  font-size: var(--t-small);
+  line-height: 1.6;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Frågorna ─────────────────────────────────────────────────────────── */
+
+.faq {
+  display: grid;
+  max-width: 62rem;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.faq__item {
+  border-top: 1px solid var(--line);
+}
+
+.faq__item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq__q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  text-align: left;
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  transition: color 300ms var(--out);
+}
+
+.faq__q:hover {
+  color: var(--flame);
+}
+
+/* Korset som blir ett minus. Två streck, det ena vridet. */
+.faq__sign {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.faq__sign::before,
+.faq__sign::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1.5px;
+  background: currentColor;
+  transition: transform 420ms var(--out);
+}
+
+.faq__sign::after {
+  transform: rotate(90deg);
+}
+
+/* Öppningsläget sitter på en inre ruta, inte på raden själv: raden är
+   framträdandet och äger redan sina klasser. Väljarna utgår därför från
+   attributet och inte från raden. */
+[data-open='true'] .faq__sign::after {
+  transform: rotate(0deg);
+}
+
+/* Höjden animeras med grid-fraktioner i stället för max-height: det ger
+   rätt höjd för vilken textmängd som helst, i stället för en gissad. */
+.faq__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 520ms var(--out);
+}
+
+[data-open='true'] > .faq__panel {
+  grid-template-rows: 1fr;
+}
+
+.faq__panel > div {
+  overflow: hidden;
+}
+
+.faq__a {
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.7;
+  padding-bottom: 1.6rem;
+}
+
+/* ── Kontakt ──────────────────────────────────────────────────────────── */
+
+.contact__title {
+  font-size: var(--t-xl);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  max-width: 15ch;
+}
+
+.contact__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  margin-top: clamp(3rem, 8vh, 6rem);
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.contact__col h4 {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 400;
+  margin-bottom: 0.9rem;
+}
+
+.contact__col a,
+.contact__col p {
+  display: block;
+  font-size: var(--t-small);
+  line-height: 1.85;
+  transition: color 300ms var(--out);
+}
+
+.contact__col a:hover {
+  color: var(--flame);
+}
+
+.colophon {
+  margin-top: clamp(3rem, 8vh, 5rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.colophon__mark {
+  display: block;
+  width: 16px;
+  height: 16px;
+}

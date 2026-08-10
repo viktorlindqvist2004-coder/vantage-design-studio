@@ -1,59 +1,80 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   GRUNDVÄRDENA
+   ═══════════════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Höjden på rutan sidan rullar i. Ute i rummet är det fönstret; inne i
-     filmen är det klippets ram, som kan vara lägre. Film.tsx skriver om
-     den på .film__page. */
-  --page-h: 100vh;
-
-  /* Färg -------------------------------------------------------------
-     Nästan monokromt. En enda dämpad accent i sand, resten är ljus och
-     skugga. Det som ska dra blicken är typografin och rörelsen — inte
-     färgerna. */
-  --ink: #0b0b0c;
-  --ink-2: #121214;
-  --ink-3: #1a1a1d;
-  --ink-4: #26262a;
-
-  --bone: #eceae5;
-  --dim: #94918b;
-  --faint: #5d5b57;
-
-  --accent: #c9bfad;
-  --glow: #cfd8dd;
-
-  --line: color-mix(in srgb, var(--bone) 11%, transparent);
-  --line-soft: color-mix(in srgb, var(--bone) 6%, transparent);
-
-  /* Typografi --------------------------------------------------------
-     Ett enda typsnitt genom hela sidan, med vikten som enda kontrast.
-     Geist är en rak, neutral grotesk utan egenheter — bokstäverna ska
-     inte märkas, bara texten. Den smala varianten vi hade tidigare drog
-     ihop orden och gav rubrikerna en ton sidan inte ska ha. */
+  /* Typografi ──────────────────────────────────────────────────────── */
   --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     'Helvetica Neue', sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Rytm -------------------------------------------------------------- */
-  --gutter: clamp(1.5rem, 5vw, 6rem);
+  /* Skalan är brant med flit. Sidan ska ta i, och det gör den med storlek
+     — inte med färg och inte med ramar. Mellanstegen är få: stort eller
+     litet, sällan något däremellan.
+
+     Rubriken mäts mot både bredd och höjd. Bara mot bredden blir den för
+     hög på en bred och låg skärm, och rinner ut under vikningen — vilket
+     är precis vad en rubrik inte får göra. */
+  --t-mega: clamp(3rem, min(12vw, 18.5vh), 13rem);
+  --t-xl: clamp(2.4rem, 6.4vw, 6.5rem);
+  --t-lg: clamp(1.6rem, 3.2vw, 3rem);
+  --t-md: clamp(1.15rem, 1.7vw, 1.5rem);
+  --t-body: clamp(1rem, 1.02vw, 1.125rem);
+  --t-small: 0.9375rem;
+  --t-label: 0.6875rem;
+
+  /* Rytm ───────────────────────────────────────────────────────────── */
+  --gutter: clamp(1.25rem, 5vw, 5.5rem);
+  --bay: clamp(4.5rem, 12vh, 10rem);
   --rule: 1px solid var(--line);
+  --nav-h: 72px;
 
-  /* Rörelse ----------------------------------------------------------- */
-  --swift: 420ms cubic-bezier(0.22, 1, 0.36, 1);
-  --smooth: 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Rörelse ────────────────────────────────────────────────────────────
+     En enda kurva för allt som träder fram: snabbt igång, lång utrullning.
+     Den läser som något som landar, inte som något som bromsar in. */
+  --out: cubic-bezier(0.16, 1, 0.3, 1);
+  --swift: 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Stora rubriker: låg vikt, stram spärr, generöst radavstånd. */
-.display {
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  line-height: 1.02;
+/* ── Tonerna ──────────────────────────────────────────────────────────────
+   Två toner och en accent, inte fler.
+
+   Grunden är ljus, men inte vit. Rent vitt lyser på en skärm och gör svart
+   text hård att läsa längre stunder; en aning nedtonat läser som papper i
+   stället för som ljuskälla. Bläcket är inte rent svart, av samma skäl åt
+   andra hållet.
+
+   Accenten är den enda färgen på sidan. Den används på få ställen och
+   alltid för att peka: det man kan klicka på, det som räknas. En färg som
+   förekommer överallt pekar ingenstans.
+
+   De härledda värdena står med i BÅDA blocken, och det är inte en
+   slarvig upprepning. En variabel som innehåller `var(--ink)` får sitt
+   `var()` utbytt redan där den deklareras — inte där den används. Stod
+   `--muted` bara i `:root` skulle den för alltid bära rotens bläck, och
+   ett parti som byter ton hade fått rätt bakgrund men fel mellantoner.
+   Därför räknas de om i varje ton. */
+
+:root,
+[data-tone='light'] {
+  --paper: #f3f2ef;
+  --ink: #0c0c0d;
+  --flame: #ff4a17;
+
+  --muted: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --faint: color-mix(in srgb, var(--ink) 42%, var(--paper));
+  --line: color-mix(in srgb, var(--ink) 14%, var(--paper));
+  --line-soft: color-mix(in srgb, var(--ink) 7%, var(--paper));
 }
 
-/* Små etiketter — det enda stället versaler och spärr används. */
-.label {
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  font-weight: 400;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--dim);
+[data-tone='dark'] {
+  --paper: #0b0b0c;
+  --ink: #f3f2ef;
+  /* Accenten behöver mer ljus mot svart för att hålla samma styrka. */
+  --flame: #ff5c2e;
+
+  --muted: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --faint: color-mix(in srgb, var(--ink) 42%, var(--paper));
+  --line: color-mix(in srgb, var(--ink) 16%, var(--paper));
+  --line-soft: color-mix(in srgb, var(--ink) 8%, var(--paper));
 }
