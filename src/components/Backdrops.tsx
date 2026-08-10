@@ -232,77 +232,6 @@ export function Beams() {
   )
 }
 
-/* ── Ritningen: bakom arbetsgången ────────────────────────────────────── */
-
-/**
- * Ett ritningsraster med måttlinjer, som andas.
- *
- * Partiet handlar om ett arbete som görs i ordning och redovisas öppet, och
- * ett ritningsraster säger det utan ett ord. Handen drar med sig ett
- * hårkors — det är det enda som händer, och det räcker: ytan blir en
- * arbetsyta man står vid i stället för en bakgrund man tittar på.
- */
-export function Blueprint() {
-  const ref = useCanvas(
-    () => {},
-    ({ ctx, w, h, px, py, inne, t }: Scen) => {
-      ctx.clearRect(0, 0, w, h)
-      const steg = 52
-      // Rastret driver långsamt, så att ytan aldrig står helt still.
-      const drift = (t * 5) % steg
-
-      ctx.strokeStyle = 'rgba(12,12,13,0.055)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      for (let x = -steg + drift; x < w + steg; x += steg) {
-        ctx.moveTo(Math.round(x) + 0.5, 0)
-        ctx.lineTo(Math.round(x) + 0.5, h)
-      }
-      for (let y = -steg + drift; y < h + steg; y += steg) {
-        ctx.moveTo(0, Math.round(y) + 0.5)
-        ctx.lineTo(w, Math.round(y) + 0.5)
-      }
-      ctx.stroke()
-
-      // Var femte linje är kraftigare — det är vad som gör det till en
-      // ritning och inte till rutat papper.
-      ctx.strokeStyle = 'rgba(12,12,13,0.1)'
-      ctx.beginPath()
-      for (let x = -steg * 5 + drift; x < w + steg * 5; x += steg * 5) {
-        ctx.moveTo(Math.round(x) + 0.5, 0)
-        ctx.lineTo(Math.round(x) + 0.5, h)
-      }
-      ctx.stroke()
-
-      if (!inne) return
-
-      // Hårkorset, med måttmarkeringar som lyser upp nära handen.
-      ctx.strokeStyle = 'rgba(255,74,23,0.34)'
-      ctx.beginPath()
-      ctx.moveTo(0, Math.round(py) + 0.5)
-      ctx.lineTo(w, Math.round(py) + 0.5)
-      ctx.moveTo(Math.round(px) + 0.5, 0)
-      ctx.lineTo(Math.round(px) + 0.5, h)
-      ctx.stroke()
-
-      ctx.fillStyle = 'rgba(255,74,23,0.5)'
-      for (let i = -4; i <= 4; i++) {
-        const bl = 1 - Math.abs(i) / 5
-        ctx.globalAlpha = bl
-        ctx.fillRect(px + i * steg - 1, py - 5, 2, 10)
-        ctx.fillRect(px - 5, py + i * steg - 1, 10, 2)
-      }
-      ctx.globalAlpha = 1
-    },
-  )
-
-  return (
-    <div className="bg-hall" aria-hidden="true">
-      <canvas className="bg bg--blueprint" ref={ref} />
-    </div>
-  )
-}
-
 /* ── Pelarna: bakom talen ─────────────────────────────────────────────── */
 
 /**
@@ -495,3 +424,337 @@ export function Depth() {
     </div>
   )
 }
+
+/* ── Kabeln: bakom arbetsgången ───────────────────────────────────────── */
+
+/** En ledare inuti manteln. */
+type Ledare = {
+  /** Var den hamnar längst ned, som andel av bredden räknat från stammen. */
+  mal: number
+  /** Hur brett den viker ut sig i sidled på vägen. */
+  bukt: number
+  tj: number
+  farg: string
+  /** Egen fas och fördröjning, så att de inte växer i takt. */
+  fas: number
+  vanta: number
+}
+
+/**
+ * KABELN SOM ÖPPNAR SIG
+ * ═════════════════════
+ * En grov gummikabel hänger ned genom partiet. En bit in skalas manteln
+ * upp, viker sig utåt, och inuti ligger ett knippe färgade ledare som
+ * rullar ut och breder ut sig mot underkanten. Allt sker i takt med att
+ * man rullar: manteln växer, snittet öppnar sig, ledarna kommer fram.
+ *
+ * Det är arbetsgången i bild. Fem steg där ett blir till många — en
+ * kartläggning blir en riktning, en riktning blir vyer, vyer blir kod och
+ * en sajt som är i drift. En kabel som skalas upp gör exakt det, och den
+ * gör det medan man läser stegen i stället för att stå färdig från början.
+ *
+ * SÅ BLIR EN LINJE ETT FÖREMÅL
+ * En kabel ritad som ett streck är ett streck. Rundningen här kommer av
+ * att samma bana dras sju gånger: bredast och mörkast underst, sedan allt
+ * smalare och ljusare drag förskjutna uppåt vänster mot ljuset. Ögat
+ * summerar dem till en cylinder. Det är samma sak som en toning tvärs över
+ * kabeln, fast till priset av sju penseldrag i stället för en beräkning
+ * per bildpunkt — och det syns ingen skillnad.
+ *
+ * Ovanpå det ligger två saker som gör att man tror på gummit: en tunn
+ * spegling längst upp på kabelns rygg, och ett mönster av ringar tvärsöver
+ * som följer banan. Utan ringarna är det en slang; med dem är det en kabel.
+ */
+export function Cord() {
+  const hall = useRef<HTMLDivElement>(null)
+  const ledare = useRef<Ledare[]>([])
+  /**
+   * Glöd och stoft ritas en gång till egna dukar och kopieras sedan.
+   *
+   * Elva spetsar med två toningar var, plus sexton stoftkorn, blir
+   * fyrtio radiella toningar per bildruta — och att skapa en toning är
+   * dyrt. Det tog partiet från sextio bilder i sekunden till trettio.
+   * Kopiering av en färdig fläck kostar nästan ingenting.
+   */
+  const bloom = useRef<HTMLCanvasElement | null>(null)
+  const karna = useRef<HTMLCanvasElement | null>(null)
+  const svalt = useRef<HTMLCanvasElement | null>(null)
+  const varmt = useRef<HTMLCanvasElement | null>(null)
+
+  const ref = useCanvas(
+    () => {
+      // Färgerna är en riktig kabels, men nedtonade till sidans värld:
+      // koppar, accent, grafit och ben. En regnbåge hade varit mer
+      // verklighetstrogen och helt fel på den här sidan.
+      // Ledarna är ljusa som manteln, inte färgade. Ett knippe brokiga
+      // trådar läser som en elinstallation; ett knippe ljusa former som
+      // skulptur, och det är det senare bilden ska vara.
+      const fargr = ['#e6eaef', '#dfe4ea', '#eef1f4', '#d7dce3', '#e9edf1', '#d2d8e0']
+      bloom.current ??= glod(90, 'rgba(255,150,60,1)')
+      karna.current ??= glod(46, 'rgba(255,208,130,1)')
+      svalt.current ??= glod(30, 'rgba(178,192,210,1)')
+      varmt.current ??= glod(30, 'rgba(255,168,90,1)')
+
+      ledare.current = Array.from({ length: 11 }, (_, i) => {
+        const f = fro(i * 3 + 1)
+        const g = fro(i * 7 + 5)
+        return {
+          // Jämnt utspridda men inte uppradade: en jämn solfjäder läser
+          // som ett diagram, en ojämn som ett knippe som fallit ut.
+          mal: (i / 10 - 0.5) * 1.55 + (f - 0.5) * 0.1,
+          bukt: (f - 0.5) * 0.34,
+          tj: 3.4 + g * 2.6,
+          farg: fargr[i % fargr.length],
+          fas: f * Math.PI * 2,
+          vanta: g * 0.16,
+        }
+      })
+    },
+    ({ ctx, w, h, px, inne, t }: Scen) => {
+      ctx.clearRect(0, 0, w, h)
+
+      const el = hall.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const langd = r.height - h
+      const p = langd > 4 ? Math.min(1, Math.max(0, -r.top / langd)) : 1
+
+      const bas = w * 0.8
+      const drag = inne ? (px - bas) * 0.045 : 0
+      const x0 = bas + drag
+
+      /** Var manteln är avskuren. Den växer ned och stannar sedan. */
+      const snitt = -70 + (h * 0.44 + 70) * Math.min(1, p / 0.3)
+      /** Hur uppskalad manteln är, 0–1. */
+      const oppen = Math.min(1, Math.max(0, (p - 0.28) / 0.26))
+      /** Hur långt ledarna hunnit ut. */
+      const ute = Math.min(1, Math.max(0, (p - 0.36) / 0.6))
+
+      /** Manteln böjer sig mjukt på vägen ned. */
+      const mantelX = (y: number) =>
+        x0 + Math.sin(y * 0.0038 + t * 0.28) * 12 + Math.sin(y * 0.0011) * 22
+
+      /**
+       * Ett kabeldrag: sju lager från mörk kant till ljus rygg.
+       * `ljus` styr hur mycket spegling draget får — ledare inuti är
+       * mattare än manteln utanpå.
+       */
+      const dra = (
+        pkt: [number, number][],
+        tj: number,
+        kant: string,
+        mitt: string,
+        ljus: string,
+        lager = 7,
+      ) => {
+        if (pkt.length < 2) return
+        const bana = () => {
+          ctx.beginPath()
+          ctx.moveTo(pkt[0][0], pkt[0][1])
+          for (let i = 1; i < pkt.length - 1; i++) {
+            ctx.quadraticCurveTo(
+              pkt[i][0], pkt[i][1],
+              (pkt[i][0] + pkt[i + 1][0]) / 2, (pkt[i][1] + pkt[i + 1][1]) / 2,
+            )
+          }
+          ctx.lineTo(pkt[pkt.length - 1][0], pkt[pkt.length - 1][1])
+        }
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+
+        // Skuggan på underlaget.
+        ctx.save()
+        ctx.translate(tj * 0.16, tj * 0.22)
+        bana()
+        ctx.lineWidth = tj + 3
+        ctx.strokeStyle = 'rgba(58,70,86,0.1)'
+        ctx.stroke()
+        ctx.restore()
+
+        for (let k = 0; k < lager; k++) {
+          const f = k / (lager - 1)
+          ctx.save()
+          // Varje lager smalnar och kryper uppåt vänster mot ljuset.
+          ctx.translate(-tj * 0.2 * f, -tj * 0.22 * f)
+          bana()
+          ctx.lineWidth = tj * (1 - f * 0.82)
+          ctx.strokeStyle = f < 0.5
+            ? blanda(kant, mitt, f * 2)
+            : blanda(mitt, ljus, (f - 0.5) * 2)
+          ctx.stroke()
+          ctx.restore()
+        }
+      }
+
+      /** Ringarna tvärs över manteln. Utan dem är det en slang. */
+      const ringa = (pkt: [number, number][], tj: number) => {
+        ctx.save()
+        ctx.lineCap = 'butt'
+        for (let i = 2; i < pkt.length - 1; i += 2) {
+          const [ax, ay] = pkt[i]
+          const [bx, by] = pkt[i + 1]
+          const d = Math.hypot(bx - ax, by - ay) || 1
+          const nx = -(by - ay) / d
+          const ny = (bx - ax) / d
+          ctx.beginPath()
+          ctx.moveTo(ax + nx * tj * 0.42, ay + ny * tj * 0.42)
+          ctx.lineTo(ax - nx * tj * 0.42, ay - ny * tj * 0.42)
+          ctx.lineWidth = 1.4
+          ctx.strokeStyle = 'rgba(120,132,148,0.16)'
+          ctx.stroke()
+        }
+        ctx.restore()
+      }
+
+      const TJ = 34
+
+      /**
+       * En glödande spets: bloom, glöd, kärna.
+       *
+       * Tre lager utifrån och in. Bara det yttersta breder ut sig; kärnan
+       * är liten och nästan vit. Utan den lilla vita punkten läser glöden
+       * som dimma, utan bloomen som en prick.
+       */
+      const spets = (x: number, y: number, r: number) => {
+        const b = bloom.current
+        const k = karna.current
+        if (b) {
+          const d = r * 6.8
+          ctx.globalAlpha = 0.34
+          ctx.drawImage(b, x - d / 2, y - d / 2, d, d)
+        }
+        if (k) {
+          const d = r * 2
+          ctx.globalAlpha = 0.85
+          ctx.drawImage(k, x - d / 2, y - d / 2, d, d)
+        }
+        ctx.globalAlpha = 1
+        ctx.fillStyle = 'rgba(255,244,220,0.95)'
+        ctx.beginPath()
+        ctx.arc(x, y, r * 0.24, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      /* ── Diset och stoftet, underst ───────────────────────────────────
+         Ett svalt blågrått dis ger djup åt de ljusa formerna. Utan det
+         ligger vita kablar mot vitt papper och tappar sin volym. */
+      if (svalt.current) {
+        const d = w * 1.3
+        ctx.globalAlpha = 0.5
+        ctx.drawImage(svalt.current, x0 - w * 0.1 - d / 2, h * 0.34 - d / 2, d, d)
+        ctx.globalAlpha = 1
+      }
+
+      for (let i = 0; i < 16; i++) {
+        const f = fro(i * 11 + 3)
+        const g2 = fro(i * 5 + 9)
+        const bx = ((f + t * 0.006 * (0.4 + g2)) % 1) * w
+        const by = ((g2 - t * 0.008 * (0.3 + f)) % 1 + 1) % 1 * h
+        const br = 3 + g2 * 12
+        const sprite = i % 3 === 0 ? varmt.current : svalt.current
+        if (!sprite) continue
+        ctx.globalAlpha = 0.2
+        ctx.drawImage(sprite, bx - br, by - br, br * 2, br * 2)
+        ctx.globalAlpha = 1
+      }
+
+      /* ── Ledarna, som ligger under manteln där de kommer ut ──────────── */
+      for (const l of ledare.current) {
+        const del = Math.min(1, Math.max(0, (ute - l.vanta) / (1 - l.vanta)))
+        if (del <= 0.001) continue
+        const ax = mantelX(snitt)
+        const ay = snitt + 4
+        const bx = ax + l.mal * w * 0.62
+        const by = h * 1.06
+        // Kontrollpunkten ger både hänget och utviket i sidled.
+        const cx = ax + l.bukt * w * 0.3
+        const cy = ay + (by - ay) * 0.7
+
+        const pkt: [number, number][] = []
+        const n = 20
+        for (let i = 0; i <= n; i++) {
+          const s = (i / n) * del
+          const u = 1 - s
+          // Liten våg längs ledaren, som en tråd som inte är spänd.
+          const vag = Math.sin(s * 9 + l.fas + t * 0.6) * 5 * s
+          pkt.push([
+            u * u * ax + 2 * u * s * cx + s * s * bx + vag,
+            u * u * ay + 2 * u * s * cy + s * s * by,
+          ])
+        }
+        // Färre lager och mindre svärta i kanten än manteln har. En tunn
+        // ledare som skuggas lika hårt som en grov mantel tappar sin färg
+        // och blir grå — det är kulören som ska säga att de är många och
+        // olika, så den får väga tyngst.
+        dra(pkt, l.tj, blanda(l.farg, '#7c8794', 0.5), l.farg, '#ffffff', 5)
+
+        // Spetsen glöder alltid, inte bara medan den växer. Det är
+        // glöden mot det ljusa som gör bilden — en vit kabel som slutar i
+        // ingenting är en vit kabel som tar slut.
+        const [sx, sy] = pkt[pkt.length - 1]
+        const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
+        spets(sx, sy, (10 + l.tj) * puls)
+      }
+
+      /* ── Manteln ──────────────────────────────────────────────────────── */
+      const mp: [number, number][] = []
+      const n = 26
+      for (let i = 0; i <= n; i++) {
+        const y = -70 + ((snitt + 70) * i) / n
+        mp.push([mantelX(y), y])
+      }
+      dra(mp, TJ, '#93a0ad', '#dee3e9', '#ffffff')
+      ringa(mp, TJ)
+      if (oppen < 0.02) spets(mp[mp.length - 1][0], mp[mp.length - 1][1], 26)
+
+      /* ── Snittet: två flikar som viker sig utåt ──────────────────────── */
+      if (oppen > 0.01) {
+        const sx = mantelX(snitt)
+        for (const sida of [-1, 1]) {
+          const vinkel = sida * (0.25 + oppen * 0.95)
+          const flik: [number, number][] = []
+          const langdF = 46 * oppen
+          for (let i = 0; i <= 8; i++) {
+            const s = i / 8
+            flik.push([
+              sx + sida * TJ * 0.3 + Math.sin(vinkel) * langdF * s,
+              snitt + Math.cos(vinkel) * langdF * s,
+            ])
+          }
+          dra(flik, TJ * 0.42, '#93a0ad', '#dee3e9', '#ffffff', 5)
+        }
+        // Den ljusa insidan av snittet, där manteln är genomskuren.
+        ctx.save()
+        ctx.globalAlpha = oppen
+        ctx.fillStyle = '#8e99a6'
+        ctx.beginPath()
+        ctx.ellipse(sx, snitt, TJ * 0.46, TJ * 0.17, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      }
+    },
+    1.5,
+  )
+
+  return (
+    <div className="bg-hall" aria-hidden="true" ref={hall}>
+      <canvas className="bg bg--cord" ref={ref} />
+    </div>
+  )
+}
+
+/* ── Små färghjälpare för kabeln ──────────────────────────────────────── */
+
+const tal = (h: string) => [
+  parseInt(h.slice(1, 3), 16),
+  parseInt(h.slice(3, 5), 16),
+  parseInt(h.slice(5, 7), 16),
+]
+
+/** Blandar två hexfärger. Görs i kod för att lagren ska kunna räknas fram. */
+function blanda(a: string, b: string, f: number) {
+  const [ar, ag, ab] = tal(a)
+  const [br, bg, bb] = tal(b)
+  return `rgb(${Math.round(ar + (br - ar) * f)},${Math.round(ag + (bg - ag) * f)},${Math.round(ab + (bb - ab) * f)})`
+}
+

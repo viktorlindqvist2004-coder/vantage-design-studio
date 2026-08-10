@@ -13,7 +13,7 @@ export const STUDIO = {
    * Ingen av dem är huvudadress — den som hör av sig ska inte behöva
    * gissa vem av oss man helst vänder sig till.
    */
-  emails: ['Viktor.vantage@gmail.com', 'arvid.vantage@gmail.com'],
+  emails: ['viktor.vantage@gmail.com', 'arvid.vantage@gmail.com'],
   /** Skrivet för läsbarhet; tel-länken rensar bort mellanslagen. */
   phone: '070 790 48 76',
   location: 'Sverige',

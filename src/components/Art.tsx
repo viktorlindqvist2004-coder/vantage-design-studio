@@ -377,9 +377,14 @@ export function Figures() {
         <path d="M399 90q1 12-2 22h26q-3-10-2-22z" fill="currentColor" />
         <ellipse cx="410" cy="74" rx="21" ry="25"
           fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M387 76q-3-27 23-27 22 0 24 21-6-13-16-15-8-2-16 0-11 3-15 21z"
+        {/* Håret sitter ihop med huvudet.
+            Förut satt knuten som en egen cirkel bakom skallen, och en
+            cirkel som inte rör vid något annat läser som en boll man
+            klistrat dit — inte som hår. Nu är knuten en utbuktning i
+            samma form, och nacklocken går ned mot halsen. */}
+        <path d="M387 76q-3-27 23-27 20 0 24 18 6 2 8 9 2 8-4 12-3 2-7 1
+          l-3 14q-1 6-6 6-4 0-4-5 1-9 3-17-6-12-15-14-8-2-16 0-11 3-15 21z"
           fill="currentColor" />
-        <circle cx="437" cy="60" r="13" fill="currentColor" />
         <path d="M410 106q-22 0-27 20-6 22-9 120h96q-3-98-9-120-5-20-27-20z"
           fill="currentColor" />
         {/* Den bortre armen. Konturen mot bålen gör att den läses som en

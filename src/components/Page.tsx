@@ -12,7 +12,7 @@ import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
 import { Figures, Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
-import { Beams, Blueprint, Columns, Depth, Dots, Flow, Rings } from './Backdrops'
+import { Beams, Columns, Cord, Depth, Dots, Flow, Rings } from './Backdrops'
 import { Screens } from './Screens'
 import { FlapValue } from './Flap'
 import { Showroom } from './Showroom'
@@ -443,7 +443,7 @@ export function Process() {
 
   return (
     <section className="bay bay--bg" data-tone="light" id="gangen">
-      <Blueprint />
+      <Cord />
       <Wrap kind="tilt">
         <div className="process">
           <div className="process__side">

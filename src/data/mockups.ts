@@ -91,7 +91,7 @@ export const MOCKUPS: Mockup[] = [
         t: 'foot',
         cols: [
           { h: 'Byrån', rows: ['Om oss', 'Medarbetare', 'Lediga tjänster'] },
-          { h: 'Kontakt', rows: ['Sverige', '070 790 48 76', 'Viktor.vantage@gmail.com'] },
+          { h: 'Kontakt', rows: ['Sverige', '070 790 48 76', 'viktor.vantage@gmail.com'] },
           { h: 'Juridiskt', rows: ['Allmänna villkor', 'Integritetspolicy'] },
         ],
       },
@@ -208,7 +208,7 @@ export const MOCKUPS: Mockup[] = [
         t: 'foot',
         cols: [
           { h: 'Arbeten', rows: ['Porträtt', 'Reportage', 'Förlag'] },
-          { h: 'Kontakt', rows: ['Viktor.vantage@gmail.com', '070 790 48 76'] },
+          { h: 'Kontakt', rows: ['viktor.vantage@gmail.com', '070 790 48 76'] },
           { h: 'Följ', rows: ['Instagram', 'Nyhetsbrev'] },
         ],
       },
@@ -249,7 +249,7 @@ export const MOCKUPS: Mockup[] = [
         cols: [
           { h: 'Evenemanget', rows: ['Programmet', 'Talare', 'Plats och tider'] },
           { h: 'Biljetter', rows: ['Priser', 'Gruppbokning', 'Villkor'] },
-          { h: 'Kontakt', rows: ['Viktor.vantage@gmail.com', '070 790 48 76'] },
+          { h: 'Kontakt', rows: ['viktor.vantage@gmail.com', '070 790 48 76'] },
         ],
       },
     ],
