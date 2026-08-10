@@ -356,11 +356,20 @@ export function Figures() {
           fill="currentColor" />
         <path d="M150 112q-22 0-27 20-6 22-9 116h96q-3-94-9-116-5-20-27-20z"
           fill="currentColor" />
-        {/* Armen ut mot bordet, med axel, armbåge och hand. */}
-        <path d="M180 124q26 14 40 46 10 24 12 78h-32q-2-44-10-62-8-18-22-28z"
+        {/* Den bortre armen, längs kroppens vänstra sida. Den satt inte
+            med förut och gjorde figuren enarmad — en kropp med bara en arm
+            läser som en olycka, inte som en pose. Den ligger under bålen i
+            ritordningen och syns bara som en kontur mot den. */}
+        <path d="M120 128q-13 16-17 40-3 18-3 76h26q0-52 3-70 3-20 11-32z"
           fill="currentColor" />
-        <ellipse cx="216" cy="240" rx="15" ry="10"
-          fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M120 128q-13 16-17 40-3 18-3 76"
+          stroke="var(--paper)" strokeWidth="1.4" fill="none" opacity="0.5" />
+        {/* Armen ut mot bordet, med axel, armbåge och hand. */}
+        <path d="M180 124q26 14 40 46 8 19 11 44l-30 6q-3-24-9-38-8-18-22-28z"
+          fill="currentColor" />
+        <ellipse cx="212" cy="228" rx="16" ry="11"
+          fill="var(--paper)" stroke="currentColor" strokeWidth="1.6"
+          transform="rotate(14 212 228)" />
       </g>
 
       {/* Personen till höger: upprätt, visar något på skärmen. */}
@@ -373,8 +382,12 @@ export function Figures() {
         <circle cx="437" cy="60" r="13" fill="currentColor" />
         <path d="M410 106q-22 0-27 20-6 22-9 120h96q-3-98-9-120-5-20-27-20z"
           fill="currentColor" />
-        <path d="M436 118q22 16 28 48 4 22 4 80h-30q0-46-6-66-6-20-18-32z"
-          fill="currentColor" opacity="0.55" />
+        {/* Den bortre armen. Konturen mot bålen gör att den läses som en
+            arm bakom kroppen och inte som en bredare axel. */}
+        <path d="M434 120q20 16 26 46 4 20 4 78h-28q0-44-5-62-6-20-17-32z"
+          fill="currentColor" />
+        <path d="M434 120q20 16 26 46 4 20 4 78"
+          stroke="var(--paper)" strokeWidth="1.4" fill="none" opacity="0.5" />
         {/* Den pekande armen är en egen grupp så att den kan röra sig
             för sig — det är den som gör att någon visar något. */}
         <g className="folk__arm">

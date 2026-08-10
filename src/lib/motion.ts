@@ -243,18 +243,27 @@ export function useFlight<T extends HTMLElement>({
     return onTick(() => {
       const r = el.getBoundingClientRect()
       const vh = window.innerHeight
-      // Var partiets mitt står, i skärmhöjder från blickens mitt.
-      // Positivt = under, negativt = ovanför.
-      const c = (r.top + r.height / 2 - vh / 2) / vh
 
-      // Utanför resan behövs inget skrivet alls.
-      if (c > 1.4 || c < -1.4) return
+      // Ingenting att skriva när partiet är långt borta åt något håll.
+      if (r.top > vh * 1.2 || r.bottom < -vh * 0.2) return
 
-      // Två skilda kurvor: en för vägen in underifrån, en för vägen ut
-      // uppåt. De är inte spegelbilder — man kommer långt bortifrån och
-      // far förbi tätt intill, precis som när man passerar något.
-      const in_ = mjuk((c - 0.12) / 0.8)
-      const ut = mjuk((-c - 0.22) / 0.72)
+      /**
+       * Mätt på kanterna, inte på mitten.
+       *
+       * Mitten fungerar bara för partier som får plats i rutan. Ett högt
+       * parti — arbetsgången är två skärmar — har sin mitt långt under
+       * blicken medan man läser toppen av det, och fick då full vridning
+       * och halv genomskinlighet mitt i läsningen. Toppen och botten
+       * tonade helt enkelt bort medan man stod och tittade på dem.
+       *
+       * Framkanten styr vägen in och bakkanten vägen ut. Är partiet högre
+       * än rutan blir båda noll så snart man är inne i det: framkanten har
+       * passerat överkanten och bakkanten är kvar under underkanten. Då
+       * ligger det platt och helt synligt, vilket är vad ett parti man
+       * befinner sig i ska göra.
+       */
+      const in_ = mjuk((r.top - vh * 0.15) / (vh * 0.85))
+      const ut = mjuk((vh * 0.85 - r.bottom) / (vh * 0.85))
 
       let x = 0
       let y = 0

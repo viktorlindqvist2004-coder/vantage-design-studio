@@ -15,6 +15,8 @@ import { Figures, Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
 import { Beams, Blueprint, Columns, Depth, Dots, Flow, Rings } from './Backdrops'
 import { Screens } from './Screens'
 import { FlapValue } from './Flap'
+import { Showroom } from './Showroom'
+import { MOCKUPS } from '../data/mockups'
 import { LogoMark } from './Logo'
 import { OfferingArt } from './OfferingArt'
 
@@ -329,7 +331,7 @@ export function Showcase() {
 
 /* ── Det vi bygger ────────────────────────────────────────────────────── */
 
-function Card({ offering }: { offering: Offering }) {
+function Card({ offering, onOpen }: { offering: Offering; onOpen: () => void }) {
   const ref = useTilt<HTMLElement>(6)
   return (
     <article className="card" ref={ref}>
@@ -338,6 +340,14 @@ function Card({ offering }: { offering: Offering }) {
         <span className="card__kind">{offering.kind}</span>
         <h3 className="card__name">{offering.name}</h3>
         <p className="card__desc">{offering.desc}</p>
+        {/* Knappen öppnar vårt eget exempel på just den sorten — en hel
+            sajt inuti sidan, med saker som går att klicka på. Att visa
+            är starkare än att beskriva, särskilt för en studio som
+            säljer att bygga sidor. */}
+        <button className="card__se" onClick={onOpen}>
+          Se ett exempel
+          <Arrow />
+        </button>
       </div>
     </article>
   )
@@ -346,6 +356,7 @@ function Card({ offering }: { offering: Offering }) {
 export function Offer() {
   const sec = useRef<HTMLElement>(null)
   const rail = useRef<HTMLDivElement>(null)
+  const [visar, setVisar] = useState<string | null>(null)
 
   /**
    * Resan i sidled.
@@ -394,10 +405,15 @@ export function Offer() {
 
         <div className="travel__rail" ref={rail}>
           {OFFERINGS.map((o) => (
-            <Card offering={o} key={o.name} />
+            <Card offering={o} key={o.name} onOpen={() => setVisar(o.sketch)} />
           ))}
         </div>
       </div>
+
+      <Showroom
+        mockup={MOCKUPS.find((m) => m.id === visar) ?? null}
+        onClose={() => setVisar(null)}
+      />
     </section>
   )
 }
