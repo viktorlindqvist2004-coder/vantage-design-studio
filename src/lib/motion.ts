@@ -93,8 +93,14 @@ function observer() {
   return io
 }
 
-/** Ger en ref som får klassen `in` när elementet syns. */
-export function useReveal<T extends HTMLElement>() {
+/**
+ * Ger en ref som får klassen `in` när elementet syns.
+ *
+ * Bunden till Element och inte till HTMLElement: tecknen i Art.tsx är SVG,
+ * och SVG-element är inga HTML-element. Allt som används här — klasslistan
+ * och rutan — finns på Element.
+ */
+export function useReveal<T extends Element>() {
   const ref = useRef<T>(null)
   useEffect(() => {
     const el = ref.current

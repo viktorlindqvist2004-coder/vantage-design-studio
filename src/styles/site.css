@@ -324,6 +324,25 @@ html[data-tone='dark'] .grain {
   padding-top: 0;
 }
 
+/* Ett parti som bär kablar behöver spillningen dold och innehållet över. */
+.bay--cables {
+  overflow: hidden;
+}
+
+.bay--cables > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.bay--cables .cables {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .wrap {
   max-width: 1560px;
   margin: 0 auto;
@@ -629,11 +648,25 @@ html[data-tone='dark'] .grain {
   border-top: 1px solid var(--line);
 }
 
-.why__no {
-  font-family: var(--mono);
-  font-size: var(--t-label);
-  letter-spacing: 0.18em;
+/* ── Tecknen som ritar sig själva ─────────────────────────────────────────
+   Konturen har en streckad mall lika lång som hela linjen, och
+   förskjutningen börjar på full längd. Går den till noll dras strecket
+   fram som av en penna. Mallen sätts i kod, för längden går inte att veta
+   på förhand för en kurva. */
+.mark {
+  width: 30px;
+  height: 30px;
   color: var(--flame);
+  overflow: visible;
+}
+
+.mark path {
+  transition: stroke-dashoffset 900ms var(--out)
+    calc(var(--d, 0ms) + var(--i) * 160ms);
+}
+
+.mark.in path {
+  stroke-dashoffset: 0 !important;
 }
 
 .why__title {
@@ -670,13 +703,16 @@ html[data-tone='dark'] .grain {
   border-radius: 14px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+  /* Lutningen skrivs som transform i kod. Övergången är kort så att kortet
+     följer handen i stället för att komma efter den — men inte noll, för
+     då rycker det när pekaren hoppar in i rutan. */
   transition:
-    transform 620ms var(--out),
+    transform 260ms var(--out),
     border-color 420ms var(--out);
+  transform-style: preserve-3d;
 }
 
 .card:hover {
-  transform: translateY(-6px);
   border-color: color-mix(in srgb, var(--ink) 34%, var(--paper));
 }
 
@@ -777,22 +813,59 @@ html[data-tone='dark'] .grain {
 }
 
 .process__steps {
+  position: relative;
   display: grid;
   gap: clamp(2rem, 5vh, 3.5rem);
+  padding-left: clamp(1.6rem, 3vw, 2.6rem);
+}
+
+/* Tråden genom stegen. Den bleka linjen är hela vägen, den mättade fylls
+   i takt med att man rullar. */
+.spine {
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 1px;
+  background: var(--line);
+}
+
+.spine i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--flame);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
 }
 
 .step {
+  position: relative;
   display: grid;
   gap: 0.9rem;
   padding-top: 1.6rem;
   border-top: 1px solid var(--line);
 }
 
-.step__no {
-  font-family: var(--mono);
-  font-size: var(--t-label);
-  letter-spacing: 0.18em;
-  color: var(--flame);
+/* Noden sitter på tråden, inte bredvid den. */
+.step__node {
+  position: absolute;
+  top: calc(1.6rem + 0.35em);
+  left: calc(clamp(1.6rem, 3vw, 2.6rem) * -1);
+  width: 9px;
+  height: 9px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  transition:
+    background-color 420ms var(--out),
+    border-color 420ms var(--out),
+    transform 420ms var(--out);
+}
+
+.step__node[data-at='true'] {
+  background: var(--flame);
+  border-color: var(--flame);
+  transform: scale(1.35);
 }
 
 .step__title {
@@ -817,7 +890,7 @@ html[data-tone='dark'] .grain {
 /* Små brickor: vad steget lämnar ifrån sig och vad det tar i tid. */
 .chip {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
@@ -834,6 +907,10 @@ html[data-tone='dark'] .grain {
   text-transform: uppercase;
   font-weight: 400;
   color: var(--faint);
+  /* Etiketten är två ord och bröts mitt itu på smal skärm, vilket gav
+     brickan två rader där den andra bara innehöll ett halvt ord. */
+  white-space: nowrap;
+  align-self: start;
 }
 
 /* ── Samtalet ─────────────────────────────────────────────────────────── */
@@ -860,6 +937,14 @@ html[data-tone='dark'] .grain {
   font-size: var(--t-md);
   line-height: 1.55;
   max-width: 48ch;
+}
+
+/* Samtalsfiguren. Höjden är fast, för figuren ritas i förhållande till sin
+   egen ruta och en ruta som växer med innehållet hade flyttat noderna. */
+.pulse {
+  width: 100%;
+  height: 150px;
+  margin-top: clamp(2rem, 5vh, 3.5rem);
 }
 
 .dialog__points {

@@ -47,7 +47,13 @@ type Kabel = {
 
 type Stoft = { x: number; y: number; r: number; fart: number; fas: number }
 
-export function Cables() {
+/**
+ * `ton` styr bara strecket. Glöden och spetsarna är accentfärgade i båda
+ * lägena — det är samma lampor, det är rummet omkring dem som byter.
+ * Mot svart lyser de betydligt starkare utan att något ändras i koden,
+ * vilket är hela skälet att låta dem återkomma längst ned på sidan.
+ */
+export function Cables({ ton = 'ljus' }: { ton?: 'ljus' | 'mork' }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -64,8 +70,17 @@ export function Cables() {
     let kablar: Kabel[] = []
     let stoft: Stoft[] = []
 
-    /** Pekarens läge, och hur mycket den räknas just nu. */
-    const pek = { x: -9999, y: -9999, styrka: 0 }
+    /**
+     * Pekarens läge i fönstrets koordinater, och hur mycket den räknas.
+     *
+     * Fönstrets och inte dukens: att räkna om till dukens läge kräver
+     * elementets ruta, och att läsa den tvingar webbläsaren att räkna om
+     * layouten på stället. En pekare kan skicka hundra händelser i
+     * sekunden, och med flera dukar på sidan blev det flera påtvingade
+     * layoutvarv per händelse — bildrutorna halverades. Rutan läses därför
+     * en gång per bildruta i stället, i steget nedan.
+     */
+    const pek = { cx: -9999, cy: -9999, x: -9999, y: -9999, styrka: 0 }
     /** Hur långt sidan rullats, utjämnat. */
     let rull = 0
     let rullMal = 0
@@ -114,6 +129,13 @@ export function Cables() {
 
     function stega(nu: number) {
       const t = nu / 1000
+
+      // En enda läsning av rutan per bildruta, före allt skrivande.
+      if (pek.styrka > 0.01) {
+        const r = canvas!.getBoundingClientRect()
+        pek.x = pek.cx - r.left
+        pek.y = pek.cy - r.top
+      }
       // Scrollen dras in mjukt. Rått värde ger ryck vid varje hjulhack.
       rull += (rullMal - rull) * 0.08
 
@@ -203,7 +225,9 @@ export function Cables() {
           ctx!.quadraticCurveTo(p[i].x, p[i].y, (p[i].x + p[i + 1].x) / 2, (p[i].y + p[i + 1].y) / 2)
         }
         ctx!.lineTo(p[p.length - 1].x, p[p.length - 1].y)
-        ctx!.strokeStyle = `rgba(12,12,13,${(0.1 + k.ton * 0.16).toFixed(3)})`
+        ctx!.strokeStyle = ton === 'mork'
+          ? `rgba(243,242,239,${(0.08 + k.ton * 0.14).toFixed(3)})`
+          : `rgba(12,12,13,${(0.1 + k.ton * 0.16).toFixed(3)})`
         ctx!.lineWidth = 1 + k.ton * 0.9
         ctx!.lineCap = 'round'
         ctx!.stroke()
@@ -239,9 +263,8 @@ export function Cables() {
     }
 
     const påPek = (e: PointerEvent) => {
-      const r = canvas.getBoundingClientRect()
-      pek.x = e.clientX - r.left
-      pek.y = e.clientY - r.top
+      pek.cx = e.clientX
+      pek.cy = e.clientY
       pek.styrka = 1
     }
     const påUt = () => { pek.styrka = 0 }
@@ -275,7 +298,7 @@ export function Cables() {
       ob.disconnect()
       stopp()
     }
-  }, [])
+  }, [ton])
 
   return <canvas className="cables" ref={ref} aria-hidden="true" />
 }

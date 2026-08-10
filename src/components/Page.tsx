@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DIALOGUE, FAQ, MANIFEST, MANIFEST_ASIDE, OFFERINGS, PROCESS,
-  SERVICES, STATS, STUDIO, WHY, WHY_LEAD,
+  SERVICES, STATS, STUDIO, WHY, WHY_LEAD, type Offering,
 } from '../data/content'
 import { clamp01 } from '../lib/math'
-import { useCountUp, useReveal, useScrub, useTick } from '../lib/motion'
+import { onTick, reducedMotion, useCountUp, useReveal, useScrub, useTick } from '../lib/motion'
 import { Eyebrow, Kinetic, Rise } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
+import { Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
 import { LogoMark } from './Logo'
 import { OfferingArt } from './OfferingArt'
 
@@ -103,6 +104,52 @@ export function Hero() {
  * ingen som lyssnar.
  */
 export function Ticker() {
+  const track = useRef<HTMLDivElement>(null)
+
+  /**
+   * Bandet drivs i kod i stället för med en CSS-animation, och skälet är
+   * att det ska höra scrollen.
+   *
+   * Rullar man nedåt tar bandet fart; rullar man uppåt saktar det in och
+   * kan vända. Det gör listen till en del av rörelsen på sidan i stället
+   * för en slinga som råkar snurra bredvid den. En CSS-animation kan inte
+   * veta något om scrollen.
+   */
+  useEffect(() => {
+    const el = track.current
+    if (!el || reducedMotion()) return
+
+    let x = 0
+    let halva = el.scrollWidth / 2
+    let sistY = window.scrollY
+    let fart = 0
+    let sist = performance.now()
+
+    const mat = () => { halva = el.scrollWidth / 2 }
+    window.addEventListener('resize', mat)
+
+    const stopp = onTick((nu) => {
+      const dt = Math.min(0.05, (nu - sist) / 1000)
+      sist = nu
+
+      const y = window.scrollY
+      // Scrollens fart dras in mjukt. Rått värde ger ryck vid varje hack.
+      fart += ((y - sistY) - fart) * 0.18
+      sistY = y
+
+      x -= (62 + fart * 7) * dt
+      // Två likadana grupper ligger efter varandra, så en halva är exakt
+      // ett varv. Slingan tål att bandet går åt båda hållen.
+      if (halva > 0) {
+        while (x <= -halva) x += halva
+        while (x > 0) x -= halva
+      }
+      el.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`
+    })
+
+    return () => { window.removeEventListener('resize', mat); stopp() }
+  }, [])
+
   const items = SERVICES.map((s) => s.name)
   const group = (key: string) => (
     <div className="ticker__group" key={key}>
@@ -117,7 +164,7 @@ export function Ticker() {
 
   return (
     <div className="ticker" data-tone="dark" aria-hidden="true">
-      <div className="ticker__track">{[group('a'), group('b')]}</div>
+      <div className="ticker__track" ref={track}>{[group('a'), group('b')]}</div>
     </div>
   )
 }
@@ -184,6 +231,9 @@ export function Manifest() {
 
 /* ── Varför ───────────────────────────────────────────────────────────── */
 
+/** Ett tecken per punkt, i samma ordning som punkterna står i innehållet. */
+const WHY_MARKS: MarkKind[] = ['sikte', 'vag', 'fart', 'faste']
+
 export function Why() {
   return (
     <section className="bay" data-tone="light">
@@ -199,7 +249,10 @@ export function Why() {
         <div className="why">
           {WHY.map((w, i) => (
             <Rise className="why__item" key={w.title} delay={i * 110}>
-              <span className="why__no">{String(i + 1).padStart(2, '0')}</span>
+              {/* Ett tecken som ritar sig självt i stället för ett räkneord.
+                  Räkneordet sa bara att det fanns fler; tecknet säger något
+                  om punkten det står framför. */}
+              <Mark kind={WHY_MARKS[i] ?? 'sikte'} delay={i * 110 + 180} />
               <h3 className="why__title">{w.title}</h3>
               <p className="why__body">{w.body}</p>
             </Rise>
@@ -211,6 +264,20 @@ export function Why() {
 }
 
 /* ── Det vi bygger ────────────────────────────────────────────────────── */
+
+function Card({ offering }: { offering: Offering }) {
+  const ref = useTilt<HTMLElement>(6)
+  return (
+    <article className="card" ref={ref}>
+      <OfferingArt offering={offering} />
+      <div className="card__body">
+        <span className="card__kind">{offering.kind}</span>
+        <h3 className="card__name">{offering.name}</h3>
+        <p className="card__desc">{offering.desc}</p>
+      </div>
+    </article>
+  )
+}
 
 export function Offer() {
   return (
@@ -227,14 +294,7 @@ export function Offer() {
         <div className="offer">
           {OFFERINGS.map((o, i) => (
             <Rise as="div" key={o.name} delay={(i % 3) * 110}>
-              <article className="card">
-                <OfferingArt offering={o} />
-                <div className="card__body">
-                  <span className="card__kind">{o.kind}</span>
-                  <h3 className="card__name">{o.name}</h3>
-                  <p className="card__desc">{o.desc}</p>
-                </div>
-              </article>
+              <Card offering={o} />
             </Rise>
           ))}
         </div>
@@ -254,9 +314,12 @@ export function Offer() {
  */
 export function Process() {
   const [at, setAt] = useState(0)
+  /** Hur långt tråden fyllts. Läses varje bildruta, aldrig av React. */
+  const fram = useRef(0)
 
   const ref = useScrub<HTMLDivElement>(
     (p) => {
+      fram.current = clamp01(p)
       const i = Math.min(PROCESS.length - 1, Math.floor(clamp01(p) * PROCESS.length))
       setAt((prev) => (prev === i ? prev : i))
     },
@@ -284,9 +347,13 @@ export function Process() {
           </div>
 
           <div className="process__steps" ref={ref}>
+            <Spine progress={fram} />
             {PROCESS.map((s, i) => (
               <Rise className="step" key={s.title}>
-                <span className="step__no">Steg {String(i + 1).padStart(2, '0')}</span>
+                {/* Noden på tråden lyser när man nått hit. Den säger samma
+                    sak som ett räkneord gjorde, men säger den i förhållande
+                    till resten i stället för som en siffra i luften. */}
+                <span className="step__node" data-at={i <= at} aria-hidden="true" />
                 <h3 className="step__title">{s.title}</h3>
                 <p className="step__body">{s.body}</p>
                 <div className="step__facts">
@@ -316,6 +383,7 @@ export function Dialogue() {
             <Rise delay={300} className="step__facts">
               <a className="btn btn--solid" href="#kontakt">Boka ett samtal<Arrow /></a>
             </Rise>
+            <Rise delay={380}><Pulse /></Rise>
           </div>
           <ul className="dialog__points">
             {DIALOGUE.points.map((p, i) => (
@@ -415,7 +483,11 @@ export function Contact() {
   const ref = useReveal<HTMLDivElement>()
 
   return (
-    <section className="bay" data-tone="dark" id="kontakt" ref={ref}>
+    <section className="bay bay--cables" data-tone="dark" id="kontakt" ref={ref}>
+      {/* Samma kablar som i hjälten, som bokstöd. Sidan börjar och slutar
+          med dem — och mot svart lyser spetsarna så mycket starkare att de
+          läser som en annan bild, trots att ingenting utom rummet ändrats. */}
+      <Cables ton="mork" />
       <div className="wrap">
         <Eyebrow>Nästa steg</Eyebrow>
         <Kinetic
