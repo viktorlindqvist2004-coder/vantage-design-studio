@@ -1,6 +1,7 @@
 import { Cursor, Grain, Nav, Rail } from './components/Chrome'
 import {
-  Contact, Dialogue, Faq, Hero, Manifest, Offer, Process, Stats, Ticker, Why,
+  Contact, Dialogue, Faq, Hero, Manifest, Offer, Process, Showcase, Stats,
+  Ticker, Why,
 } from './components/Page'
 import { useToneUnderNav } from './lib/motion'
 
@@ -29,6 +30,7 @@ export default function App() {
         <Ticker />
         <Manifest />
         <Why />
+        <Showcase />
         <Offer />
         <Process />
         <Dialogue />

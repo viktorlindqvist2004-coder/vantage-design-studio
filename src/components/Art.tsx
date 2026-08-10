@@ -301,3 +301,94 @@ export function Pulse() {
 
   return <canvas className="pulse" ref={ref} aria-hidden="true" />
 }
+
+/* ── Människorna ──────────────────────────────────────────────────────── */
+
+/**
+ * Två personer vid ett bord, med en skärm emellan sig.
+ *
+ * Partiet handlar om att ni pratar direkt med den som bygger. Det gick att
+ * säga med två prickar och en linje, och det gjorde sidan förut — men två
+ * prickar är en symbol, och det här ska handla om människor.
+ *
+ * Ritade i linje och inte fotograferade, av två skäl. Ett foto på två
+ * främlingar är ett foto på två främlingar; en teckning är tydlig med att
+ * den föreställer situationen och inte personerna. Och studion har inga
+ * bilder på riktiga möten att visa — då är en teckning ärligare än ett
+ * köpt fotografi som låtsas vara ett.
+ *
+ * FORMEN
+ * Första försöket var en cirkel på en kupol och en böjd arm, och det såg
+ * ut som en skylt på en toalettdörr. Skillnaden mot något man tror på
+ * ligger i tre saker, och alla tre finns här: en hals, så att huvudet
+ * sitter på kroppen i stället för att sväva ovanför den; armbågar, så att
+ * armarna kan göra något; och två kroppar som inte är samma kropp
+ * speglad — den ena lutar sig fram och lyssnar, den andra visar något.
+ *
+ * De andas i olika takt. Det är den lilla osynkade rörelsen som gör att
+ * man läser två personer och inte två former.
+ */
+export function Figures() {
+  const ref = useReveal<SVGSVGElement>()
+
+  return (
+    <svg
+      className="folk"
+      ref={ref}
+      viewBox="0 0 560 252"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role="img"
+      aria-label="Två personer i samtal vid ett bord med en skärm emellan sig"
+    >
+      {/* Rummet: bord och två stolar. Stolarna finns för att kropparna ska
+          ha något att sitta på — utan dem svävar de. */}
+      <g opacity="0.28">
+        <path d="M26 198h508" />
+        <path d="M96 198v42M464 198v42" />
+        <path d="M74 198v-52M74 152h30" />
+        <path d="M486 198v-52M486 152h-30" />
+      </g>
+
+      {/* Personen till vänster: lutar sig fram, lyssnar, handen på bordet. */}
+      <g className="folk__en">
+        <ellipse cx="150" cy="66" rx="16.5" ry="18.5" />
+        <path d="M133 62c0-13 7-22 17-22s17 9 17 21c-3-5-9-9-17-9s-14 5-17 10z" />
+        <path d="M142 83v11M158 83v10" />
+        <path d="M112 198c0-46 9-79 20-90 10-7 20-7 30 0 11 11 20 44 20 90" />
+        {/* Armen mot bordet, med armbåge. */}
+        <path d="M161 112c17 9 29 24 37 39 4 8 13 13 23 14" />
+        {/* Den bortre armen, delvis skymd av kroppen. */}
+        <path d="M129 116c-9 14-13 33-13 50" opacity="0.55" />
+      </g>
+
+      {/* Skärmen dem emellan, på bordet. */}
+      <g className="folk__skarm">
+        <rect x="242" y="120" width="80" height="56" rx="5" opacity="0.55" />
+        <path d="M282 176v14M264 190h36" opacity="0.4" />
+        <path d="M252 134h30" stroke="var(--flame)" strokeWidth="4" />
+        <path d="M252 146h56" opacity="0.34" />
+        <path d="M252 156h40" opacity="0.26" />
+        <path d="M252 166h48" opacity="0.2" />
+      </g>
+
+      {/* Personen till höger: sitter uppräten och visar något på skärmen. */}
+      <g className="folk__tva">
+        <ellipse cx="410" cy="62" rx="16.5" ry="18.5" />
+        <path d="M393 60c0-13 8-22 18-22 9 0 15 6 16 15" />
+        <circle cx="432" cy="48" r="7.5" />
+        <path d="M402 79v11M418 79v10" />
+        <path d="M370 198c0-48 9-81 20-92 10-7 20-7 30 0 11 11 20 46 20 92" />
+        {/* Armen som pekar mot skärmen. Egen grupp, så att den kan röra sig
+            för sig — det är den som gör att någon visar något. */}
+        <g className="folk__arm">
+          <path d="M390 110c-16 7-28 20-36 33-4 7-11 11-19 12" />
+        </g>
+        <path d="M431 114c9 15 13 35 13 52" opacity="0.55" />
+      </g>
+    </svg>
+  )
+}

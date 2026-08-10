@@ -430,3 +430,68 @@ export function Rings() {
     </div>
   )
 }
+
+/* ── Djupet: bakom skärmarna ──────────────────────────────────────────── */
+
+/**
+ * Ett golv i perspektiv som försvinner mot en horisont.
+ *
+ * Skärmarna framför ska stå någonstans, inte sväva på en svart platta. Ett
+ * golv med linjer som glesnar mot horisonten ger rummet ett djup som
+ * skärmarnas egen vridning ensam inte kan ge — det är först när golvet
+ * finns som de läser som föremål på ett bord.
+ *
+ * Linjerna åt djupet ritas med jämna mellanrum i marken och projiceras;
+ * ritades de med jämna mellanrum på skärmen skulle golvet se platt ut.
+ * Marken rullar mot en, så att man känner att man färdas.
+ */
+export function Depth() {
+  const ref = useCanvas(
+    () => {},
+    ({ ctx, w, h, px, inne, t }: Scen) => {
+      ctx.clearRect(0, 0, w, h)
+
+      // Horisonten ligger en bit ovanför mitten, och flyktpunkten följer
+      // pekaren en aning i sidled — då vrider sig hela rummet med handen.
+      const hy = h * 0.46
+      const fx = w * 0.5 + (inne ? (px - w * 0.5) * 0.08 : 0)
+
+      const g = ctx.createLinearGradient(0, hy - 90, 0, hy + 30)
+      g.addColorStop(0, 'rgba(255,110,45,0)')
+      g.addColorStop(0.75, 'rgba(255,110,45,0.1)')
+      g.addColorStop(1, 'rgba(255,110,45,0)')
+      ctx.fillStyle = g
+      ctx.fillRect(0, hy - 90, w, 120)
+
+      ctx.lineWidth = 1
+      ctx.strokeStyle = 'rgba(243,242,239,0.09)'
+      ctx.beginPath()
+      // Linjer på djupet: jämnt fördelade i marken, projicerade till rutan.
+      for (let i = -14; i <= 14; i++) {
+        ctx.moveTo(fx + i * 26, hy)
+        ctx.lineTo(fx + i * 300, h + 40)
+      }
+      ctx.stroke()
+
+      // Tvärlinjer. Avståndet mellan dem följer 1/z, vilket är vad som gör
+      // att golvet läser som ett golv och inte som en solfjäder.
+      ctx.strokeStyle = 'rgba(243,242,239,0.07)'
+      ctx.beginPath()
+      const rull = (t * 0.22) % 1
+      for (let i = 0; i < 16; i++) {
+        const z = i + 1 - rull
+        const y = hy + (h - hy) / z
+        if (y > h + 40) continue
+        ctx.moveTo(0, y)
+        ctx.lineTo(w, y)
+      }
+      ctx.stroke()
+    },
+  )
+
+  return (
+    <div className="bg-hall" aria-hidden="true">
+      <canvas className="bg bg--depth" ref={ref} />
+    </div>
+  )
+}

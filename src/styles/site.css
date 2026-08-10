@@ -457,6 +457,7 @@ html[data-tone='dark'] .grain {
 .bg--blueprint { opacity: 0.85; }
 .bg--columns { opacity: 0.85; }
 .bg--rings { opacity: 0.7; }
+.bg--depth { opacity: 0.9; }
 
 .wrap {
   max-width: 1560px;
@@ -867,6 +868,143 @@ html[data-tone='dark'] .grain {
   line-height: 1.6;
 }
 
+/* ── Skärmarna ───────────────────────────────────────────────────────────
+   Tre bildskärmar i djupet med riktiga sidor som rullar på dem. Allt är
+   vanliga element med 3D-transform — ingen duk, ingen bild. En skärm är
+   en ruta med rundade hörn, och sidan på den en avlång ruta som skjuts
+   uppåt; grafikkortet flyttar dem utan att någon ritar om något. */
+.skarmar {
+  position: relative;
+  perspective: 1700px;
+  padding: clamp(2rem, 6vh, 5rem) 0;
+}
+
+.skarmar__scen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 2.4vw, 2.75rem);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.skarm {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(150px, 21vw, 320px);
+  transform-style: preserve-3d;
+}
+
+/* Sidoskärmarna står vridna inåt och en bit bort, så att klungan läser
+   som tre föremål på ett bord och inte som tre rutor på rad. */
+.skarm--0 { transform: rotateY(24deg) translate3d(0, 14px, -90px); }
+.skarm--1 { width: clamp(190px, 27vw, 430px); z-index: 2; }
+.skarm--2 { transform: rotateY(-24deg) translate3d(0, 14px, -90px); }
+
+/* Hårdvaran har egna färger och ärver inte partiets ton.
+   En bildskärm är ett föremål: den blir inte vit för att rummet är mörkt.
+   Med tontokens blev ramen vit och glaset svart i det mörka partiet, och
+   hela klungan läste som ett negativ. */
+.skarm__ram {
+  border-radius: 12px;
+  padding: 9px 9px 15px;
+  background: #1b1b1e;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 34px 70px -26px rgba(0, 0, 0, 0.75);
+}
+
+.skarm__glas {
+  position: relative;
+  overflow: hidden;
+  border-radius: 5px;
+  aspect-ratio: 16 / 10;
+  background: #f3f2ef;
+}
+
+.skarm__rull {
+  position: absolute;
+  inset: 0 0 auto;
+  will-change: transform;
+}
+
+.skarm__sida {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 8px 8px;
+}
+
+.skarm__list {
+  display: flex;
+  gap: 4px;
+  padding: 7px 2px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(12, 12, 13, 0.12);
+}
+
+.skarm__list i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(12, 12, 13, 0.22);
+}
+
+.skarm__list i:first-child { background: #ff4a17; }
+
+.skarm__rad {
+  display: block;
+  border-radius: 2px;
+  background: #0c0c0d;
+  flex: none;
+}
+
+/* Glaset. Utan reflexen läser rutan som en platta med innehåll; med den
+   läser den som en skärm. */
+.skarm__glans {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.03) 26%,
+    transparent 46%
+  );
+}
+
+.skarm__fot {
+  display: block;
+  width: 26%;
+  height: 9px;
+  margin: 0 auto;
+  border-radius: 0 0 5px 5px;
+  background: #17171a;
+}
+
+.skarm__namn {
+  display: block;
+  margin-top: 0.9rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+@media (max-width: 720px) {
+  /* På smal skärm blir tre skärmar bredvid varandra tre frimärken.
+     Sidoskärmarna får stå kvar men bakom, och namnen tas bort. */
+  .skarmar__scen { gap: 0; }
+  .skarm--0 { transform: rotateY(34deg) translate3d(38%, 10px, -130px); }
+  .skarm--2 { transform: rotateY(-34deg) translate3d(-38%, 10px, -130px); }
+  .skarm--1 { width: 62vw; }
+  .skarm--0 .skarm__namn,
+  .skarm--2 .skarm__namn { display: none; }
+}
+
 /* ── Resan i sidled ───────────────────────────────────────────────────────
    Partiet är tre skärmar högt men fastnar i rutan hela vägen, och scrollen
    som annars hade fört en nedåt för korten åt sidan i stället. Det är enda
@@ -1125,6 +1263,50 @@ html[data-tone='dark'] .grain {
   font-size: var(--t-md);
   line-height: 1.55;
   max-width: 48ch;
+}
+
+/* Människorna. Färgen ärvs, så figurerna följer partiets ton.
+   De andas i olika takt och lutar sig i tur och ordning fram — det är den
+   osynkade rörelsen som gör att man läser två personer och inte två
+   former. Ritningen dras fram när den kommer in i rutan. */
+.folk {
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  margin-top: clamp(2rem, 5vh, 3.5rem);
+  color: var(--ink);
+  overflow: visible;
+}
+
+/* Vridpunkten ligger vid bordet och inte mitt i figuren: en människa som
+   andas eller lutar sig gör det kring höften, inte kring naveln. */
+.folk__en { transform-origin: 150px 198px; }
+.folk__tva { transform-origin: 410px 198px; }
+.folk__arm { transform-origin: 390px 110px; }
+
+.folk.in .folk__en { animation: andas 5.2s ease-in-out infinite; }
+.folk.in .folk__tva { animation: andas 6.1s ease-in-out infinite 0.9s; }
+.folk.in .folk__arm { animation: visa 7s ease-in-out infinite 1.4s; }
+.folk.in .folk__skarm { animation: glim 6s ease-in-out infinite; }
+
+/* Andetaget är litet med flit. Syns rörelsen tydligt läser den som en
+   docka som vickar; märks den knappt läser den som liv. */
+@keyframes andas {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  30%      { transform: translate3d(0, -1.6px, 0) rotate(0.35deg); }
+  65%      { transform: translate3d(0, 0.8px, 0) rotate(-0.4deg); }
+}
+
+/* Armen som visar något: en liten gest med långa pauser emellan. */
+@keyframes visa {
+  0%, 62%, 100% { transform: rotate(0deg); }
+  72%           { transform: rotate(-5deg); }
+  84%           { transform: rotate(2.5deg); }
+}
+
+@keyframes glim {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.82; }
 }
 
 /* Samtalsfiguren. Höjden är fast, för figuren ritas i förhållande till sin

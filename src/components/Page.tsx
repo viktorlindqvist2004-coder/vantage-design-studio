@@ -11,8 +11,9 @@ import {
 import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
-import { Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
-import { Beams, Blueprint, Columns, Dots, Flow, Rings } from './Backdrops'
+import { Figures, Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
+import { Beams, Blueprint, Columns, Depth, Dots, Flow, Rings } from './Backdrops'
+import { Screens } from './Screens'
 import { LogoMark } from './Logo'
 import { OfferingArt } from './OfferingArt'
 
@@ -293,6 +294,38 @@ export function Why() {
   )
 }
 
+/* ── Skärmarna ────────────────────────────────────────────────────────── */
+
+/**
+ * Ett parti med föremål i stället för form.
+ *
+ * Tre bildskärmar står i djupet med sidor som rullar på dem medan man tar
+ * sig förbi. En studio som bygger webbplatser ska visa webbplatser, och
+ * det här är enda stället där sidan gör det bokstavligt.
+ */
+export function Showcase() {
+  return (
+    <section className="bay bay--bg" data-tone="dark">
+      <Depth />
+      <Wrap kind="fram">
+        <div className="head head--split">
+          <div>
+            <Eyebrow>Sådant vi sätter upp</Eyebrow>
+            <Kinetic className="head__title" text={'Sidor som\narbetar.'} />
+          </div>
+          <Sweep className="head__lead" delay={160}>
+            Vi ritar varje vy för dator, surfplatta och mobil innan en rad
+            kod skrivs. Det ni ser här är sorter av sidor — inte utförda
+            uppdrag, för studion är ny och vi visar hellre vad vi gör än
+            påstår vad vi gjort.
+          </Sweep>
+        </div>
+        <Screens />
+      </Wrap>
+    </section>
+  )
+}
+
 /* ── Det vi bygger ────────────────────────────────────────────────────── */
 
 function Card({ offering }: { offering: Offering }) {
@@ -450,7 +483,8 @@ export function Dialogue() {
             <Rise delay={300} className="step__facts">
               <a className="btn btn--solid" href="#kontakt">Boka ett samtal<Arrow /></a>
             </Rise>
-            <Rise delay={380}><Pulse /></Rise>
+            <Rise delay={380}><Figures /></Rise>
+            <Rise delay={460}><Pulse /></Rise>
           </div>
           <ul className="dialog__points">
             {DIALOGUE.points.map((p, i) => (
