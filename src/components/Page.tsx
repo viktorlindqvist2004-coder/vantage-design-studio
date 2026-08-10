@@ -4,7 +4,10 @@ import {
   SERVICES, STATS, STUDIO, WHY, WHY_LEAD, type Offering,
 } from '../data/content'
 import { clamp01 } from '../lib/math'
-import { onTick, reducedMotion, useCountUp, useReveal, useScrub, useTick } from '../lib/motion'
+import {
+  onTick, reducedMotion, useCountUp, useFlight, useReveal, useScrub, useTick,
+  type FlightKind,
+} from '../lib/motion'
 import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
@@ -24,6 +27,28 @@ import { OfferingArt } from './OfferingArt'
  * Varje parti bär sin egen ton på `data-tone`, och listen läser av vilken
  * ton som råkar ligga under den för att byta färg i takt.
  */
+
+/**
+ * Innehållsrutan i ett parti, med färden pålagd.
+ *
+ * Vridningen sitter här och inte på partiet: ett element med transform blir
+ * referenssystem för allt inuti, och då slutar de fastklistrade
+ * bakgrunderna ligga still. Bakgrunden ligger utanför den här rutan.
+ */
+function Wrap({
+  kind,
+  dir = 1,
+  children,
+  className = '',
+}: {
+  kind: FlightKind
+  dir?: 1 | -1
+  children: React.ReactNode
+  className?: string
+}) {
+  const ref = useFlight<HTMLDivElement>({ kind, dir })
+  return <div className={`wrap ${className}`} ref={ref}>{children}</div>
+}
 
 /* ── Hjältebilden ─────────────────────────────────────────────────────── */
 
@@ -185,7 +210,9 @@ export function Ticker() {
 export function Manifest() {
   const words = useRef<(HTMLSpanElement | null)[]>([])
 
-  const ref = useScrub<HTMLDivElement>(
+  // Skrubben mäter stycket och inte hela rutan: rutan bär färden och har
+  // sin egen ref, och ett element kan bara ha en.
+  const ref = useScrub<HTMLParagraphElement>(
     (p) => {
       // Tändningen är utsträckt över mitten av resan. Början och slutet
       // lämnas i fred så att meningen står hel både före och efter.
@@ -203,9 +230,9 @@ export function Manifest() {
   return (
     <section className="bay bay--bg" data-tone="dark" id="arbetet">
       <Flow />
-      <div className="wrap" ref={ref}>
+      <Wrap kind="sving" dir={1}>
         <Eyebrow>Vad arbetet går ut på</Eyebrow>
-        <p className="manifest__text" style={{ marginTop: '2.5rem' }}>
+        <p className="manifest__text" ref={ref} style={{ marginTop: '2.5rem' }}>
           {MANIFEST.map((w, i) => (
             <span
               key={`${w}-${i}`}
@@ -226,7 +253,7 @@ export function Manifest() {
             ))}
           </ul>
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -240,7 +267,7 @@ export function Why() {
   return (
     <section className="bay bay--bg" data-tone="light">
       <Dots />
-      <div className="wrap">
+      <Wrap kind="fram">
         <div className="head head--split">
           <Kinetic
             className="head__title"
@@ -261,7 +288,7 @@ export function Why() {
             </Rise>
           ))}
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -283,11 +310,47 @@ function Card({ offering }: { offering: Offering }) {
 }
 
 export function Offer() {
+  const sec = useRef<HTMLElement>(null)
+  const rail = useRef<HTMLDivElement>(null)
+
+  /**
+   * Resan i sidled.
+   *
+   * Partiet är tre skärmar högt men fastnar i rutan hela vägen. Scrollen
+   * som normalt hade fört en nedåt för i stället korten åt sidan, så att
+   * man reser tvärs igenom dem i stället för förbi dem. Det är den enda
+   * platsen på sidan där riktningen byts, och det räcker för att resan
+   * ska kännas som en resa och inte som en lista.
+   *
+   * Scrollen tas aldrig över. Fönstret rullar precis som vanligt — det är
+   * bara innehållet som råkar röra sig åt ett annat håll än sidan.
+   */
+  useTick(() => {
+    const s = sec.current
+    const r = rail.current
+    if (!s || !r) return
+    const rect = s.getBoundingClientRect()
+    const langd = rect.height - window.innerHeight
+    if (langd <= 0) {
+      if (r.style.transform) r.style.transform = ''
+      return
+    }
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return
+    const p = clamp01(-rect.top / langd)
+    // Sträckan mäts mot rutan rälsen ligger i, inte mot rälsen själv.
+    // Rälsen är `width: max-content` och alltså exakt lika bred som sitt
+    // innehåll — mätt mot sig själv blir överskottet alltid noll, och
+    // ingenting rörde sig.
+    const rum = r.parentElement?.clientWidth ?? window.innerWidth
+    const max = Math.max(0, r.scrollWidth - rum)
+    r.style.transform = `translate3d(${(-max * p).toFixed(1)}px, 0, 0)`
+  })
+
   return (
-    <section className="bay bay--bg" data-tone="dark" id="bygger">
+    <section className="travel" data-tone="dark" id="bygger" ref={sec}>
       <Beams />
-      <div className="wrap">
-        <div className="head head--split">
+      <div className="travel__stage">
+        <div className="travel__head">
           <Kinetic className="head__title" text={'Vad vi bygger.'} />
           <Sweep className="head__lead" delay={160}>
             Vilken sorts webbplats ni än behöver, och oavsett bransch.
@@ -295,11 +358,9 @@ export function Offer() {
           </Sweep>
         </div>
 
-        <div className="offer">
-          {OFFERINGS.map((o, i) => (
-            <Rise as="div" key={o.name} delay={(i % 3) * 110}>
-              <Card offering={o} />
-            </Rise>
+        <div className="travel__rail" ref={rail}>
+          {OFFERINGS.map((o) => (
+            <Card offering={o} key={o.name} />
           ))}
         </div>
       </div>
@@ -333,7 +394,7 @@ export function Process() {
   return (
     <section className="bay bay--bg" data-tone="light" id="gangen">
       <Blueprint />
-      <div className="wrap">
+      <Wrap kind="tilt">
         <div className="process">
           <div className="process__side">
             <Eyebrow>Arbetsgången</Eyebrow>
@@ -369,7 +430,7 @@ export function Process() {
             ))}
           </div>
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -380,7 +441,7 @@ export function Dialogue() {
   return (
     <section className="bay bay--bg" data-tone="light">
       <Rings />
-      <div className="wrap">
+      <Wrap kind="glid" dir={-1}>
         <div className="dialog">
           <div>
             <Eyebrow>{DIALOGUE.lead}</Eyebrow>
@@ -400,7 +461,7 @@ export function Dialogue() {
             ))}
           </ul>
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -433,13 +494,13 @@ export function Stats() {
   return (
     <section className="bay bay--bg" data-tone="dark">
       <Columns />
-      <div className="wrap">
+      <Wrap kind="stig">
         <div className="stats">
           {STATS.map((s, i) => (
             <Stat key={s.value} value={s.value} label={s.label} delay={i * 100} />
           ))}
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -454,7 +515,7 @@ export function Faq() {
   return (
     <section className="bay bay--bg" data-tone="light" id="fragor">
       <Rings />
-      <div className="wrap">
+      <Wrap kind="sving" dir={-1}>
         <div className="head">
           <Kinetic className="head__title" text={'Vanliga frågor.'} />
         </div>
@@ -480,7 +541,7 @@ export function Faq() {
             </Rise>
           ))}
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }
@@ -496,7 +557,7 @@ export function Contact() {
           med dem — och mot svart lyser spetsarna så mycket starkare att de
           läser som en annan bild, trots att ingenting utom rummet ändrats. */}
       <Cables ton="mork" />
-      <div className="wrap">
+      <Wrap kind="glid" dir={1}>
         <Eyebrow>Nästa steg</Eyebrow>
         <Kinetic
           className="contact__title"
@@ -536,7 +597,7 @@ export function Contact() {
           <span>© {STUDIO.founded} {STUDIO.name}</span>
           <span>Formgiven och handkodad</span>
         </div>
-      </div>
+      </Wrap>
     </section>
   )
 }

@@ -106,6 +106,14 @@ export function Kinetic({
  *
  * `clip-path` går att animera på kompositortråden, precis som transform.
  * Att animera bredden hade tvingat fram ny layout varje bildruta.
+ *
+ * Klippet sitter på en inre ruta och inte på den som bevakas, och det är
+ * inte en formalitet. Webbläsaren räknar in elementets eget `clip-path` när
+ * den avgör hur mycket av det som syns — ett element klippt till noll bredd
+ * rapporteras som osynligt. Satt klippet på den bevakade rutan blev det ett
+ * lås: den syntes aldrig, fick därför aldrig klassen som tar bort klippet,
+ * och texten stod osynlig för alltid. Ytterrutan är oklippt och syns; den
+ * inre bär klippet.
  */
 export function Sweep({
   children,
@@ -121,7 +129,7 @@ export function Sweep({
       className={`sweep ${className}`}
       style={delay ? ({ '--d': `${delay}ms` } as React.CSSProperties) : undefined}
     >
-      {children}
+      <span className="sweep__i">{children}</span>
     </Tag>
   )
 }

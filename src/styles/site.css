@@ -64,13 +64,15 @@
   100% { transform: scaleX(0); transform-origin: 100% 50%; }
 }
 
-/* Text som avtäcks av en kant i stället för att tona in. */
-.sweep {
+/* Text som avtäcks av en kant i stället för att tona in.
+   Klippet sitter på den inre rutan — se Motion.tsx för varför. */
+.sweep__i {
+  display: block;
   clip-path: inset(0 100% 0 0);
   transition: clip-path 1100ms var(--out) var(--d, 0ms);
 }
 
-.sweep.in {
+.sweep.in .sweep__i {
   clip-path: inset(0 -0.2em 0 0);
 }
 
@@ -383,11 +385,16 @@ html[data-tone='dark'] .grain {
    oavsett hur lite som ritades i dem. Med en skärmhöjd är kostnaden
    densamma vad partiet än råkar vara högt. Att bakgrunden dessutom
    ligger stilla medan texten rullar förbi ger ett djup den inte hade. */
+/* `clip` och inte `hidden`. Ett element med overflow:hidden blir en egen
+   rullbehållare, och då slutar det klistrade inuti klistra mot fönstret.
+   `clip` klipper utan att bli behållare, vilket är precis vad som behövs:
+   ljusbanden är dubbelt så breda som partiet och ska inte sticka ut. */
 .bg-hall {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  overflow: clip;
 }
 
 /* Ljusbanden bakom Vad vi bygger. Ytan är dubbelt så bred som partiet och
@@ -858,6 +865,79 @@ html[data-tone='dark'] .grain {
   color: var(--muted);
   font-size: var(--t-small);
   line-height: 1.6;
+}
+
+/* ── Resan i sidled ───────────────────────────────────────────────────────
+   Partiet är tre skärmar högt men fastnar i rutan hela vägen, och scrollen
+   som annars hade fört en nedåt för korten åt sidan i stället. Det är enda
+   stället på sidan där färdriktningen byts. */
+.travel {
+  position: relative;
+  height: 320vh;
+  /* Rälsen är bredare än rutan. Samma skäl till `clip` som ovan: partiet
+     innehåller ett klistrat lager och får inte bli rullbehållare. */
+  overflow-x: clip;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.travel__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(2rem, 6vh, 4rem);
+  overflow: hidden;
+  padding-top: var(--nav-h);
+  z-index: 1;
+}
+
+.travel__head {
+  padding-inline: var(--gutter);
+  display: grid;
+  gap: 1.25rem;
+  max-width: 1560px;
+  margin-inline: auto;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .travel__head {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.travel__rail {
+  display: flex;
+  gap: clamp(1rem, 2vw, 1.75rem);
+  padding-inline: var(--gutter);
+  width: max-content;
+  will-change: transform;
+}
+
+.travel__rail > * {
+  flex: 0 0 clamp(250px, 27vw, 400px);
+}
+
+/* På smal skärm blir sidleds resa en trång tunnel. Där staplas korten
+   som vanligt och partiet får sin höjd av innehållet. */
+@media (max-width: 860px) {
+  .travel { height: auto; }
+  .travel__stage {
+    position: static;
+    height: auto;
+    padding: var(--bay) 0;
+  }
+  .travel__rail {
+    width: auto;
+    flex-direction: column;
+    transform: none !important;
+  }
+  .travel__rail > * { flex: none; }
 }
 
 /* ── Arbetsgången ─────────────────────────────────────────────────────── */

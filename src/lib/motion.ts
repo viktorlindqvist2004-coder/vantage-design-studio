@@ -171,6 +171,134 @@ export function useScrub<T extends HTMLElement>(
   return ref
 }
 
+/* ── Kameran ──────────────────────────────────────────────────────────── */
+
+/**
+ * FÄRDEN
+ * ══════
+ * Sidan ska inte läsas som en lista man rullar nedför utan som en resa där
+ * man far förbi platser. Det görs utan att röra scrollen: fönstret rullar
+ * precis som vanligt, men varje partis innehåll ligger i ett djup och
+ * vrids efter var det står i förhållande till blicken.
+ *
+ * Ett parti kommer emot en snett från sidan, rätar upp sig när det står
+ * mitt i rutan, och far förbi åt andra hållet. Vartannat parti lutar åt
+ * motsatt håll, så att man väver sig fram i stället för att åka rakt.
+ *
+ * TVÅ SAKER SOM STYR HUR DET ÄR BYGGT
+ *
+ * Vridningen läggs på innehållet, aldrig på partiet självt. Ett element med
+ * transform blir ett eget referenssystem för allt inuti, och då slutar de
+ * fastklistrade bakgrunderna vara fastklistrade — de skulle följa med
+ * partiet i stället för att ligga still. Bakgrunden ligger därför utanför
+ * det som vrids.
+ *
+ * Perspektivet står i själva transformen och inte på någon förälder, av
+ * exakt samma skäl: perspektiv på en förälder gör den till referenssystem
+ * för allt fast och klistrat under den.
+ *
+ * Rätt uppe i mitten ligger allt platt. Text som står lutad är text man
+ * inte läser, så vridningen ska vara borta i samma stund partiet är det
+ * man tittar på.
+ */
+
+/** Mjuk övergång mellan 0 och 1 — ingen knyck i ändarna. */
+const mjuk = (x: number) => {
+  const t = x < 0 ? 0 : x > 1 ? 1 : x
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Sorterna av inflygning.
+ *
+ * Poängen med flera är att inget parti ska röra sig som det förra. Kommer
+ * allt in på samma sätt slutar man se rörelsen efter tredje partiet och
+ * den blir en maner; byter den karaktär hela vägen ned förblir resan en
+ * resa. Varje sort är en egen kameraidé:
+ *
+ *  sving  — svänger in snett från sidan och rätar upp sig.
+ *  fram   — kommer rakt emot en ur djupet, som genom en tunnel.
+ *  tilt   — reser sig upp från golvet.
+ *  glid   — glider in i sidled utan djup, som ett blad som skjuts fram.
+ *  stig   — stiger underifrån och krymper ihop på väg ut.
+ */
+export type FlightKind = 'sving' | 'fram' | 'tilt' | 'glid' | 'stig'
+
+export type FlightOpts = {
+  kind?: FlightKind
+  /** Åt vilket håll partiet rör sig. Växla per parti. */
+  dir?: 1 | -1
+}
+
+export function useFlight<T extends HTMLElement>({
+  kind = 'sving',
+  dir = 1,
+}: FlightOpts = {}) {
+  const ref = useRef<T>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || reducedMotion()) return
+
+    return onTick(() => {
+      const r = el.getBoundingClientRect()
+      const vh = window.innerHeight
+      // Var partiets mitt står, i skärmhöjder från blickens mitt.
+      // Positivt = under, negativt = ovanför.
+      const c = (r.top + r.height / 2 - vh / 2) / vh
+
+      // Utanför resan behövs inget skrivet alls.
+      if (c > 1.4 || c < -1.4) return
+
+      // Två skilda kurvor: en för vägen in underifrån, en för vägen ut
+      // uppåt. De är inte spegelbilder — man kommer långt bortifrån och
+      // far förbi tätt intill, precis som när man passerar något.
+      const in_ = mjuk((c - 0.12) / 0.8)
+      const ut = mjuk((-c - 0.22) / 0.72)
+
+      let x = 0
+      let y = 0
+      let z = 0
+      let rx = 0
+      let ry = 0
+      let sk = 1
+
+      switch (kind) {
+        case 'fram':
+          z = -1100 * in_ + 420 * ut
+          sk = 1 - 0.04 * ut
+          break
+        case 'tilt':
+          rx = -26 * in_ + 12 * ut
+          y = 90 * in_ - 40 * ut
+          z = -300 * in_
+          break
+        case 'glid':
+          x = 130 * dir * in_ - 90 * dir * ut
+          y = 20 * in_
+          break
+        case 'stig':
+          y = 120 * in_ - 60 * ut
+          sk = 1 - 0.12 * in_ - 0.06 * ut
+          break
+        default:
+          z = -620 * in_ + 190 * ut
+          ry = 13 * dir * in_ - 7 * dir * ut
+          y = 46 * in_ - 26 * ut
+      }
+
+      const op = 1 - 0.74 * in_ - 0.64 * ut
+
+      el.style.transform =
+        `perspective(1500px) translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) `
+        + `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${sk.toFixed(4)})`
+      el.style.opacity = op.toFixed(3)
+    })
+  }, [kind, dir])
+
+  return ref
+}
+
 /* ── Siffror som räknas upp ───────────────────────────────────────────── */
 
 /**
