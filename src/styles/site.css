@@ -36,6 +36,42 @@
 
 .kin__line {
   display: block;
+  position: relative;
+}
+
+/* Kanten som sveper över raden medan orden reser sig bakom den.
+   Den gör att rubriken läses som något som sätts på plats, inte som
+   något som tonar in. En rad i taget, uppifrån och ned. */
+.kin__line::after {
+  content: '';
+  position: absolute;
+  inset: 0.1em 0 0.14em;
+  background: var(--flame);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.kin.in .kin__line::after {
+  animation: wipe 820ms var(--out) forwards;
+  animation-delay: calc(var(--l, 0) * 130ms);
+}
+
+@keyframes wipe {
+  0%   { transform: scaleX(0); transform-origin: 0 50%; }
+  46%  { transform: scaleX(1); transform-origin: 0 50%; }
+  54%  { transform: scaleX(1); transform-origin: 100% 50%; }
+  100% { transform: scaleX(0); transform-origin: 100% 50%; }
+}
+
+/* Text som avtäcks av en kant i stället för att tona in. */
+.sweep {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1100ms var(--out) var(--d, 0ms);
+}
+
+.sweep.in {
+  clip-path: inset(0 -0.2em 0 0);
 }
 
 .kin__word {
@@ -324,14 +360,77 @@ html[data-tone='dark'] .grain {
   padding-top: 0;
 }
 
-/* Ett parti som bär kablar behöver spillningen dold och innehållet över. */
+/* Ett parti med levande bakgrund: spillningen dold, innehållet över.
+   Bakgrunden tar aldrig emot pekaren — fönstret lyssnar åt den — så all
+   text går att markera rakt igenom. */
+.bay--bg,
 .bay--cables {
   overflow: hidden;
 }
 
+.bay--bg > .wrap,
 .bay--cables > .wrap {
   position: relative;
   z-index: 1;
+}
+
+/* Hallen täcker hela partiet; duken i den är bara en skärm hög och
+   klistras fast i överkanten medan hallen rullar förbi.
+
+   Det är inte en effekt utan en kostnadsgräns. En duk lika hög som
+   partiet kan vara tretton hundra bildpunkter, och att tömma och fylla
+   den ytan varje bildruta tog partierna till tjugo bilder i sekunden
+   oavsett hur lite som ritades i dem. Med en skärmhöjd är kostnaden
+   densamma vad partiet än råkar vara högt. Att bakgrunden dessutom
+   ligger stilla medan texten rullar förbi ger ett djup den inte hade. */
+.bg-hall {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ljusbanden bakom Vad vi bygger. Ytan är dubbelt så bred som partiet och
+   dras en fjärdedel i sidled, så slingan möter sig själv utan skarv. */
+.beams {
+  position: sticky;
+  top: 0;
+  left: -50%;
+  display: block;
+  width: 200%;
+  height: 100vh;
+  height: 100svh;
+  /* Mjuka flanker och inte raka kanter. Med hårda stopp blev banden
+     ränder tvärs över partiet i stället för ljus som faller in, och en
+     rand drar till sig blicken på ett sätt som ljus aldrig gör. */
+  background: repeating-linear-gradient(
+    116deg,
+    transparent 0 66px,
+    color-mix(in srgb, #ffece0 1.5%, transparent) 96px,
+    color-mix(in srgb, #ffece0 4.5%, transparent) 124px,
+    color-mix(in srgb, #ffece0 1.5%, transparent) 152px,
+    transparent 190px 268px
+  );
+  animation: beamdrift 46s linear infinite;
+}
+
+@keyframes beamdrift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(25%, 0, 0); }
+}
+
+/* Duken i strålpartiet ligger ovanpå banden. */
+.beams + .bg {
+  margin-top: -100vh;
+}
+
+.bg {
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
 }
 
 .bay--cables .cables {
@@ -342,6 +441,15 @@ html[data-tone='dark'] .grain {
   z-index: 0;
   pointer-events: none;
 }
+
+/* Var bakgrund har sin egen styrka. Rastret är många prickar och blir
+   starkt av att vara tätt; strömningen är få linjer och tål mer. */
+.bg--flow { opacity: 0.85; }
+.bg--dots { opacity: 0.32; }
+.bg--beams { opacity: 0.9; }
+.bg--blueprint { opacity: 0.85; }
+.bg--columns { opacity: 0.85; }
+.bg--rings { opacity: 0.7; }
 
 .wrap {
   max-width: 1560px;

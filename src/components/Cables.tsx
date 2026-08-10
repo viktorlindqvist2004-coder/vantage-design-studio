@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { onTick, reducedMotion } from '../lib/motion'
+import { glod } from '../lib/canvas'
 
 /**
  * KABLARNA
@@ -69,6 +70,8 @@ export function Cables({ ton = 'ljus' }: { ton?: 'ljus' | 'mork' }) {
     let dpr = 1
     let kablar: Kabel[] = []
     let stoft: Stoft[] = []
+    // Glöden ritas en gång och kopieras. Se lib/canvas.ts.
+    const flack = glod(64, 'rgba(255,120,50,1)')
 
     /**
      * Pekarens läge i fönstrets koordinater, och hur mycket den räknas.
@@ -89,7 +92,9 @@ export function Cables({ ton = 'ljus' }: { ton?: 'ljus' | 'mork' }) {
       const rect = canvas!.getBoundingClientRect()
       w = rect.width
       h = rect.height
-      dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // Halv täthet räcker för mjuka linjer och glöd, och kostar en
+      // fjärdedel så många bildpunkter att fylla varje ruta.
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5)
       canvas!.width = Math.round(w * dpr)
       canvas!.height = Math.round(h * dpr)
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -204,15 +209,12 @@ export function Cables({ ton = 'ljus' }: { ton?: 'ljus' | 'mork' }) {
       ctx!.clearRect(0, 0, w, h)
 
       // Stoftet ligger underst — det är luft, inte förgrund.
+      ctx!.globalAlpha = 0.22
       for (const s of stoft) {
-        const g = ctx!.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3)
-        g.addColorStop(0, 'rgba(255,120,60,0.22)')
-        g.addColorStop(1, 'rgba(255,120,60,0)')
-        ctx!.fillStyle = g
-        ctx!.beginPath()
-        ctx!.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2)
-        ctx!.fill()
+        const d = s.r * 6
+        ctx!.drawImage(flack, s.x - d / 2, s.y - d / 2, d, d)
       }
+      ctx!.globalAlpha = 1
 
       for (const k of kablar) {
         const p = k.leder
@@ -236,14 +238,9 @@ export function Cables({ ton = 'ljus' }: { ton?: 'ljus' | 'mork' }) {
         // pricken läser glöden som dis, utan glöden som en punkt.
         const tip = p[p.length - 1]
         const r = 26 + k.ton * 16
-        const g = ctx!.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, r)
-        g.addColorStop(0, `rgba(255,110,40,${(0.34 * k.ton).toFixed(3)})`)
-        g.addColorStop(0.4, `rgba(255,140,60,${(0.12 * k.ton).toFixed(3)})`)
-        g.addColorStop(1, 'rgba(255,140,60,0)')
-        ctx!.fillStyle = g
-        ctx!.beginPath()
-        ctx!.arc(tip.x, tip.y, r, 0, Math.PI * 2)
-        ctx!.fill()
+        ctx!.globalAlpha = 0.34 * k.ton
+        ctx!.drawImage(flack, tip.x - r, tip.y - r, r * 2, r * 2)
+        ctx!.globalAlpha = 1
 
         ctx!.fillStyle = `rgba(255,74,23,${(0.55 + k.ton * 0.45).toFixed(3)})`
         ctx!.beginPath()

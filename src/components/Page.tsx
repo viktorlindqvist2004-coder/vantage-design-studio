@@ -5,10 +5,11 @@ import {
 } from '../data/content'
 import { clamp01 } from '../lib/math'
 import { onTick, reducedMotion, useCountUp, useReveal, useScrub, useTick } from '../lib/motion'
-import { Eyebrow, Kinetic, Rise } from './Motion'
+import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
 import { Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
+import { Beams, Blueprint, Columns, Dots, Flow, Rings } from './Backdrops'
 import { LogoMark } from './Logo'
 import { OfferingArt } from './OfferingArt'
 
@@ -63,10 +64,10 @@ export function Hero() {
             <Rise key={s} delay={140 + i * 90}>{s}</Rise>
           ))}
         </div>
-        <Rise className="hero__intro" delay={340}>
+        <Sweep className="hero__intro" delay={340}>
           Vi ritar och bygger webbplatser för hand. Ni pratar med dem som
           utför arbetet, hela vägen.
-        </Rise>
+        </Sweep>
       </div>
 
       <div ref={title}>
@@ -200,7 +201,8 @@ export function Manifest() {
   )
 
   return (
-    <section className="bay" data-tone="dark" id="arbetet">
+    <section className="bay bay--bg" data-tone="dark" id="arbetet">
+      <Flow />
       <div className="wrap" ref={ref}>
         <Eyebrow>Vad arbetet går ut på</Eyebrow>
         <p className="manifest__text" style={{ marginTop: '2.5rem' }}>
@@ -236,14 +238,15 @@ const WHY_MARKS: MarkKind[] = ['sikte', 'vag', 'fart', 'faste']
 
 export function Why() {
   return (
-    <section className="bay" data-tone="light">
+    <section className="bay bay--bg" data-tone="light">
+      <Dots />
       <div className="wrap">
         <div className="head head--split">
           <Kinetic
             className="head__title"
             text={'Fyra saker avgör\nom det gör nytta.'}
           />
-          <Rise className="head__lead" delay={160}>{WHY_LEAD}</Rise>
+          <Sweep className="head__lead" delay={160}>{WHY_LEAD}</Sweep>
         </div>
 
         <div className="why">
@@ -281,14 +284,15 @@ function Card({ offering }: { offering: Offering }) {
 
 export function Offer() {
   return (
-    <section className="bay" data-tone="dark" id="bygger">
+    <section className="bay bay--bg" data-tone="dark" id="bygger">
+      <Beams />
       <div className="wrap">
         <div className="head head--split">
           <Kinetic className="head__title" text={'Vad vi bygger.'} />
-          <Rise className="head__lead" delay={160}>
+          <Sweep className="head__lead" delay={160}>
             Vilken sorts webbplats ni än behöver, och oavsett bransch.
             Behöver ni något som inte står här bygger vi det också.
-          </Rise>
+          </Sweep>
         </div>
 
         <div className="offer">
@@ -327,7 +331,8 @@ export function Process() {
   )
 
   return (
-    <section className="bay" data-tone="light" id="gangen">
+    <section className="bay bay--bg" data-tone="light" id="gangen">
+      <Blueprint />
       <div className="wrap">
         <div className="process">
           <div className="process__side">
@@ -373,13 +378,14 @@ export function Process() {
 
 export function Dialogue() {
   return (
-    <section className="bay" data-tone="light">
+    <section className="bay bay--bg" data-tone="light">
+      <Rings />
       <div className="wrap">
         <div className="dialog">
           <div>
             <Eyebrow>{DIALOGUE.lead}</Eyebrow>
             <Kinetic className="dialog__title" text={DIALOGUE.title} />
-            <Rise className="dialog__body" delay={200}>{DIALOGUE.body}</Rise>
+            <Sweep className="dialog__body" delay={200}>{DIALOGUE.body}</Sweep>
             <Rise delay={300} className="step__facts">
               <a className="btn btn--solid" href="#kontakt">Boka ett samtal<Arrow /></a>
             </Rise>
@@ -425,7 +431,8 @@ function Stat({ value, label, delay }: { value: string; label: string; delay: nu
 
 export function Stats() {
   return (
-    <section className="bay" data-tone="dark">
+    <section className="bay bay--bg" data-tone="dark">
+      <Columns />
       <div className="wrap">
         <div className="stats">
           {STATS.map((s, i) => (
@@ -445,7 +452,8 @@ export function Faq() {
   const [open, setOpen] = useState<number | null>(0)
 
   return (
-    <section className="bay" data-tone="light" id="fragor">
+    <section className="bay bay--bg" data-tone="light" id="fragor">
+      <Rings />
       <div className="wrap">
         <div className="head">
           <Kinetic className="head__title" text={'Vanliga frågor.'} />

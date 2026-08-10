@@ -75,7 +75,11 @@ export function Kinetic({
   return (
     <Tag ref={ref} className={`kin ${className}`}>
       {lines.map((line, li) => (
-        <span className="kin__line" key={li}>
+        <span
+          className="kin__line"
+          key={li}
+          style={{ '--l': li } as React.CSSProperties}
+        >
           {line.split(' ').map((raw) => {
             const d = delay + n++ * step
             const hot = raw.length > 2 && raw.startsWith('*') && raw.endsWith('*')
@@ -88,6 +92,36 @@ export function Kinetic({
           })}
         </span>
       ))}
+    </Tag>
+  )
+}
+
+/**
+ * Text som sveps fram bakom en kant.
+ *
+ * Skillnaden mot `Rise` är att innehållet inte tonar in utan avtäcks: en
+ * kant far från vänster till höger och lämnar texten efter sig. Det läser
+ * som att raden sätts, inte som att den laddar — och det är den enda
+ * rörelsen på sidan som inte rör själva elementet, bara vad man ser av det.
+ *
+ * `clip-path` går att animera på kompositortråden, precis som transform.
+ * Att animera bredden hade tvingat fram ny layout varje bildruta.
+ */
+export function Sweep({
+  children,
+  delay = 0,
+  className = '',
+  as = 'div',
+}: RiseProps) {
+  const ref = useReveal<HTMLDivElement>()
+  const Tag = as as 'div'
+  return (
+    <Tag
+      ref={ref}
+      className={`sweep ${className}`}
+      style={delay ? ({ '--d': `${delay}ms` } as React.CSSProperties) : undefined}
+    >
+      {children}
     </Tag>
   )
 }
