@@ -754,25 +754,35 @@ export function Cord() {
       ]
 
       /**
-       * VAR MANTELN ÄR AVSKUREN, SOM ANDEL AV BANAN
-       * ═══════════════════════════════════════════
-       * Ett betyder hel kabel: manteln går hela vägen ut ur bilden och det
-       * finns ingenting utvecklat att se. Så ser den ut tills man rullat
-       * knappt halva partiet.
+       * HUR LÅNGT KABELN HAR MATATS IN, SOM ANDEL AV BANAN
+       * ══════════════════════════════════════════════════
+       * Noll betyder ingen kabel alls. Banans början ligger ovanför bildens
+       * överkant, så det första som händer när man rullar in i partiet är
+       * att en ände kommer ned uppifrån — kabeln firas ned genom bilden i
+       * takt med att man läser sig ned genom stegen.
        *
-       * Sedan vandrar snittet uppåt, mot kabelns början. Det är åt det
-       * hållet man skalar en kabel — man skär manteln och drar den bakåt —
-       * och det är också det som gör att knippet nedanför blir längre av
-       * sig självt, utan att det någonsin uppstår ett glapp mellan mantel
-       * och ledare. Att i stället låta ledarna växa fram ur ett fast snitt
-       * hade betytt en kabel som slutar mitt i luften ända tills man rullat
-       * förbi, och det är just den halvan av bilden man tittar på.
+       * Den stannar på knappa två tredjedelar av banan. Där är änden nere i
+       * partiets nedre tredjedel med gott om plats under sig, och det är
+       * först då den öppnar sig. Att låta manteln fortsätta ut ur bild hade
+       * betytt att uppvecklingen skedde utanför rutan.
+       *
+       * Ingången är mjuk i båda ändar men förskjuten en gnutta framåt: rakt
+       * mjuk startar så långsamt att kabeln står stilla ovanför kanten under
+       * hela den första femtedelen, och då ser partiet tomt ut just när man
+       * kommer in i det.
        */
-      const uSnitt = 1 - 0.44 * mjuk(Math.min(1, Math.max(0, (p - 0.4) / 0.5)))
-      /** Hur uppskalad manteln är vid snittet, 0–1. */
-      const oppen = Math.min(1, Math.max(0, (p - 0.42) / 0.22))
-      /** Hur brett knippet har vecklat ut sig. */
-      const ute = Math.min(1, Math.max(0, (p - 0.48) / 0.46))
+      const SLUT = 0.62
+      const uFram = SLUT * mjuk((p + 0.06) / 0.66)
+      /**
+       * Uppvecklingen. Den börjar när änden är framme och inte förr — det
+       * är hela poängen med den här ordningen: man ser en hel kabel komma
+       * ned, och först när man är nere hos den öppnar den sig.
+       */
+      const veckla = mjuk((p - 0.6) / 0.34)
+      /** Hur uppskalad manteln är vid änden, 0–1. */
+      const oppen = mjuk((p - 0.6) / 0.16)
+      /** Hur brett knippet har vecklat ut sig. Bredden ligger efter fallet. */
+      const ute = veckla * veckla
 
       /**
        * MANTELN MAPPAD MED DEN MÄTTA YTAN
@@ -969,16 +979,18 @@ export function Cord() {
 
       /* ── Ledarna, som ligger under manteln där de kommer ut ──────────── */
       for (const l of ledare.current) {
-        // Varje ledare vecklar ut sig i sin egen takt, men alla hänger hela
-        // vägen ned från början.
+        // Varje ledare vecklar ut sig i sin egen takt.
+        const fram = Math.min(1, Math.max(0, (veckla - l.vanta) / (1 - l.vanta)))
+        // Kabeln är hel tills änden är nere. Då finns inget knippe att rita.
+        if (fram <= 0.001) continue
         const vidd = Math.min(1, Math.max(0, (ute - l.vanta) / (1 - l.vanta)))
         /**
-         * Ledarna lämnar snittet spridda över mynningens bredd, inte ur en
+         * Ledarna lämnar änden spridda över mynningens bredd, inte ur en
          * och samma punkt. Utgår alla ur en punkt blir knippet en solfjäder
          * av ekrar — ett hjul, inte ett knippe. Några bildpunkters skillnad
          * i utgångsläge är hela skillnaden.
          */
-        const [sxk, syk] = bana(uSnitt)
+        const [sxk, syk] = bana(uFram)
         const ax = sxk + l.bukt * TJ * 1.1
         const ay = syk + 4
         /**
@@ -990,17 +1002,15 @@ export function Cord() {
          * Bredden börjar inte på noll utan på en dryg tiondel: ett knippe
          * som faller exakt rakt ned är en enda tjock linje, inte flera
          * ledare som ännu inte skilts åt.
+         *
+         * Hela knippet växer dessutom ut ur änden med `fram`. Det är det
+         * som är uppvecklingen: när man väl är nere hos kabeln rullar
+         * ledarna ut ur den, de ligger inte och väntar färdiga.
          */
-        const bx = ax + l.mal * w * (0.05 + 0.35 * vidd)
-        /**
-         * Spetsarna hamnar på olika höjd först när knippet vecklat ut sig:
-         * de som går längst ut i sidled slutar högre upp, de rakaste går ned
-         * förbi underkanten. Innan dess går alla förbi kanten, och kabeln
-         * ser ut att fortsätta ut ur bilden — vilket är meningen.
-         */
-        const by = h * (1.18 - Math.min(0.95, Math.abs(l.mal)) * 0.32 * vidd)
-        // Innan snittet börjat vandra uppåt ligger det utanför bilden och
-        // det finns inget knippe att rita — kabeln är hel.
+        const mx = ax + l.mal * w * (0.05 + 0.35 * vidd)
+        const my = h * (1.18 - Math.min(0.95, Math.abs(l.mal)) * 0.32 * vidd)
+        const bx = ax + (mx - ax) * fram
+        const by = ay + (my - ay) * fram
         if (by - ay < 8) continue
 
         const pkt: [number, number][] = []
@@ -1037,24 +1047,28 @@ export function Cord() {
       // kurvor mellan punkterna — varje segment är rakt — så det är
       // upplösningen på polylinjen som avgör hur mjuk banan ser ut.
       const n = 40
-      for (let i = 0; i <= n; i++) mp.push(bana((uSnitt * i) / n))
+      // Ingen kabel alls förrän änden hunnit in i bilden. Utan det ritas en
+      // bana med noll längd, och ett penseldrag med rund ände blir en prick
+      // uppe i hörnet — en kabel som ännu inte finns ska inte finnas.
+      if (uFram < 0.004) return
+      for (let i = 0; i <= n; i++) mp.push(bana((uFram * i) / n))
       kastskugga(mp, TJ)
       if (yta.current) mappa(mp, TJ, yta.current)
 
-      /* ── Snittet: manteln uppskuren och tillbakadragen ───────────────── */
-      if (oppen > 0.01) {
-        const [sx, sy] = bana(uSnitt)
-        // Kabelns egen riktning vid snittet. Flikarna räknas i den och inte
+      /* ── Änden: hel medan den firas ned, uppskuren när den är framme ─── */
+      {
+        const [sx, sy] = bana(uFram)
+        // Kabelns egen riktning vid änden. Flikarna räknas i den och inte
         // i bildens lodräta: en kabel som svänger måste ha sitt snitt tvärs
         // sig själv, annars sitter flikarna snett på sin egen mantel.
-        const [fx0, fy0] = bana(Math.max(0, uSnitt - 0.02))
+        const [fx0, fy0] = bana(Math.max(0, uFram - 0.02))
         const tl = Math.hypot(sx - fx0, sy - fy0) || 1
         const tx = (sx - fx0) / tl
         const ty = (sy - fy0) / tl
         const nx = -ty
         const ny = tx
 
-        for (const sida of [-1, 1]) {
+        for (const sida of oppen > 0.01 ? [-1, 1] : []) {
           /**
            * Fliken viker sig utåt och tillbaka uppför kabeln, inte rakt ut
            * åt sidan. Det är så man skalar: man skär manteln och drar den
@@ -1083,14 +1097,35 @@ export function Cord() {
           if (yta.current) mappa(flik, TJ * 0.3, yta.current)
         }
 
-        // Den mörka insidan av snittet, där manteln är genomskuren. Den
-        // ligger tvärs kabeln och inte vågrätt i bilden.
+        /**
+         * Ändytan, tvärs kabeln och inte vågrätt i bilden.
+         *
+         * Medan kabeln firas ned är det en hel, ren avskuren ände: mörkare
+         * än manteln men inte svart, med en ljus kant mot ljuset. Utan den
+         * slutar mappningen tvärt i en rak kant, och en rak kant tvärs en
+         * cylinder läser som att kabeln är avklippt av bildens ram i
+         * stället för att ha en ände.
+         *
+         * När den öppnar sig blir samma ellips i stället hålet in i
+         * knippet: bredare och mörkare.
+         */
         ctx.save()
-        ctx.globalAlpha = oppen * 0.9
-        ctx.fillStyle = SNITT_INSIDA
+        ctx.translate(sx, sy)
+        ctx.rotate(Math.atan2(ty, tx))
+        // Mynningen blir inte längre i kabelns riktning när den öppnar
+        // sig — det är flikarna som viker undan, inte hålet som växer
+        // på längden. Lät man den bli det blev änden en grå slant
+        // klistrad på kabeln.
+        const rb = TJ * (0.12 + 0.05 * oppen)
+        ctx.fillStyle = blanda(LEDAR_MITT, SNITT_INSIDA, 0.4 + oppen * 0.6)
         ctx.beginPath()
-        ctx.ellipse(sx, sy, TJ * 0.4, TJ * 0.14, Math.atan2(ty, tx), 0, Math.PI * 2)
+        ctx.ellipse(0, 0, rb, TJ * 0.44, 0, 0, Math.PI * 2)
         ctx.fill()
+        ctx.strokeStyle = ytaFarg(6)
+        ctx.lineWidth = Math.max(1.2, TJ * 0.035)
+        ctx.beginPath()
+        ctx.ellipse(0, 0, rb, TJ * 0.44, 0, Math.PI * 0.55, Math.PI * 1.45)
+        ctx.stroke()
         ctx.restore()
       }
     },
