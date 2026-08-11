@@ -433,24 +433,47 @@ type Ledare = {
   mal: number
   /** Hur brett den viker ut sig i sidled på vägen. */
   bukt: number
-  tj: number
-  farg: string
-  /** Den mörka kanten, framräknad en gång och inte varje bildruta. */
-  kant: string
   /**
-   * Hur nära betraktaren ledaren ligger, 0–1.
+   * Vilket djupskikt ledaren tillhör, 0 bakerst.
    *
    * Ett knippe där varje ledare har samma kontrast ligger i ett enda plan,
-   * och ett plan är en teckning. De bakre får sin kant dragen mot
-   * mittentonen och sin glans dämpad — luften mellan dem och ögat tar bort
-   * kontrast innan avstånd gör något annat. De ritas dessutom först, så de
-   * hamnar bakom.
+   * och ett plan är en teckning. De bakre är tunnare, mattare och ritas
+   * först — luften mellan dem och ögat tar bort kontrast innan avstånd gör
+   * något annat.
+   *
+   * Skiktet är också det som gör hundratals ledare möjliga. Se `SKIKT`.
    */
-  djup: number
+  skikt: number
   /** Egen fas och fördröjning, så att de inte växer i takt. */
   fas: number
   vanta: number
+  /** Hur kort ledaren är i förhållande till de andra, 0–1. */
+  kort: number
+  /** Sann för de få som får en riktig glödspets och inte bara en prick. */
+  lyser: boolean
 }
+
+/**
+ * HUNDRATALS LEDARE, FEM PENSELDRAG
+ * ═════════════════════════════════
+ * Nio ledare kunde få var sin behandling: tre lager för rundningen och två
+ * för glansen, alltså fem drag var. Trehundra ledare på samma sätt vore
+ * femtonhundra drag per bildruta, och det går inte.
+ *
+ * Lösningen är att ledarna inte behöver vara olika. En ledare på tre
+ * bildpunkter har ingen rundning att visa — den är en linje med en färg.
+ * Det enda som verkligen skiljer dem är hur långt bort de ligger, och det
+ * finns det bara några få meningsfulla steg av.
+ *
+ * Alltså fem skikt. Alla ledare i ett skikt samlas i en enda `Path2D` med
+ * varsin delbana, och hela skiktet dras sedan i ett drag: en gång brett i
+ * kantfärgen, en gång smalt i mitttonen, och för de främre en gång mycket
+ * smalt förskjutet mot ljuset. Det blir under femton drag för trehundra
+ * ledare, och de ligger dessutom rätt i djupled utan att någon behöver
+ * sortera dem — skikt för skikt är sorteringen.
+ */
+const SKIKT = 5
+const ANTAL_LEDARE = 140
 
 /**
  * KABELNS GENOMSKINLIGHET LIGGER I FÄRGEN, INTE PÅ DUKEN
@@ -498,7 +521,6 @@ const SNITT_INSIDA = ton('#78838f')
  * läser kabeln som ritad, med det som fotograferad.
  */
 const GLANS = '#ffffff'
-const STUDS = ton('#c3ccd6')
 
 /**
  * MANTELNS TVÄRSNITT, MÄTT PÅ ETT FOTOGRAFI
@@ -671,45 +693,47 @@ export function Cord() {
 
   const ref = useCanvas(
     () => {
-      // Färgerna är en riktig kabels, men nedtonade till sidans värld:
-      // koppar, accent, grafit och ben. En regnbåge hade varit mer
-      // verklighetstrogen och helt fel på den här sidan.
-      // Ledarna är ljusa som manteln, inte färgade. Ett knippe brokiga
-      // trådar läser som en elinstallation; ett knippe ljusa former som
-      // skulptur, och det är det senare bilden ska vara.
-      const fargr = ['#e6eaef', '#dfe4ea', '#eef1f4', '#d7dce3', '#e9edf1', '#d2d8e0']
       bloom.current ??= glod(90, 'rgba(255,150,60,1)')
       karna.current ??= glod(46, 'rgba(255,208,130,1)')
       svalt.current ??= glod(30, 'rgba(178,192,210,1)')
       varmt.current ??= glod(30, 'rgba(255,168,90,1)')
       yta.current ??= bygYta()
 
-      ledare.current = Array.from({ length: 9 }, (_, i) => {
+      ledare.current = Array.from({ length: ANTAL_LEDARE }, (_, i) => {
         const f = fro(i * 3 + 1)
         const g = fro(i * 7 + 5)
-        // Stammen står till vänster, så knippet faller ut åt höger. Ett
-        // par ledare hålls nästan lodräta: de bär blicken vidare nedåt
-        // förbi underkanten, medan de andra vecklar ut sig i bredd.
-        // Jämnt utspridda men inte uppradade — en jämn solfjäder läser
-        // som ett diagram, en ojämn som ett knippe som fallit ut.
-        const mal = -0.12 + (i / 8) * 1.12 + (f - 0.5) * 0.09
-        const farg = fargr[i % fargr.length]
-        const djup = fro(i * 13 + 2)
+        const d = fro(i * 13 + 2)
+        /**
+         * Stammen står till vänster, så knippet faller ut åt höger.
+         *
+         * Utbredningen är inte jämn utan tätast nära lodrätt: en jämnt
+         * fördelad solfjäder av trehundra trådar blir ett fält med jämn
+         * täthet, alltså en gradient. Ett riktigt knippe som fallit ut är
+         * tätt i mitten och glesare ut mot kanterna, för det är fler
+         * trådar som inte hunnit ut än som hunnit långt.
+         */
+        const jamn = i / (ANTAL_LEDARE - 1)
+        const tathet = jamn ** 1.45
         return {
-          mal,
-          bukt: (f - 0.5) * 0.3,
-          // De närmare ledarna är grövre. Samma grovlek på alla säger att de
-          // ligger på samma avstånd, och det gör knippet platt.
-          tj: (5 + g * 4.4) * (0.82 + djup * 0.36),
-          // Kulören varierar en gnutta mellan ledarna, men alla ligger på
-          // samma mätta kurva. `farg` var förut en egen blek palett.
-          farg: blanda(LEDAR_MITT, farg, 0.18),
-          kant: blanda(LEDAR_MITT, LEDAR_KANT, 0.45 + djup * 0.5),
-          djup,
+          mal: -0.14 + tathet * 1.2 + (f - 0.5) * 0.05,
+          // Startpunkten sprids över hela mynningens bredd. Med nio ledare
+          // räckte en tredjedel; med trehundra ska de fylla hålet.
+          bukt: (f - 0.5) * 0.86,
+          skikt: Math.min(SKIKT - 1, Math.floor(d * SKIKT)),
+          // Utan egen längd hamnar alla spetsar på samma kurva och
+          // knippet får en gardinkant. Med nio ledare räckte utbredningen
+          // i sidled för att sprida dem; med trehundra gör den inte det.
+          kort: fro(i * 17 + 7),
           fas: f * Math.PI * 2,
-          vanta: g * 0.16,
+          // Utvecklingen sprids ut i tid över hela knippet, så att det
+          // rullar ut som en våg i stället för att slå ut på en gång.
+          vanta: g * 0.34,
+          // Var elfte får en riktig glödspets. Tvåhundra glöd vore
+          // fyrahundra kopieringar av stora genomskinliga fläckar per
+          // bildruta, och två glöd bredvid varandra syns ändå som en.
+          lyser: i % 11 === 4,
         }
-      }).sort((a, b) => a.djup - b.djup)
+      })
     },
     ({ ctx, w, h, px, inne, t }: Scen) => {
       ctx.clearRect(0, 0, w, h)
@@ -732,7 +756,7 @@ export function Cord() {
        * telefon som på en bildskärm är antingen ett rep eller en tråd —
        * aldrig samma föremål.
        */
-      const TJ = Math.min(84, Math.max(52, w * 0.058))
+      const TJ = Math.min(124, Math.max(68, w * 0.086))
 
       /**
        * KABELNS BANA
@@ -834,51 +858,6 @@ export function Cord() {
       }
 
       /**
-       * Ett kabeldrag: lager från mörk kant till ljus rygg.
-       * `ljus` styr hur mycket spegling draget får — ledare inuti är
-       * mattare än manteln utanpå.
-       *
-       * Antalet lager är en kostnad och inte en smaksak. Varje lager är
-       * ett eget penseldrag längs hela banan, och kabeln ritar ett tiotal
-       * banor per bildruta. Grova drag behöver många lager för att bli
-       * runda; en tunn ledare på åtta bildpunkter blir precis lika rund av
-       * tre, för det finns inte plats för fler steg i bredden. Skuggan
-       * hoppas över på ledarna av samma skäl: den är ett extra drag som är
-       * bredare än ledaren själv, och den syns inte under en tråd som ändå
-       * hänger i luften.
-       */
-      /** Banan som en mjuk kurva genom punkterna. */
-      const kurva = (pkt: [number, number][]) => {
-        ctx.beginPath()
-        ctx.moveTo(pkt[0][0], pkt[0][1])
-        for (let i = 1; i < pkt.length - 1; i++) {
-          ctx.quadraticCurveTo(
-            pkt[i][0], pkt[i][1],
-            (pkt[i][0] + pkt[i + 1][0]) / 2, (pkt[i][1] + pkt[i + 1][1]) / 2,
-          )
-        }
-        ctx.lineTo(pkt[pkt.length - 1][0], pkt[pkt.length - 1][1])
-      }
-
-      /** Ett förskjutet drag längs en bana. */
-      const lagerDrag = (
-        pkt: [number, number][],
-        dx: number, dy: number,
-        bredd: number, farg: string, alfa = 1,
-      ) => {
-        ctx.save()
-        ctx.globalAlpha = alfa
-        ctx.lineCap = 'round'
-        ctx.lineJoin = 'round'
-        ctx.translate(dx, dy)
-        kurva(pkt)
-        ctx.lineWidth = bredd
-        ctx.strokeStyle = farg
-        ctx.stroke()
-        ctx.restore()
-      }
-
-      /**
        * Skuggan på underlaget, i tre steg i stället för ett.
        *
        * En kastskugga med en enda kant är en till kontur; tre drag som blir
@@ -887,51 +866,35 @@ export function Cord() {
        */
       const kastskugga = (pkt: [number, number][], tj: number) => {
         if (pkt.length < 2) return
-        lagerDrag(pkt, tj * 0.24, tj * 0.3, tj * 1.34, tonA(52, 64, 80, 0.05))
-        lagerDrag(pkt, tj * 0.22, tj * 0.28, tj * 1.14, tonA(52, 64, 80, 0.07))
-        lagerDrag(pkt, tj * 0.2, tj * 0.26, tj + 3, tonA(52, 64, 80, 0.1))
-      }
-
-      const dra = (
-        pkt: [number, number][],
-        tj: number,
-        kant: string,
-        mitt: string,
-        ljus: string,
-        lager = 7,
-        skugga = true,
-        /** Hur blank ytan är, 0–1. Manteln är gummi och blank, ledarna matta. */
-        glans = 0,
-      ) => {
-        if (pkt.length < 2) return
-        const lager1 = (dx: number, dy: number, bredd: number, farg: string, alfa = 1) =>
-          lagerDrag(pkt, dx, dy, bredd, farg, alfa)
-
-        if (skugga) kastskugga(pkt, tj)
-
-        for (let k = 0; k < lager; k++) {
-          const f = k / (lager - 1)
-          // Varje lager smalnar och kryper uppåt vänster mot ljuset.
-          lager1(
-            -tj * 0.2 * f,
-            -tj * 0.22 * f,
-            tj * (1 - f * 0.82),
-            f < 0.5 ? blanda(kant, mitt, f * 2) : blanda(mitt, ljus, (f - 0.5) * 2),
-          )
+        ctx.save()
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        const kurva = () => {
+          ctx.beginPath()
+          ctx.moveTo(pkt[0][0], pkt[0][1])
+          for (let i = 1; i < pkt.length - 1; i++) {
+            ctx.quadraticCurveTo(
+              pkt[i][0], pkt[i][1],
+              (pkt[i][0] + pkt[i + 1][0]) / 2, (pkt[i][1] + pkt[i + 1][1]) / 2,
+            )
+          }
+          ctx.lineTo(pkt[pkt.length - 1][0], pkt[pkt.length - 1][1])
         }
-
-        if (glans > 0) {
-          // Studsljuset ligger innanför skuggkanten, inte på den.
-          lager1(tj * 0.29, tj * 0.3, tj * 0.13, STUDS, glans * 0.75)
-          // Högdagern: smal, ljusare än pappret, en bit in från kanten.
-          lager1(-tj * 0.31, -tj * 0.33, tj * 0.11, GLANS, glans)
-          // En andra, bredare och svagare glans runt den. En högdager med
-          // hård kant läser som en påmålad rand; en med en svag gloria
-          // omkring sig läser som ljus i en yta. Bara på grova drag: på en
-          // ledare på tio bildpunkter finns ingen yta att lägga den i, och
-          // den skulle kosta ett helt penseldrag per ledare.
-          if (tj > 20) lager1(-tj * 0.28, -tj * 0.3, tj * 0.3, GLANS, glans * 0.22)
+        const steg: [number, number, number, number][] = [
+          [0.24, 0.3, tj * 1.34, 0.05],
+          [0.22, 0.28, tj * 1.14, 0.07],
+          [0.2, 0.26, tj + 3, 0.1],
+        ]
+        for (const [dx, dy, bredd, alfa] of steg) {
+          ctx.save()
+          ctx.translate(tj * dx, tj * dy)
+          kurva()
+          ctx.lineWidth = bredd
+          ctx.strokeStyle = tonA(52, 64, 80, alfa)
+          ctx.stroke()
+          ctx.restore()
         }
+        ctx.restore()
       }
 
       /**
@@ -978,6 +941,14 @@ export function Cord() {
       }
 
       /* ── Ledarna, som ligger under manteln där de kommer ut ──────────── */
+      const [sxk, syk] = bana(uFram)
+      // En delbana per skikt, plus prickarna i ändarna och de få som får en
+      // riktig glöd. Ingenting ritas inne i slingan — den bygger bara banor.
+      const skikt = Array.from({ length: SKIKT }, () => new Path2D())
+      const prickar = new Path2D()
+      const glodande: [number, number, number][] = []
+      let nagot = false
+
       for (const l of ledare.current) {
         // Varje ledare vecklar ut sig i sin egen takt.
         const fram = Math.min(1, Math.max(0, (veckla - l.vanta) / (1 - l.vanta)))
@@ -987,11 +958,9 @@ export function Cord() {
         /**
          * Ledarna lämnar änden spridda över mynningens bredd, inte ur en
          * och samma punkt. Utgår alla ur en punkt blir knippet en solfjäder
-         * av ekrar — ett hjul, inte ett knippe. Några bildpunkters skillnad
-         * i utgångsläge är hela skillnaden.
+         * av ekrar — ett hjul, inte ett knippe.
          */
-        const [sxk, syk] = bana(uFram)
-        const ax = sxk + l.bukt * TJ * 1.1
+        const ax = sxk + l.bukt * TJ * 0.46
         const ay = syk + 4
         /**
          * Fallet är det viktiga. En ledare som går rakt ut i sidled är en
@@ -999,46 +968,89 @@ export function Cord() {
          * kabel som hänger. Sidledsrörelsen växer därför med kvadraten på
          * hur långt ned man kommit, medan fallet är jämnt.
          *
-         * Bredden börjar inte på noll utan på en dryg tiondel: ett knippe
-         * som faller exakt rakt ned är en enda tjock linje, inte flera
-         * ledare som ännu inte skilts åt.
-         *
          * Hela knippet växer dessutom ut ur änden med `fram`. Det är det
          * som är uppvecklingen: när man väl är nere hos kabeln rullar
          * ledarna ut ur den, de ligger inte och väntar färdiga.
          */
-        const mx = ax + l.mal * w * (0.05 + 0.35 * vidd)
-        const my = h * (1.18 - Math.min(0.95, Math.abs(l.mal)) * 0.32 * vidd)
+        const mx = ax + l.mal * w * (0.05 + 0.36 * vidd)
+        const my = h * (1.22 - (Math.min(0.95, Math.abs(l.mal)) * 0.3 + l.kort * 0.26) * vidd)
         const bx = ax + (mx - ax) * fram
         const by = ay + (my - ay) * fram
         if (by - ay < 8) continue
+        nagot = true
 
-        const pkt: [number, number][] = []
-        const n = 14
-        for (let i = 0; i <= n; i++) {
+        const bana2 = skikt[l.skikt]
+        const n = 9
+        let sx = ax
+        let sy = ay
+        bana2.moveTo(ax, ay)
+        for (let i = 1; i <= n; i++) {
           const s = i / n
           // Liten våg längs ledaren, som en tråd som inte är spänd.
           const vag = Math.sin(s * 8 + l.fas + t * 0.6) * 6 * s
-          pkt.push([
-            ax + (bx - ax) * s * s * (1.15 - 0.15 * s) + vag,
-            ay + (by - ay) * s,
-          ])
+          sx = ax + (bx - ax) * s * s * (1.15 - 0.15 * s) + vag
+          sy = ay + (by - ay) * s
+          bana2.lineTo(sx, sy)
         }
-        // Färre lager och mindre svärta i kanten än manteln har. En tunn
-        // ledare som skuggas lika hårt som en grov mantel tappar sin färg
-        // och blir grå — det är kulören som ska säga att de är många och
-        // olika, så den får väga tyngst.
-        // Ledarna grovnar med manteln. Ett knippe hårstrån ur en
-        // brandslang är inte samma föremål som en kabel som skalats upp.
-        const ltj = l.tj * (TJ / 58)
-        dra(pkt, ltj, l.kant, l.farg, LEDAR_LJUS, 3, false, 0.6 * (0.5 + l.djup * 0.5))
 
-        // Spetsen glöder alltid, inte bara medan den växer. Det är
-        // glöden mot det ljusa som gör bilden — en vit kabel som slutar i
-        // ingenting är en vit kabel som tar slut.
-        const [sx, sy] = pkt[pkt.length - 1]
-        const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
-        spets(sx, sy, (10 + ltj) * puls)
+        // Änden: en liten prick åt alla, en riktig glöd åt några få.
+        prickar.moveTo(sx + 1.6, sy)
+        prickar.arc(sx, sy, 1.6, 0, Math.PI * 2)
+        if (l.lyser) {
+          const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
+          glodande.push([sx, sy, (5.5 + l.skikt * 1.3) * puls])
+        }
+      }
+
+      if (nagot) {
+        /**
+         * Antalet drag per skikt är en kostnad och inte en smaksak.
+         *
+         * Först fick varje skikt tre drag: ett brett i kantfärgen för
+         * avgränsning, ett smalt i mitttonen och ett mycket smalt i glans.
+         * Tre hundra ledare gånger tre drag gånger femhundra bildpunkter
+         * blev en och en halv miljon bildpunkter per bildruta, och partiet
+         * gick på femton bilder i sekunden.
+         *
+         * De bakre skikten behöver inget av det. En tråd på två bildpunkter
+         * som ligger bakom tvåhundra andra har varken kant eller högdager
+         * att visa — den är en ljusare eller mörkare linje, punkt. Bara de
+         * två främre får sin mörka kant, och bara det allra främsta sin
+         * glans. Det är där ögat faktiskt läser enskilda trådar.
+         */
+        for (let k = 0; k < SKIKT; k++) {
+          const d = k / (SKIKT - 1)
+          // Runda ändar och hörn kostar, och längst bak syns de inte.
+          const framme = k >= SKIKT - 2
+          ctx.lineCap = framme ? 'round' : 'butt'
+          ctx.lineJoin = framme ? 'round' : 'bevel'
+          // Bakre skikt är tunnare och mattare. Fram- och bakgrund i ett
+          // knippe är skillnaden mellan en volym och en solfjäder.
+          const bredd = (1.4 + d * 2.4) * (TJ / 84)
+          if (k >= SKIKT - 2) {
+            ctx.lineWidth = bredd + 1
+            ctx.strokeStyle = blanda(LEDAR_MITT, LEDAR_KANT, 0.5)
+            ctx.stroke(skikt[k])
+          }
+          ctx.lineWidth = bredd
+          ctx.strokeStyle = blanda(
+            blanda(LEDAR_MITT, LEDAR_KANT, 0.34 * (1 - d)),
+            LEDAR_LJUS, d * 0.45,
+          )
+          ctx.stroke(skikt[k])
+          if (k === SKIKT - 1) {
+            ctx.save()
+            ctx.translate(-bredd * 0.3, -bredd * 0.3)
+            ctx.lineWidth = bredd * 0.34
+            ctx.strokeStyle = GLANS
+            ctx.globalAlpha = 0.55
+            ctx.stroke(skikt[k])
+            ctx.restore()
+          }
+        }
+        ctx.fillStyle = tonA(255, 226, 178, 0.9)
+        ctx.fill(prickar)
+        for (const [gx, gy, gr] of glodande) spets(gx, gy, gr)
       }
 
       /* ── Manteln, från kabelns början fram till snittet ──────────────── */
