@@ -364,10 +364,19 @@ html[data-tone='dark'] .grain {
 
 /* Ett parti med levande bakgrund: spillningen dold, innehållet över.
    Bakgrunden tar aldrig emot pekaren — fönstret lyssnar åt den — så all
-   text går att markera rakt igenom. */
+   text går att markera rakt igenom.
+
+   `clip` och inte `hidden`, av samma skäl som står vid `.bg-hall` nedan —
+   och det här var stället som glömdes bort. Hallen fick `clip`, partiet
+   behöll `hidden`, och ett parti med overflow:hidden är en rullbehållare.
+   Duken inuti är `position: sticky` och klistrade sig då mot partiet i
+   stället för mot fönstret, alltså inte alls: den följde med uppåt och
+   klipptes tvärt av vid sin egen underkant mitt i partiet. På en bakgrund
+   som knappt syns märks det inte; på en kabel som går genom hela partiet
+   blev det en rak kant tvärs över sidan. */
 .bay--bg,
 .bay--cables {
-  overflow: hidden;
+  overflow: clip;
 }
 
 .bay--bg > .wrap,
@@ -458,7 +467,22 @@ html[data-tone='dark'] .grain {
 .bg--columns { opacity: 0.85; }
 .bg--rings { opacity: 0.7; }
 .bg--depth { opacity: 0.9; }
-.bg--cord { opacity: 0.55; }
+/* Kabelpartiet. Diset bakom kabeln är en toning och inte något ritat:
+   det rör sig inte, det lyssnar inte, och det täcker mer än hela skärmen.
+   Sådant hör hemma i ett lager grafikkortet kan flytta. */
+/* Ingen `opacity` här. Kabelns dova ton ligger i färgerna den ritas med,
+   och skälet står vid `PAPPER` i Backdrops.tsx: en genomskinlig duk i
+   fönsterstorlek är ett eget lager att blanda varje bildruta, och det
+   kostade en hel bildruta. Toningens alfa är redan nedskalad på samma
+   sätt. */
+.bg--cord {
+  background: radial-gradient(
+    62% 58% at 24% 52%,
+    rgba(178, 192, 210, 0.28),
+    rgba(178, 192, 210, 0.08) 45%,
+    transparent 72%
+  );
+}
 
 .wrap {
   max-width: 1560px;
@@ -1281,9 +1305,9 @@ html[data-tone='dark'] .grain {
 
 /* Vridpunkten ligger vid bordet och inte mitt i figuren: en människa som
    andas eller lutar sig gör det kring höften, inte kring naveln. */
-.folk__en { transform-origin: 150px 244px; }
-.folk__tva { transform-origin: 410px 244px; }
-.folk__arm { transform-origin: 388px 120px; }
+.folk__en { transform-origin: 158px 244px; }
+.folk__tva { transform-origin: 404px 244px; }
+.folk__arm { transform-origin: 380px 122px; }
 
 .folk.in .folk__en { animation: andas 5.2s ease-in-out infinite; }
 .folk.in .folk__tva { animation: andas 6.1s ease-in-out infinite 0.9s; }

@@ -340,67 +340,134 @@ export function Figures() {
       role="img"
       aria-label="Två personer i samtal vid ett bord med en skärm emellan sig"
     >
-      {/* Stolsryggarna, längst bak. */}
-      <g stroke="currentColor" strokeWidth="1.6" fill="none" opacity="0.22">
-        <path d="M74 246v-70q0-10 10-10h34q10 0 10 10v22" />
-        <path d="M486 246v-70q0-10-10-10h-34q-10 0-10 10v22" />
+      {/* Stolsryggarna, längst bak. De stod förut vid sidan om personerna
+          och läste som två lösa rundlar; en stolsrygg hör hemma bakom den
+          som sitter, och det är kanterna som sticker ut på var sida om
+          axlarna som säger att där finns en stol. */}
+      <g stroke="currentColor" strokeWidth="1.6" fill="none" opacity="0.2">
+        <path d="M110 250v-56q0-12 12-12h72q12 0 12 12v56" />
+        <path d="M356 250v-56q0-12 12-12h72q12 0 12 12v56" />
       </g>
 
-      {/* Personen till vänster: lutar sig fram, handen på bordet. */}
+      {/* Personen till vänster: lutar sig fram, handen på bordet, vänd åt
+          höger mot skärmen och mot den andra.
+
+          Två saker gjorde att de såg knasiga ut, och båda är rättade här.
+
+          Huvudet stod inte mitt över bålen utan en dryg decimeter till
+          vänster om sin egen kropp, och ett huvud bredvid axlarna i
+          stället för på dem är precis den sortens fel man känner utan att
+          kunna peka på.
+
+          Och ansiktet var en tom oval. Det är värre än det låter: en tom
+          oval på en svart kropp läser inte som ett obestämt ansikte utan
+          som ett ansikte som saknas. Två prickar, ett streck för munnen
+          och en antydd näsa är allt som behövs — och eftersom de sitter
+          en bit åt det håll personen är vänd säger de dessutom vart hon
+          eller han tittar, vilket ingen kroppshållning i världen kan säga
+          lika tydligt. */}
       <g className="folk__en">
-        <path d="M139 96q1 12-2 22h26q-3-10-2-22z" fill="currentColor" />
-        <ellipse cx="150" cy="80" rx="21" ry="25"
+        <path d="M148 94q1 14-3 24h26q-4-10-3-24z" fill="currentColor" />
+        <ellipse cx="158" cy="76" rx="21" ry="25"
           fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
-        {/* Håret ligger ovanpå ansiktet och ger huvudet dess form. */}
-        <path d="M126 84q-5-27 24-27t24 27q-4-16-12-19-6-2-12-2t-12 2q-8 3-12 19z"
+        {/* Ansiktet, vänt åt höger. */}
+        <g fill="currentColor">
+          <circle cx="157" cy="78" r="2.6" />
+          <circle cx="170" cy="78" r="2.6" />
+        </g>
+        <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round">
+          <path d="M152 71q5-3 10-1M166 70q5-2 9 1" opacity="0.7" />
+          <path d="M176 79q3 4-1 6" />
+          <path d="M163 90q6 2 10-1" />
+        </g>
+        {/* Håret ligger ovanpå ansiktet och ger huvudet dess form. Kanten
+            följer skallens och lämnar pannan fri — går fransen längre ned
+            blir ansiktet en springa och personen en siluett igen. */}
+        <path d="M137 84q-6-31 21-31 26 0 22 31-3-17-11-21-5-3-11-3-6 0-11 3-7 4-10 21z"
           fill="currentColor" />
-        <path d="M150 112q-22 0-27 20-6 22-9 116h96q-3-94-9-116-5-20-27-20z"
+        {/* Ett par ljusa slingor i håret. Utan dem är håret en kalott. */}
+        <path d="M145 62q9-6 22-4M143 70q10-8 24-6"
+          stroke="var(--paper)" strokeWidth="1.3" fill="none" opacity="0.35" />
+        <path d="M158 108q-25 3-31 24-5 17-6 116h74q-1-99-6-116-6-21-31-24z"
           fill="currentColor" />
+        {/* Kragen bryter upp bålen. En helsvart klocka är en form; samma
+            form med en krage är en människa i en skjorta. */}
+        <path d="M147 113l11 19 11-19"
+          stroke="var(--paper)" strokeWidth="2.6" fill="none" strokeLinejoin="round" />
         {/* Den bortre armen, längs kroppens vänstra sida. Den satt inte
             med förut och gjorde figuren enarmad — en kropp med bara en arm
             läser som en olycka, inte som en pose. Den ligger under bålen i
             ritordningen och syns bara som en kontur mot den. */}
-        <path d="M120 128q-13 16-17 40-3 18-3 76h26q0-52 3-70 3-20 11-32z"
+        <path d="M128 130q-14 16-19 42-3 18-3 76h25q0-52 3-70 3-20 12-34z"
           fill="currentColor" />
-        <path d="M120 128q-13 16-17 40-3 18-3 76"
-          stroke="var(--paper)" strokeWidth="1.4" fill="none" opacity="0.5" />
+        <path d="M128 130q-14 16-19 42-3 18-3 76"
+          stroke="var(--paper)" strokeWidth="1.6" fill="none" opacity="0.75" />
         {/* Armen ut mot bordet, med axel, armbåge och hand. */}
-        <path d="M180 124q26 14 40 46 8 19 11 44l-30 6q-3-24-9-38-8-18-22-28z"
+        <path d="M186 126q27 14 41 46 8 18 11 42l-30 6q-3-24-9-38-8-18-24-30z"
           fill="currentColor" />
-        <ellipse cx="212" cy="228" rx="16" ry="11"
+        <ellipse cx="223" cy="228" rx="16" ry="11"
           fill="var(--paper)" stroke="currentColor" strokeWidth="1.6"
-          transform="rotate(14 212 228)" />
+          transform="rotate(14 223 228)" />
       </g>
 
-      {/* Personen till höger: upprätt, visar något på skärmen. */}
+      {/* Personen till höger: upprätt, vänd åt vänster, visar något på
+          skärmen. */}
       <g className="folk__tva">
-        <path d="M399 90q1 12-2 22h26q-3-10-2-22z" fill="currentColor" />
-        <ellipse cx="410" cy="74" rx="21" ry="25"
+        <path d="M394 88q1 14-3 24h26q-4-10-3-24z" fill="currentColor" />
+        <ellipse cx="404" cy="70" rx="21" ry="25"
           fill="var(--paper)" stroke="currentColor" strokeWidth="1.6" />
-        {/* Håret sitter ihop med huvudet.
-            Förut satt knuten som en egen cirkel bakom skallen, och en
-            cirkel som inte rör vid något annat läser som en boll man
-            klistrat dit — inte som hår. Nu är knuten en utbuktning i
-            samma form, och nacklocken går ned mot halsen. */}
-        <path d="M387 76q-3-27 23-27 20 0 24 18 6 2 8 9 2 8-4 12-3 2-7 1
-          l-3 14q-1 6-6 6-4 0-4-5 1-9 3-17-6-12-15-14-8-2-16 0-11 3-15 21z"
+        <g fill="currentColor">
+          <circle cx="392" cy="72" r="2.6" />
+          <circle cx="405" cy="72" r="2.6" />
+        </g>
+        <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round">
+          <path d="M387 65q5-3 10-1M401 64q5-2 9 1" opacity="0.7" />
+          <path d="M386 73q-3 4 1 6" />
+          <path d="M391 84q6 2 10-1" />
+        </g>
+        {/* Knuten är en egen form som överlappar kalotten i stället för att
+            sväva bakom skallen. Det var den frikopplade cirkeln som såg ut
+            som en svart boll man klistrat dit; två former som skär varandra
+            och har samma fyllning smälter ihop till en. Slingorna tvärsöver
+            gör resten — en rund fläck är en boll, en rund fläck med varv
+            runt sig är en knut. */}
+        {/* Knuten sitter uppe i nacken, inte i öronhöjd.
+            I öronhöjd blev den ett hörlurskåpa — och ännu tydligare när
+            den fick en ring innanför kanten. Höjden är hela skillnaden:
+            en rund form vid örat är en hörlur, samma form uppe bakom
+            hjässan är en knut. Den överlappar kalotten i stället för att
+            sväva bakom skallen, för det var den frikopplade cirkeln som
+            en gång såg ut som en svart boll man klistrat dit. */}
+        <ellipse cx="425" cy="54" rx="13" ry="11.5"
+          fill="currentColor" transform="rotate(-22 425 54)" />
+        <path d="M383 78q-5-31 21-31 26 0 22 31-3-17-11-21-5-3-11-3-6 0-11 3-7 4-10 21z"
           fill="currentColor" />
-        <path d="M410 106q-22 0-27 20-6 22-9 120h96q-3-98-9-120-5-20-27-20z"
+        <g stroke="var(--paper)" strokeWidth="1.3" fill="none" opacity="0.32">
+          <path d="M418 50q8 2 12 8M420 61q9-2 13-8" />
+          <path d="M390 58q10-6 21-3M388 66q10-7 23-4" />
+        </g>
+        <path d="M404 104q-25 3-31 24-5 17-6 120h74q-1-103-6-120-6-21-31-24z"
           fill="currentColor" />
+        <path d="M393 109l11 19 11-19"
+          stroke="var(--paper)" strokeWidth="2.6" fill="none" strokeLinejoin="round" />
         {/* Den bortre armen. Konturen mot bålen gör att den läses som en
             arm bakom kroppen och inte som en bredare axel. */}
-        <path d="M434 120q20 16 26 46 4 20 4 78h-28q0-44-5-62-6-20-17-32z"
+        <path d="M429 126q19 16 25 46 4 20 4 76h-25q0-44-5-62-6-20-17-32z"
           fill="currentColor" />
-        <path d="M434 120q20 16 26 46 4 20 4 78"
-          stroke="var(--paper)" strokeWidth="1.4" fill="none" opacity="0.5" />
+        <path d="M429 126q19 16 25 46 4 20 4 76"
+          stroke="var(--paper)" strokeWidth="1.6" fill="none" opacity="0.75" />
         {/* Den pekande armen är en egen grupp så att den kan röra sig
             för sig — det är den som gör att någon visar något. */}
+        {/* Handen ligger utanför skärmens kant och inte bakom den. Skärmen
+            ritas efter personerna, så en hand som hamnar innanför dess ram
+            blir avklippt på mitten — och en halv hand vid en skärmkant
+            läser inte som att peka, den läser som ett fel. */}
         <g className="folk__arm">
-          <path d="M384 120q-24 10-38 34-10 17-14 34l30 8q5-18 13-30 8-13 20-20z"
+          <path d="M380 122q-22 10-34 34-9 17-13 34l30 8q4-18 12-30 8-13 19-20z"
             fill="currentColor" />
-          <ellipse cx="356" cy="196" rx="14" ry="10"
+          <ellipse cx="356" cy="200" rx="14" ry="10"
             fill="var(--paper)" stroke="currentColor" strokeWidth="1.6"
-            transform="rotate(-18 356 196)" />
+            transform="rotate(-18 356 200)" />
         </g>
       </g>
 
