@@ -571,7 +571,7 @@ export function Cord() {
       // Stammen hänger i vänsterkanten, bakom rubriken och stegmätaren.
       // Där står texten still medan stegen rullar förbi till höger, så
       // det är den enda spalten som tål något stort bakom sig.
-      const bas = w * (w < 760 ? 0.17 : 0.13)
+      const bas = w * (w < 760 ? 0.11 : 0.09)
       const drag = inne ? (px - bas) * 0.045 : 0
       const x0 = bas + drag
 
@@ -580,20 +580,32 @@ export function Cord() {
        * telefon som på en bildskärm är antingen ett rep eller en tråd —
        * aldrig samma föremål.
        */
-      const TJ = Math.min(58, Math.max(38, w * 0.042))
+      const TJ = Math.min(84, Math.max(52, w * 0.058))
 
       /**
-       * Var manteln är avskuren. Snittet börjar en bit ned — kabeln ska
-       * finnas där redan när partiet kommer in, inte växa fram ur en tom
-       * ruta — och vandrar sedan ned mot mitten. Resten av rullningen går
-       * åt att öppna snittet och låta knippet falla ut därifrån och ned
-       * genom hela partiet.
+       * Var manteln är avskuren. Snittet vandrar ned mot mitten medan man
+       * rullar, men börjar redan en bit ned: kabeln ska finnas där när
+       * partiet kommer in, inte växa fram ur en tom ruta.
        */
-      const snitt = h * (0.16 + 0.3 * Math.min(1, p / 0.34))
-      /** Hur uppskalad manteln är, 0–1. */
-      const oppen = Math.min(1, Math.max(0, (p - 0.34) / 0.22))
-      /** Hur långt ledarna hunnit ut. */
-      const ute = Math.min(1, Math.max(0, (p - 0.4) / 0.55))
+      const snitt = h * (0.26 + 0.24 * Math.min(1, p / 0.4))
+      /** Hur uppskalad manteln är, 0–1. Aldrig helt stängd. */
+      const oppen = 0.12 + 0.88 * Math.min(1, Math.max(0, (p - 0.06) / 0.34))
+      /**
+       * Hur brett knippet har vecklat ut sig.
+       *
+       * Ledarna är utrullade hela vägen ned redan från början, och det som
+       * ändras när man rullar är hur brett de faller. Det är skillnaden
+       * mellan en kabel som går genom hela partiet och en som slutar mitt
+       * i luften: växer knippet fram nedifrån finns det ingen kabel alls i
+       * nedre halvan förrän man rullat en bit, och just den halvan är den
+       * man tittar på när partiet kommer in.
+       *
+       * Berättelsen finns kvar ändå — ett tätt knippe som faller rakt ned
+       * ser ut som en kabel som fortsätter, och det är först när det
+       * vecklar ut sig som man ser att det var många hela tiden. Det är
+       * arbetsgången: ett som visar sig vara fem.
+       */
+      const ute = Math.min(1, Math.max(0, (p - 0.12) / 0.6))
 
       /** Manteln böjer sig mjukt på vägen ned. */
       const mantelX = (y: number) =>
@@ -728,8 +740,9 @@ export function Cord() {
 
       /* ── Ledarna, som ligger under manteln där de kommer ut ──────────── */
       for (const l of ledare.current) {
-        const del = Math.min(1, Math.max(0, (ute - l.vanta) / (1 - l.vanta)))
-        if (del <= 0.001) continue
+        // Varje ledare vecklar ut sig i sin egen takt, men alla hänger hela
+        // vägen ned från början.
+        const vidd = Math.min(1, Math.max(0, (ute - l.vanta) / (1 - l.vanta)))
         /**
          * Ledarna lämnar snittet spridda över mynningens bredd, inte ur en
          * och samma punkt. Utgår alla ur en punkt blir knippet en solfjäder
@@ -744,17 +757,23 @@ export function Cord() {
          * kabel som hänger. Sidledsrörelsen växer därför med kvadraten på
          * hur långt ned man kommit, medan fallet är jämnt.
          *
-         * Spetsarna hamnar på olika höjd: de som går längst ut i sidled
-         * slutar högre upp, de rakaste går ned förbi underkanten. En rad
-         * spetsar på samma höjd läser som en gardinkant.
+         * Bredden börjar inte på noll utan på en dryg tiondel: ett knippe
+         * som faller exakt rakt ned är en enda tjock linje, inte flera
+         * ledare som ännu inte skilts åt.
          */
-        const bx = ax + l.mal * w * 0.4
-        const by = h * (1.16 - Math.min(0.95, Math.abs(l.mal)) * 0.34)
+        const bx = ax + l.mal * w * (0.05 + 0.35 * vidd)
+        /**
+         * Spetsarna hamnar på olika höjd först när knippet vecklat ut sig:
+         * de som går längst ut i sidled slutar högre upp, de rakaste går ned
+         * förbi underkanten. Innan dess går alla förbi kanten, och kabeln
+         * ser ut att fortsätta ut ur bilden — vilket är meningen.
+         */
+        const by = h * (1.18 - Math.min(0.95, Math.abs(l.mal)) * 0.32 * vidd)
 
         const pkt: [number, number][] = []
         const n = 14
         for (let i = 0; i <= n; i++) {
-          const s = (i / n) * del
+          const s = i / n
           // Liten våg längs ledaren, som en tråd som inte är spänd.
           const vag = Math.sin(s * 8 + l.fas + t * 0.6) * 6 * s
           pkt.push([
@@ -766,29 +785,31 @@ export function Cord() {
         // ledare som skuggas lika hårt som en grov mantel tappar sin färg
         // och blir grå — det är kulören som ska säga att de är många och
         // olika, så den får väga tyngst.
-        dra(pkt, l.tj, l.kant, l.farg, VIT, 3, false)
+        // Ledarna grovnar med manteln. Ett knippe hårstrån ur en
+        // brandslang är inte samma föremål som en kabel som skalats upp.
+        const ltj = l.tj * (TJ / 58)
+        dra(pkt, ltj, l.kant, l.farg, VIT, 3, false)
 
         // Spetsen glöder alltid, inte bara medan den växer. Det är
         // glöden mot det ljusa som gör bilden — en vit kabel som slutar i
         // ingenting är en vit kabel som tar slut.
         const [sx, sy] = pkt[pkt.length - 1]
         const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
-        spets(sx, sy, (10 + l.tj) * puls)
+        spets(sx, sy, (10 + ltj) * puls)
       }
 
       /* ── Manteln ──────────────────────────────────────────────────────── */
       const mp: [number, number][] = []
       const n = 26
       for (let i = 0; i <= n; i++) {
-        const y = -90 + ((snitt + 90) * i) / n
+        const y = -TJ * 1.6 + ((snitt + TJ * 1.6) * i) / n
         mp.push([mantelX(y), y])
       }
       dra(mp, TJ, MANTEL_KANT, MANTEL_MITT, VIT)
       ringa(mp, TJ)
-      if (oppen < 0.02) spets(mp[mp.length - 1][0], mp[mp.length - 1][1], TJ * 0.78)
 
       /* ── Snittet: två flikar som viker sig utåt ──────────────────────── */
-      if (oppen > 0.01) {
+      {
         const sx = mantelX(snitt)
         for (const sida of [-1, 1]) {
           /**

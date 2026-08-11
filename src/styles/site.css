@@ -1305,9 +1305,18 @@ html[data-tone='dark'] .grain {
 
 /* Vridpunkten ligger vid bordet och inte mitt i figuren: en människa som
    andas eller lutar sig gör det kring höften, inte kring naveln. */
+/* Sömmen mellan arm och bål. Papprets färg, så den syns bara där armen
+   ligger över det svarta och försvinner där den ligger mot pappret. */
+.folk__som {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
 .folk__en { transform-origin: 158px 244px; }
-.folk__tva { transform-origin: 404px 244px; }
-.folk__arm { transform-origin: 380px 122px; }
+.folk__tva { transform-origin: 403px 244px; }
+.folk__arm { transform-origin: 379px 120px; }
 
 .folk.in .folk__en { animation: andas 5.2s ease-in-out infinite; }
 .folk.in .folk__tva { animation: andas 6.1s ease-in-out infinite 0.9s; }
