@@ -357,8 +357,20 @@ html[data-tone='dark'] .grain {
    varandra. Utan det här blir gapet mellan dem dubbelt så stort som
    överallt annars, och läses som att något fattas där. Byter tonen är
    dubbelt luft däremot rätt: då finns en kant att andas kring. */
-.bay[data-tone='light'] + .bay[data-tone='light'],
-.bay[data-tone='dark'] + .bay[data-tone='dark'] {
+.bay[data-tone='light']:not(.bay--gryning) + .bay[data-tone='light']:not(.bay--gryning),
+.bay[data-tone='dark']:not(.bay--gryning) + .bay[data-tone='dark']:not(.bay--gryning) {
+  padding-top: 0;
+}
+
+/* Gryningspartiet står utanför regeln ovan, och det är ingen finess utan
+   en nödvändighet: dess `data-tone` byts medan man rullar, och regeln
+   ovan hade då slagit av och på grannens toppluft mitt i rullningen. Ett
+   parti som växer med några centimeter medan man läser det flyttar allt
+   under sig — sidan skulle hoppa till precis i tonvändningen.
+
+   Partiet börjar mörkt mot ett ljust ovanför, alltså full luft, och slutar
+   ljust mot ett ljust nedanför, alltså ingen. Båda står fast. */
+.bay--gryning + .bay[data-tone='light'] {
   padding-top: 0;
 }
 
@@ -467,22 +479,98 @@ html[data-tone='dark'] .grain {
 .bg--columns { opacity: 0.85; }
 .bg--rings { opacity: 0.7; }
 .bg--depth { opacity: 0.9; }
-/* Kabelpartiet. Diset bakom kabeln är en toning och inte något ritat:
-   det rör sig inte, det lyssnar inte, och det täcker mer än hela skärmen.
-   Sådant hör hemma i ett lager grafikkortet kan flytta. */
-/* Ingen `opacity` här. Kabelns dova ton ligger i färgerna den ritas med,
-   och skälet står vid `PAPPER` i Backdrops.tsx: en genomskinlig duk i
-   fönsterstorlek är ett eget lager att blanda varje bildruta, och det
-   kostade en hel bildruta. Toningens alfa är redan nedskalad på samma
-   sätt. */
-.bg--cord {
-  background: radial-gradient(
-    62% 58% at 24% 52%,
-    rgba(178, 192, 210, 0.35),
-    rgba(178, 192, 210, 0.1) 45%,
-    transparent 72%
-  );
+/* Ingen `opacity` och ingen bakgrund på kabelduken. Kabeln är ett föremål
+   med egna toner och ska se likadan ut mot mörkt som mot ljust — se
+   `YTA_PROFIL` i Backdrops.tsx. En genomskinlig duk i fönsterstorlek är
+   dessutom ett eget lager att blanda varje bildruta, och det kostade en
+   hel bildruta när den fanns. */
+
+/* ── Gryningen ────────────────────────────────────────────────────────────
+   Arbetsgången börjar mörk och blir ljus. Ljuset kommer med kabeln: den
+   lyser svagt medan den firas ned, och när knippet vecklar ut sig sköljer
+   ljuset ut över hela partiet, som att någon tänt i rummet.
+
+   Övergången är en enda siffra, `--ljus`, som skrivs från rullningen. Allt
+   annat följer av den, för partiets alla toner räknas fram ur `--paper` och
+   `--ink` — rubriken, brödtexten, linjerna, chipsen, mätaren, tråden. Ett
+   parti som byter ton är annars ett dussin regler som ska hållas i takt.
+
+   De härledda värdena står med här av samma skäl som i tokens.css: en
+   variabel som innehåller `var(--ink)` får sitt `var()` utbytt redan där
+   den deklareras. Utan omräkningen hade partiet fått rätt bakgrund och fel
+   mellantoner. */
+.bay--gryning {
+  --ljus: 0;
+  --paper: color-mix(in srgb, #f3f2ef calc(var(--ljus) * 100%), #0b0b0c);
+  --ink: color-mix(in srgb, #0c0c0d calc(var(--ljus) * 100%), #f3f2ef);
+  --flame: color-mix(in srgb, #ff4a17 calc(var(--ljus) * 100%), #ff5c2e);
+
+  --muted: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --faint: color-mix(in srgb, var(--ink) 42%, var(--paper));
+  --line: color-mix(in srgb, var(--ink) 15%, var(--paper));
+  --line-soft: color-mix(in srgb, var(--ink) 7%, var(--paper));
 }
+
+/* BLIXTEN
+   Tonvändningen kan inte göras långsam. Bakgrunden går från nästan svart
+   till papper och texten åt andra hållet, och mitt i den resan är båda
+   mellangrå — grå text på grått papper. Kurvorna kan inte läggas så att de
+   slipper mötas; de måste mötas någonstans.
+
+   Alltså görs mötet kort, och över det ligger en ljusblixt som är som
+   starkast just då. Man ser inte en otydlig sida som klarnar, man ser
+   rummet tändas: allt vitnar ut för ett ögonblick och när ljuset lägger
+   sig ligger partiet där ljust med svart text. Det är dessutom vad kabeln
+   just gjorde — ljuset kom med den.
+
+   Ligger över innehållet och inte under det, vilket är hela poängen:
+   under det hade blixten lyst upp en otydlig sida i stället för att dölja
+   den medan den vänder. */
+.bay--gryning::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: var(--blank, 0);
+  background:
+    radial-gradient(58% 46% at 24% 72%, #fffdf7, rgba(255, 250, 240, 0.86) 48%, rgba(255, 248, 236, 0.72)),
+    #fffaf2;
+}
+
+/* Den som bett om lugn får slutläget direkt. Ett parti som ligger halvmörkt
+   och väntar på en rullning som aldrig animeras är bara svårläst. */
+@media (prefers-reduced-motion: reduce) {
+  .bay--gryning { --ljus: 1; }
+  .bay--gryning::after { display: none; }
+}
+
+/* Ljuset som kommer med kabeln. Ligger under duken, klistrat mot fönstret
+   som den, och ritas aldrig om — bara dess genomskinlighet ändras, och den
+   kan grafikkortet sköta själv. */
+.bg-flod {
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  opacity: var(--flod, 0);
+  background:
+    radial-gradient(
+      48% 42% at 24% 72%,
+      rgba(255, 250, 240, 0.95),
+      rgba(255, 241, 218, 0.36) 46%,
+      transparent 74%
+    ),
+    radial-gradient(
+      130% 95% at 16% 92%,
+      rgba(255, 238, 210, 0.55),
+      transparent 66%
+    );
+}
+
+.bg-flod + .bg { margin-top: -100vh; }
 
 .wrap {
   max-width: 1560px;

@@ -449,31 +449,23 @@ type Ledare = {
   vanta: number
   /** Hur kort ledaren är i förhållande till de andra, 0–1. */
   kort: number
-  /** Sann för de få som får en riktig glödspets och inte bara en prick. */
-  lyser: boolean
 }
 
 /**
- * HUNDRATALS LEDARE, FEM PENSELDRAG
- * ═════════════════════════════════
- * Nio ledare kunde få var sin behandling: tre lager för rundningen och två
- * för glansen, alltså fem drag var. Trehundra ledare på samma sätt vore
- * femtonhundra drag per bildruta, och det går inte.
+ * LEDARNA I SKIKT
+ * ═══════════════
+ * Knippet var uppe i hundrafyrtio hårfina trådar, och det blev en pensel i
+ * stället för ett knippe kablar: på två bildpunkter finns ingen kabel att
+ * se, bara ett streck. Nu är de trettiofyra och grova nog att var och en
+ * läser som en egen ledare med rundning och glans — och varje ände lyser.
  *
- * Lösningen är att ledarna inte behöver vara olika. En ledare på tre
- * bildpunkter har ingen rundning att visa — den är en linje med en färg.
- * Det enda som verkligen skiljer dem är hur långt bort de ligger, och det
- * finns det bara några få meningsfulla steg av.
- *
- * Alltså fem skikt. Alla ledare i ett skikt samlas i en enda `Path2D` med
- * varsin delbana, och hela skiktet dras sedan i ett drag: en gång brett i
- * kantfärgen, en gång smalt i mitttonen, och för de främre en gång mycket
- * smalt förskjutet mot ljuset. Det blir under femton drag för trehundra
- * ledare, och de ligger dessutom rätt i djupled utan att någon behöver
- * sortera dem — skikt för skikt är sorteringen.
+ * Skiktningen finns kvar ändå, för den gör två saker som är värda den.
+ * Alla ledare i ett skikt samlas i en `Path2D` och hela skiktet dras i ett
+ * penseldrag i stället för ett per ledare. Och de hamnar rätt i djupled
+ * utan att någon sorterar dem — skikt för skikt är sorteringen.
  */
-const SKIKT = 5
-const ANTAL_LEDARE = 140
+const SKIKT = 4
+const ANTAL_LEDARE = 34
 
 /**
  * KABELNS GENOMSKINLIGHET LIGGER I FÄRGEN, INTE PÅ DUKEN
@@ -493,13 +485,7 @@ const ANTAL_LEDARE = 140
  * själv, och där är det ogenomskinliga svaret det riktiga — ett föremål
  * lyser inte igenom sig självt.
  */
-const PAPPER = '#f3f2ef'
-const TACK = 0.7
-
-/** Samma färg som den skulle ha sett ut med `TACK` täckning över pappret. */
-const ton = (f: string) => blanda(f, PAPPER, 1 - TACK)
-
-const SNITT_INSIDA = ton('#78838f')
+const SNITT_INSIDA = '#78838f'
 
 /**
  * GLANSEN TONAS INTE
@@ -541,8 +527,8 @@ const GLANS = '#ffffff'
  *    mot en i övrigt kall yta. Det är golvet som lyser tillbaka, och det
  *    är den detaljen ögat läser som fotografi.
  *
- * Värdena ligger mot en bakgrund på 223,219,215 och räknas om mot sidans
- * papper i `bygYta` nedan.
+ * Värdena ligger mot en bakgrund på 223,219,215, men används orörda —
+ * skälet står vid `ytaVarde`.
  */
 const YTA_PROFIL: number[][] = [
   [238, 239, 238], [237, 239, 238], [239, 241, 240], [241, 243, 242],
@@ -559,24 +545,25 @@ const YTA_PROFIL: number[][] = [
   [133, 126, 123], [162, 147, 134], [206, 185, 163], [165, 152, 142],
 ]
 
-/** Bakgrunden i fotografiet profilen är mätt på. */
-const FOTO_BG = [223, 219, 215]
-
 /**
- * Ett värde ur den mätta profilen, omräknat mot sidans papper.
+ * Ett värde ur den mätta profilen, orört.
  *
- * Skuggan behåller hela sitt djup steg för steg medan ljussidan trycks
- * ihop till hälften, och skälet är att pappret ligger högt: från 243 finns
- * bara tolv steg kvar upp till vitt, medan fotografiets bakgrund på 223
- * hade trettiotvå. Skalar man båda lika får man välja mellan en kabel utan
- * högdager och en utan skugga.
+ * Det räknades förut om mot sidans papper, för att kabeln skulle ligga dovt
+ * mot en ljus bakgrund. Nu byter partiet ton under kabeln — det börjar
+ * mörkt och blir ljust — och då kan materialet inte höra ihop med
+ * bakgrunden alls: en kabel som är avstämd mot vitt papper blir en grå
+ * skugga mot svart.
+ *
+ * Fotografiets egna värden fungerar mot båda, och det är ingen slump. En
+ * blank vit kabel ligger mellan 121 och 248 av 255. Mot nästan svart är den
+ * ett lysande föremål; mot papper på 243 ligger dess skuggsida långt under
+ * och dess högdager en gnutta över. Samma material, två helt olika bilder —
+ * vilket är precis vad ett fotografi av samma kabel i två rum också hade
+ * gett.
  */
 function ytaVarde(i: number, kanal: number) {
   const rad = YTA_PROFIL[Math.max(0, Math.min(YTA_PROFIL.length - 1, i))]
-  const d = rad[kanal] - FOTO_BG[kanal]
-  const p = tal(PAPPER)[kanal]
-  const rå = p + (d < 0 ? d : d * 0.5)
-  return Math.max(0, Math.min(255, Math.round(p + (rå - p) * TACK)))
+  return rad[kanal]
 }
 
 /** Samma punkt i profilen som en hexfärg. */
@@ -597,16 +584,7 @@ const LEDAR_KANT = ytaFarg(41)
 const LEDAR_MITT = ytaFarg(24)
 const LEDAR_LJUS = ytaFarg(11)
 
-/**
- * Profilen som en remsa att mappa längs kabelns bana.
- *
- * Omräkningen mot sidans papper är inte en enkel skalning, och skälet är
- * att pappret ligger högt: från 243 finns bara tolv steg kvar upp till
- * vitt, medan fotografiets bakgrund på 223 hade trettiotvå. Skuggan får
- * därför behålla hela sitt djup steg för steg, medan ljussidan trycks ihop
- * till hälften. Skalar man båda lika mycket får man välja mellan en kabel
- * utan högdager och en utan skugga.
- */
+/** Profilen som en remsa att mappa längs kabelns bana. */
 function bygYta() {
   const B = 128
   const c = document.createElement('canvas')
@@ -620,8 +598,7 @@ function bygYta() {
     const k0 = Math.floor(f)
     const k1 = Math.min(sista, k0 + 1)
     const m = f - k0
-    // Mellan två mätpunkter tas den ljusare av de omräknade värdena med
-    // vikt: profilen är tät nog att en rak blandning räcker.
+    // Profilen är tät nog att en rak blandning mellan mätpunkterna räcker.
     const kanal = (kanalNr: number) =>
       Math.round(ytaVarde(k0, kanalNr) + (ytaVarde(k1, kanalNr) - ytaVarde(k0, kanalNr)) * m)
     g.fillStyle = `rgb(${kanal(0)},${kanal(1)},${kanal(2)})`
@@ -630,15 +607,43 @@ function bygYta() {
   return c
 }
 
+/**
+ * Hur långt knippet har vecklat ut sig, 0–1.
+ *
+ * Ligger här och inte i partiet, för den måste vara exakt densamma på båda
+ * ställena: duken ritar kabelns ljus ur den, och partiet räknar sina toner
+ * ur den. Två kopior av samma kurva glider isär vid första justeringen, och
+ * då tänds rummet före eller efter det som tänder det.
+ */
+export const uppveckling = (p: number) => mjuk((p - 0.6) / 0.34)
+
+/**
+ * Hur långt partiet har hunnit från mörkt till ljust, 0–1.
+ *
+ * Fönstret är avsiktligt kort — en dryg tiondel av partiets rullning, alltså
+ * ett par hack på hjulet — och skälet är att en tonvändning inte kan göras
+ * långsam.
+ *
+ * Bakgrunden går från nästan svart till papper och texten åt andra hållet.
+ * Mitt i den resan är båda mellangrå, och då finns ingen kontrast kvar:
+ * grå text på grått papper. Det går inte att undvika genom att lägga
+ * kurvorna olika — de måste mötas någonstans — utan bara genom att göra
+ * mötet kort och lägga en ljusblixt över det. Se `--blank` i site.css.
+ */
+export const gryning = (p: number) => mjuk((p - 0.63) / 0.15)
+
+/** Hur stark blixten är just nu. Starkast mitt i tonvändningen. */
+export const blixt = (p: number) => Math.sin(gryning(p) * Math.PI) ** 0.65
+
 /** Mjuk in- och utgång, 0–1. Linjärt läser som en maskin som startar. */
 const mjuk = (x: number) => {
   const s = Math.min(1, Math.max(0, x))
   return s * s * (3 - 2 * s)
 }
 
-/** Samma för en färg som redan har egen alfa: alfan skalas i stället. */
+/** En färg med alfa. */
 const tonA = (r: number, g: number, b: number, a: number) =>
-  `rgba(${r},${g},${b},${(a * TACK).toFixed(3)})`
+  `rgba(${r},${g},${b},${a.toFixed(3)})`
 
 /**
  * KABELN SOM ÖPPNAR SIG
@@ -728,10 +733,6 @@ export function Cord() {
           // Utvecklingen sprids ut i tid över hela knippet, så att det
           // rullar ut som en våg i stället för att slå ut på en gång.
           vanta: g * 0.34,
-          // Var elfte får en riktig glödspets. Tvåhundra glöd vore
-          // fyrahundra kopieringar av stora genomskinliga fläckar per
-          // bildruta, och två glöd bredvid varandra syns ändå som en.
-          lyser: i % 11 === 4,
         }
       })
     },
@@ -802,7 +803,9 @@ export function Cord() {
        * är hela poängen med den här ordningen: man ser en hel kabel komma
        * ned, och först när man är nere hos den öppnar den sig.
        */
-      const veckla = mjuk((p - 0.6) / 0.34)
+      const veckla = uppveckling(p)
+      /** Hur ljust partiet är just nu. Samma siffra som CSS får. */
+      const ljus = gryning(p)
       /** Hur uppskalad manteln är vid änden, 0–1. */
       const oppen = mjuk((p - 0.6) / 0.16)
       /** Hur brett knippet har vecklat ut sig. Bredden ligger efter fallet. */
@@ -864,7 +867,7 @@ export function Cord() {
        * bredare och svagare utåt ger den en mjuk kant utan oskärpa, som är
        * dyr att räkna fram i en duk.
        */
-      const kastskugga = (pkt: [number, number][], tj: number) => {
+      const kastskugga = (pkt: [number, number][], tj: number, styrka: number) => {
         if (pkt.length < 2) return
         ctx.save()
         ctx.lineCap = 'round'
@@ -890,7 +893,7 @@ export function Cord() {
           ctx.translate(tj * dx, tj * dy)
           kurva()
           ctx.lineWidth = bredd
-          ctx.strokeStyle = tonA(52, 64, 80, alfa)
+          ctx.strokeStyle = tonA(52, 64, 80, alfa * styrka)
           ctx.stroke()
           ctx.restore()
         }
@@ -909,12 +912,12 @@ export function Cord() {
         const k = karna.current
         if (b) {
           const d = r * 6.8
-          ctx.globalAlpha = 0.34 * TACK
+          ctx.globalAlpha = 0.34
           ctx.drawImage(b, x - d / 2, y - d / 2, d, d)
         }
         if (k) {
           const d = r * 2
-          ctx.globalAlpha = 0.85 * TACK
+          ctx.globalAlpha = 0.85
           ctx.drawImage(k, x - d / 2, y - d / 2, d, d)
         }
         ctx.globalAlpha = 1
@@ -935,17 +938,16 @@ export function Cord() {
         const br = 3 + g2 * 12
         const sprite = i % 3 === 0 ? varmt.current : svalt.current
         if (!sprite) continue
-        ctx.globalAlpha = 0.2 * TACK
+        ctx.globalAlpha = 0.22
         ctx.drawImage(sprite, bx - br, by - br, br * 2, br * 2)
         ctx.globalAlpha = 1
       }
 
       /* ── Ledarna, som ligger under manteln där de kommer ut ──────────── */
       const [sxk, syk] = bana(uFram)
-      // En delbana per skikt, plus prickarna i ändarna och de få som får en
-      // riktig glöd. Ingenting ritas inne i slingan — den bygger bara banor.
+      // En delbana per skikt, och glödpunkterna sparade till efteråt.
+      // Ingenting ritas inne i slingan — den bygger bara banor.
       const skikt = Array.from({ length: SKIKT }, () => new Path2D())
-      const prickar = new Path2D()
       const glodande: [number, number, number][] = []
       let nagot = false
 
@@ -993,63 +995,48 @@ export function Cord() {
           bana2.lineTo(sx, sy)
         }
 
-        // Änden: en liten prick åt alla, en riktig glöd åt några få.
-        prickar.moveTo(sx + 1.6, sy)
-        prickar.arc(sx, sy, 1.6, 0, Math.PI * 2)
-        if (l.lyser) {
-          const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
-          glodande.push([sx, sy, (5.5 + l.skikt * 1.3) * puls])
-        }
+        // Varje ände lyser. Med trettiofyra ledare går det — med hundrafyrtio
+        // gjorde det inte, och då fick var elfte glöda och resten nöja sig
+        // med en prick. En rad ledare där bara några lyser läser inte som
+        // ett knippe som leder ljus, den läser som ett knippe med fel på.
+        const puls = 0.82 + Math.sin(t * 1.6 + l.fas) * 0.18
+        glodande.push([sx, sy, (9 + l.skikt * 2.4) * puls])
       }
 
       if (nagot) {
         /**
-         * Antalet drag per skikt är en kostnad och inte en smaksak.
+         * Tre drag per skikt: mörk kant, kropp, och en glans på de främre.
          *
-         * Först fick varje skikt tre drag: ett brett i kantfärgen för
-         * avgränsning, ett smalt i mitttonen och ett mycket smalt i glans.
-         * Tre hundra ledare gånger tre drag gånger femhundra bildpunkter
-         * blev en och en halv miljon bildpunkter per bildruta, och partiet
-         * gick på femton bilder i sekunden.
-         *
-         * De bakre skikten behöver inget av det. En tråd på två bildpunkter
-         * som ligger bakom tvåhundra andra har varken kant eller högdager
-         * att visa — den är en ljusare eller mörkare linje, punkt. Bara de
-         * två främre får sin mörka kant, och bara det allra främsta sin
-         * glans. Det är där ögat faktiskt läser enskilda trådar.
+         * Med hundratals hårfina ledare var det här för dyrt och de två
+         * bakre skikten fick klara sig med ett enda drag. Med trettiofyra
+         * grova finns budgeten, och den behövs: en ledare som ska läsas som
+         * en egen kabel måste ha både en kant som skiljer den från grannen
+         * och en högdager som säger att den är rund.
          */
         for (let k = 0; k < SKIKT; k++) {
           const d = k / (SKIKT - 1)
-          // Runda ändar och hörn kostar, och längst bak syns de inte.
-          const framme = k >= SKIKT - 2
-          ctx.lineCap = framme ? 'round' : 'butt'
-          ctx.lineJoin = framme ? 'round' : 'bevel'
+          ctx.lineCap = 'round'
+          ctx.lineJoin = 'round'
           // Bakre skikt är tunnare och mattare. Fram- och bakgrund i ett
           // knippe är skillnaden mellan en volym och en solfjäder.
-          const bredd = (1.4 + d * 2.4) * (TJ / 84)
-          if (k >= SKIKT - 2) {
-            ctx.lineWidth = bredd + 1
-            ctx.strokeStyle = blanda(LEDAR_MITT, LEDAR_KANT, 0.5)
-            ctx.stroke(skikt[k])
-          }
+          const bredd = (4.2 + d * 4.6) * (TJ / 84)
+          ctx.lineWidth = bredd + 1.6
+          ctx.strokeStyle = blanda(LEDAR_MITT, LEDAR_KANT, 0.55 + d * 0.25)
+          ctx.stroke(skikt[k])
           ctx.lineWidth = bredd
           ctx.strokeStyle = blanda(
-            blanda(LEDAR_MITT, LEDAR_KANT, 0.34 * (1 - d)),
-            LEDAR_LJUS, d * 0.45,
+            blanda(LEDAR_MITT, LEDAR_KANT, 0.3 * (1 - d)),
+            LEDAR_LJUS, d * 0.5,
           )
           ctx.stroke(skikt[k])
-          if (k === SKIKT - 1) {
-            ctx.save()
-            ctx.translate(-bredd * 0.3, -bredd * 0.3)
-            ctx.lineWidth = bredd * 0.34
-            ctx.strokeStyle = GLANS
-            ctx.globalAlpha = 0.55
-            ctx.stroke(skikt[k])
-            ctx.restore()
-          }
+          ctx.save()
+          ctx.translate(-bredd * 0.28, -bredd * 0.28)
+          ctx.lineWidth = bredd * 0.3
+          ctx.strokeStyle = GLANS
+          ctx.globalAlpha = 0.32 + d * 0.34
+          ctx.stroke(skikt[k])
+          ctx.restore()
         }
-        ctx.fillStyle = tonA(255, 226, 178, 0.9)
-        ctx.fill(prickar)
         for (const [gx, gy, gr] of glodande) spets(gx, gy, gr)
       }
 
@@ -1064,50 +1051,21 @@ export function Cord() {
       // uppe i hörnet — en kabel som ännu inte finns ska inte finnas.
       if (uFram < 0.004) return
       for (let i = 0; i <= n; i++) mp.push(bana((uFram * i) / n))
-      kastskugga(mp, TJ)
+      if (ljus > 0.02) kastskugga(mp, TJ, ljus)
       if (yta.current) mappa(mp, TJ, yta.current)
 
-      /* ── Änden: hel medan den firas ned, uppskuren när den är framme ─── */
+      /* ── Änden ────────────────────────────────────────────────────────
+         Här satt förut två flikar av uppskuren mantel, en på var sida om
+         mynningen. De var tänkta som gummi som vikts undan, men i bild blev
+         de två feta klumpar som satt fast vid sidan om öppningen och drog
+         till sig blicken från det som faktiskt händer där. Nu är änden bara
+         en ände: ledarna kommer ut ur den. */
       {
         const [sx, sy] = bana(uFram)
-        // Kabelns egen riktning vid änden. Flikarna räknas i den och inte
-        // i bildens lodräta: en kabel som svänger måste ha sitt snitt tvärs
-        // sig själv, annars sitter flikarna snett på sin egen mantel.
         const [fx0, fy0] = bana(Math.max(0, uFram - 0.02))
         const tl = Math.hypot(sx - fx0, sy - fy0) || 1
         const tx = (sx - fx0) / tl
         const ty = (sy - fy0) / tl
-        const nx = -ty
-        const ny = tx
-
-        for (const sida of oppen > 0.01 ? [-1, 1] : []) {
-          /**
-           * Fliken viker sig utåt och tillbaka uppför kabeln, inte rakt ut
-           * åt sidan. Det är så man skalar: man skär manteln och drar den
-           * bakåt, och gummit blir kvar som två uppkrupna kragar. Rakt ut
-           * åt sidan blev de i stället två vingar på var sin sida om
-           * snittet — ett propellerblad, inte en avskalad kabel.
-           *
-           * De två är olika långa med flit. Ingen som skalat en kabel har
-           * fått två lika stora flikar, och symmetrin var det som såg
-           * tillverkat ut även när formen var rätt.
-           */
-          const flik: [number, number][] = []
-          const langdF = TJ * (sida < 0 ? 1.35 : 1.05) * oppen
-          let fx = sx + nx * sida * TJ * 0.24 - tx * TJ * 0.1
-          let fy = sy + ny * sida * TJ * 0.24 - ty * TJ * 0.1
-          flik.push([fx, fy])
-          for (let i = 1; i <= 9; i++) {
-            const s = i / 9
-            // Vinkeln vrider sig från framåt längs kabeln till bakåt-utåt.
-            const a = Math.PI * (0.1 + 0.66 * s * oppen)
-            fx += (tx * Math.cos(a) + nx * sida * Math.sin(a)) * (langdF / 9)
-            fy += (ty * Math.cos(a) + ny * sida * Math.sin(a)) * (langdF / 9)
-            flik.push([fx, fy])
-          }
-          kastskugga(flik, TJ * 0.3)
-          if (yta.current) mappa(flik, TJ * 0.3, yta.current)
-        }
 
         /**
          * Ändytan, tvärs kabeln och inte vågrätt i bilden.
@@ -1119,15 +1077,13 @@ export function Cord() {
          * stället för att ha en ände.
          *
          * När den öppnar sig blir samma ellips i stället hålet in i
-         * knippet: bredare och mörkare.
+         * knippet: en gnutta bredare och mörkare. Den blir inte längre i
+         * kabelns riktning — ett hål växer inte på längden — och lät man
+         * den bli det blev änden en grå slant klistrad på kabeln.
          */
         ctx.save()
         ctx.translate(sx, sy)
         ctx.rotate(Math.atan2(ty, tx))
-        // Mynningen blir inte längre i kabelns riktning när den öppnar
-        // sig — det är flikarna som viker undan, inte hålet som växer
-        // på längden. Lät man den bli det blev änden en grå slant
-        // klistrad på kabeln.
         const rb = TJ * (0.12 + 0.05 * oppen)
         ctx.fillStyle = blanda(LEDAR_MITT, SNITT_INSIDA, 0.4 + oppen * 0.6)
         ctx.beginPath()
@@ -1139,6 +1095,30 @@ export function Cord() {
         ctx.ellipse(0, 0, rb, TJ * 0.44, 0, Math.PI * 0.55, Math.PI * 1.45)
         ctx.stroke()
         ctx.restore()
+
+        /**
+         * LJUSET SOM FÖLJER MED ÄNDEN
+         * ═══════════════════════════
+         * Partiet är mörkt medan kabeln firas ned, och änden bär med sig
+         * ett svagt sken. Det är det som gör att man tittar på den: ett
+         * föremål som rör sig i ett mörkt rum utan att lysa är svårt att
+         * följa, och ett som lyser behöver ingen pil.
+         *
+         * Skenet växer kraftigt precis när knippet vecklar ut sig, och det
+         * är samma ögonblick som partiets egen ton börjar vändas — se
+         * `gryning` nedan och `.bay--gryning` i site.css. Ljuset kommer
+         * alltså inte till bilden, det kommer ur kabeln.
+         */
+        const b = bloom.current
+        if (b) {
+          // Skenet är starkast i mörkret och lägger sig när rummet är tänt.
+          // Ett sken som lyser lika hårt mot vitt papper är inte ett ljus,
+          // det är en gul fläck över texten.
+          const dia = TJ * (3.4 + veckla * 5.4)
+          ctx.globalAlpha = (0.3 + veckla * 0.42) * (1 - 0.62 * ljus)
+          ctx.drawImage(b, sx - dia / 2, sy - dia / 2, dia, dia)
+          ctx.globalAlpha = 1
+        }
       }
     },
     /**
@@ -1153,6 +1133,7 @@ export function Cord() {
 
   return (
     <div className="bg-hall" aria-hidden="true" ref={hall}>
+      <i className="bg-flod" />
       <canvas className="bg bg--cord" ref={ref} />
     </div>
   )

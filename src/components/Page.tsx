@@ -12,7 +12,9 @@ import { Eyebrow, Kinetic, Rise, Sweep } from './Motion'
 import { Arrow } from './Chrome'
 import { Cables } from './Cables'
 import { Figures, Mark, Pulse, Spine, useTilt, type MarkKind } from './Art'
-import { Beams, Columns, Cord, Depth, Dots, Flow, Rings } from './Backdrops'
+import {
+  Beams, Columns, Cord, Depth, Dots, Flow, Rings, blixt, gryning, uppveckling,
+} from './Backdrops'
 import { Screens } from './Screens'
 import { FlapValue } from './Flap'
 import { Showroom } from './Showroom'
@@ -427,10 +429,83 @@ export function Offer() {
  * med fem steg är lätt att tappa bort sig i, och en visare som följer med
  * säger var man är utan att man behöver räkna raderna.
  */
+/**
+ * GRYNINGEN: PARTIET SOM TÄNDS
+ * ════════════════════════════
+ * Arbetsgången börjar mörk. Kabeln firas ned genom den med ett svagt sken,
+ * och när knippet vecklar ut sig kommer ljuset med det: partiet blir vitt
+ * med svart text medan man tittar på det.
+ *
+ * Hela övergången är en siffra, `--ljus`, som skrivs på partiet. Resten
+ * följer av den i CSS, för partiets alla toner räknas fram ur `--paper` och
+ * `--ink`. Kurvan är importerad från kabeln och inte skriven en gång till —
+ * två kopior glider isär vid första justeringen, och då tänds rummet före
+ * eller efter det som tänder det.
+ *
+ * Siffran avrundas till hundradelar innan den skrivs. Att skriva en
+ * egenskap på ett element är billigt, men att skriva den tvingar fram en
+ * omräkning av stilen för allt inuti partiet — och den räkningen blir
+ * likadan vare sig siffran ändrats i tredje decimalen eller inte. Med
+ * avrundningen skrivs den bara när den faktiskt betyder något.
+ *
+ * `data-tone` sätts om vid halva vägen. Det är inte för partiets egen
+ * skull utan för navigeringens: den läser tonen på det parti som ligger
+ * under den och skulle annars visa ljus text mot ett ljust parti.
+ */
+function useGryning<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+
+  useTick(() => {
+    const el = ref.current
+    if (!el || reducedMotion()) return
+    const r = el.getBoundingClientRect()
+    const langd = r.height - window.innerHeight
+    const p = langd > 4 ? clamp01(-r.top / langd) : 1
+    const ljus = gryning(p)
+
+    const tvaDec = (v: number) => (Math.round(v * 100) / 100).toFixed(2)
+    const nyLjus = tvaDec(ljus)
+    // Skenet bakom kabeln följer uppvecklingen och lägger sig när rummet
+    // väl är tänt: en lampa som fortsätter blända efter att den lyst upp
+    // rummet är inte ett ljus utan ett filter, och partiet ska vara läsbart
+    // efteråt och inte gulddränkt.
+    const nyFlod = tvaDec(uppveckling(p) * (1 - 0.62 * ljus))
+    // Blixten följer tonvändningen och är som starkast mitt i den.
+    const nyBlank = tvaDec(blixt(p) * 0.94)
+
+    /**
+     * Alla tre jämförs mot samma nyckel.
+     *
+     * Först satt de bakom `--ljus` ensam, och då frös skenet: tonvändningen
+     * är över långt innan knippet vecklat färdigt, så `--ljus` slutade
+     * ändras medan `--flod` fortfarande hade en resa kvar — och den skrevs
+     * aldrig igen.
+     */
+    const nyckel = `${nyLjus} ${nyFlod} ${nyBlank}`
+    if (el.dataset.gryning === nyckel) return
+    el.dataset.gryning = nyckel
+    el.style.setProperty('--ljus', nyLjus)
+    el.style.setProperty('--flod', nyFlod)
+    el.style.setProperty('--blank', nyBlank)
+
+    const ton = ljus > 0.5 ? 'light' : 'dark'
+    if (el.dataset.tone !== ton) {
+      el.dataset.tone = ton
+      // Navigeringen läser tonen på det som ligger under den. Byter partiet
+      // ton medan det redan står där hinner ingen iakttagare säga till.
+      const navH = 72
+      if (r.top <= navH && r.bottom > navH) document.documentElement.dataset.tone = ton
+    }
+  })
+
+  return ref
+}
+
 export function Process() {
   const [at, setAt] = useState(0)
   /** Hur långt tråden fyllts. Läses varje bildruta, aldrig av React. */
   const fram = useRef(0)
+  const sektion = useGryning<HTMLElement>()
 
   const ref = useScrub<HTMLDivElement>(
     (p) => {
@@ -442,7 +517,12 @@ export function Process() {
   )
 
   return (
-    <section className="bay bay--bg" data-tone="light" id="gangen">
+    <section
+      className="bay bay--bg bay--gryning"
+      data-tone="dark"
+      id="gangen"
+      ref={sektion}
+    >
       <Cord />
       <Wrap kind="tilt">
         <div className="process">
