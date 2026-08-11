@@ -478,8 +478,8 @@ html[data-tone='dark'] .grain {
 .bg--cord {
   background: radial-gradient(
     62% 58% at 24% 52%,
-    rgba(178, 192, 210, 0.28),
-    rgba(178, 192, 210, 0.08) 45%,
+    rgba(178, 192, 210, 0.35),
+    rgba(178, 192, 210, 0.1) 45%,
     transparent 72%
   );
 }
@@ -1567,6 +1567,11 @@ html[data-tone='dark'] .grain {
   padding-top: 1.75rem;
   border-top: 1px solid var(--line);
 }
+
+/* Skälet är en mening och inte en uppgift, så den får två spalter och en
+   radlängd som går att läsa. */
+.contact__col--vid { grid-column: span 2; }
+.contact__col--vid p { max-width: 48ch; }
 
 .contact__col h4 {
   font-family: var(--mono);

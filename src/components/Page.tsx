@@ -628,19 +628,17 @@ export function Contact() {
             <h4>Telefon</h4>
             <a href={`tel:${STUDIO.phone.replace(/[^\d+]/g, '')}`}>{STUDIO.phone}</a>
           </div>
-          <div className="contact__col">
-            <h4>Var vi finns</h4>
-            <p>{STUDIO.location}</p>
-          </div>
-          <div className="contact__col">
-            <h4>Studion</h4>
-            <p>Grundad {STUDIO.founded}</p>
+          {/* Skälet står i stället för ett grundandeår och ett landsnamn.
+              Det tar två spalter, för det är en mening och inte en uppgift. */}
+          <div className="contact__col contact__col--vid">
+            <h4>Varför vi finns</h4>
+            <p>{STUDIO.why}</p>
           </div>
         </div>
 
         <div className="colophon">
           <span className="colophon__mark"><LogoMark /></span>
-          <span>© {STUDIO.founded} {STUDIO.name}</span>
+          <span>© {STUDIO.name}</span>
           <span>Formgiven och handkodad</span>
         </div>
       </Wrap>

@@ -437,6 +437,16 @@ type Ledare = {
   farg: string
   /** Den mörka kanten, framräknad en gång och inte varje bildruta. */
   kant: string
+  /**
+   * Hur nära betraktaren ledaren ligger, 0–1.
+   *
+   * Ett knippe där varje ledare har samma kontrast ligger i ett enda plan,
+   * och ett plan är en teckning. De bakre får sin kant dragen mot
+   * mittentonen och sin glans dämpad — luften mellan dem och ögat tar bort
+   * kontrast innan avstånd gör något annat. De ritas dessutom först, så de
+   * hamnar bakom.
+   */
+  djup: number
   /** Egen fas och fördröjning, så att de inte växer i takt. */
   fas: number
   vanta: number
@@ -461,15 +471,37 @@ type Ledare = {
  * lyser inte igenom sig självt.
  */
 const PAPPER = '#f3f2ef'
-const TACK = 0.55
+const TACK = 0.7
 
 /** Samma färg som den skulle ha sett ut med `TACK` täckning över pappret. */
 const ton = (f: string) => blanda(f, PAPPER, 1 - TACK)
 
-const MANTEL_KANT = ton('#93a0ad')
-const MANTEL_MITT = ton('#dee3e9')
+const MANTEL_KANT = ton('#7d8b99')
+const MANTEL_MITT = ton('#dde3ea')
 const VIT = ton('#ffffff')
-const SNITT_INSIDA = ton('#8e99a6')
+const SNITT_INSIDA = ton('#78838f')
+
+/**
+ * GLANSEN TONAS INTE
+ * ══════════════════
+ * Allt annat på kabeln blandas mot pappret, och det betyder att kabelns
+ * ljusaste möjliga färg är exakt papprets. Ett föremål vars högdager har
+ * samma ljusstyrka som väggen bakom kan aldrig se blankt ut — det ser ut
+ * som en urklippt form, hur många skuggsteg man än lägger i den.
+ *
+ * Glansen är därför den enda färg här som är otonad. Den är ett smalt
+ * drag, förskjutet mot ljuset, och den ska vara ljusare än pappret. Det
+ * är den enda punkten i bilden där något är det, och det räcker: det är
+ * högdagern som säger att ytan är hård och rund, allt annat säger bara
+ * att den är rund.
+ *
+ * Studsljuset är samma idé åt andra hållet. En verklig cylinder är inte
+ * mörkast längst ut i skuggan utan en bit innanför kanten, för ytterst
+ * fångar den ljus som studsat tillbaka från underlaget. Utan det bandet
+ * läser kabeln som ritad, med det som fotograferad.
+ */
+const GLANS = '#ffffff'
+const STUDS = ton('#c3ccd6')
 
 /** Samma för en färg som redan har egen alfa: alfan skalas i stället. */
 const tonA = (r: number, g: number, b: number, a: number) =>
@@ -548,16 +580,20 @@ export function Cord() {
         // som ett diagram, en ojämn som ett knippe som fallit ut.
         const mal = -0.12 + (i / 8) * 1.12 + (f - 0.5) * 0.09
         const farg = fargr[i % fargr.length]
+        const djup = fro(i * 13 + 2)
         return {
           mal,
           bukt: (f - 0.5) * 0.3,
-          tj: 5 + g * 4.4,
+          // De närmare ledarna är grövre. Samma grovlek på alla säger att de
+          // ligger på samma avstånd, och det gör knippet platt.
+          tj: (5 + g * 4.4) * (0.82 + djup * 0.36),
           farg: ton(farg),
-          kant: ton(blanda(farg, '#7c8794', 0.5)),
+          kant: ton(blanda(farg, '#7c8794', 0.3 + djup * 0.45)),
+          djup,
           fas: f * Math.PI * 2,
           vanta: g * 0.16,
         }
-      })
+      }).sort((a, b) => a.djup - b.djup)
     },
     ({ ctx, w, h, px, inne, t }: Scen) => {
       ctx.clearRect(0, 0, w, h)
@@ -633,6 +669,8 @@ export function Cord() {
         ljus: string,
         lager = 7,
         skugga = true,
+        /** Hur blank ytan är, 0–1. Manteln är gummi och blank, ledarna matta. */
+        glans = 0,
       ) => {
         if (pkt.length < 2) return
         const bana = () => {
@@ -646,53 +684,92 @@ export function Cord() {
           }
           ctx.lineTo(pkt[pkt.length - 1][0], pkt[pkt.length - 1][1])
         }
+        /** Ett förskjutet drag längs samma bana. */
+        const lager1 = (dx: number, dy: number, bredd: number, farg: string, alfa = 1) => {
+          ctx.save()
+          ctx.globalAlpha = alfa
+          ctx.translate(dx, dy)
+          bana()
+          ctx.lineWidth = bredd
+          ctx.strokeStyle = farg
+          ctx.stroke()
+          ctx.restore()
+        }
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
-        // Skuggan på underlaget.
+        /* Skuggan på underlaget, i tre steg i stället för ett.
+           En kastskugga med en enda kant är en till kontur; tre drag som
+           blir bredare och svagare utåt ger den en mjuk kant utan att man
+           behöver oskärpa, som är dyr att räkna fram i en duk. */
         if (skugga) {
-          ctx.save()
-          ctx.translate(tj * 0.16, tj * 0.22)
-          bana()
-          ctx.lineWidth = tj + 3
-          ctx.strokeStyle = tonA(58, 70, 86, 0.1)
-          ctx.stroke()
-          ctx.restore()
+          lager1(tj * 0.24, tj * 0.3, tj * 1.34, tonA(52, 64, 80, 0.05))
+          lager1(tj * 0.22, tj * 0.28, tj * 1.14, tonA(52, 64, 80, 0.07))
+          lager1(tj * 0.2, tj * 0.26, tj + 3, tonA(52, 64, 80, 0.1))
         }
 
         for (let k = 0; k < lager; k++) {
           const f = k / (lager - 1)
-          ctx.save()
           // Varje lager smalnar och kryper uppåt vänster mot ljuset.
-          ctx.translate(-tj * 0.2 * f, -tj * 0.22 * f)
-          bana()
-          ctx.lineWidth = tj * (1 - f * 0.82)
-          ctx.strokeStyle = f < 0.5
-            ? blanda(kant, mitt, f * 2)
-            : blanda(mitt, ljus, (f - 0.5) * 2)
-          ctx.stroke()
-          ctx.restore()
+          lager1(
+            -tj * 0.2 * f,
+            -tj * 0.22 * f,
+            tj * (1 - f * 0.82),
+            f < 0.5 ? blanda(kant, mitt, f * 2) : blanda(mitt, ljus, (f - 0.5) * 2),
+          )
+        }
+
+        if (glans > 0) {
+          // Studsljuset ligger innanför skuggkanten, inte på den.
+          lager1(tj * 0.29, tj * 0.3, tj * 0.13, STUDS, glans * 0.75)
+          // Högdagern: smal, ljusare än pappret, en bit in från kanten.
+          lager1(-tj * 0.31, -tj * 0.33, tj * 0.11, GLANS, glans)
+          // En andra, bredare och svagare glans runt den. En högdager med
+          // hård kant läser som en påmålad rand; en med en svag gloria
+          // omkring sig läser som ljus i en yta. Bara på grova drag: på en
+          // ledare på tio bildpunkter finns ingen yta att lägga den i, och
+          // den skulle kosta ett helt penseldrag per ledare.
+          if (tj > 20) lager1(-tj * 0.28, -tj * 0.3, tj * 0.3, GLANS, glans * 0.22)
         }
       }
 
-      /** Ringarna tvärs över manteln. Utan dem är det en slang. */
-      const ringa = (pkt: [number, number][], tj: number) => {
-        ctx.save()
-        ctx.lineCap = 'butt'
-        for (let i = 2; i < pkt.length - 1; i += 3) {
-          const [ax, ay] = pkt[i]
-          const [bx, by] = pkt[i + 1]
-          const d = Math.hypot(bx - ax, by - ay) || 1
-          const nx = -(by - ay) / d
-          const ny = (bx - ax) / d
+      /**
+       * SPEGLINGARNA LÄNGS MANTELN
+       * ══════════════════════════
+       * Här satt först räfflor: korta tvärstreck med jämnt mellanrum hela
+       * vägen ned. De skulle säga "kabel" i stället för "slang", och de
+       * sade i stället "mätglas". Ett kort streck med jämn pitch längs en
+       * blank cylinder läser som gradering, och det gick inte att rädda
+       * med vare sig tätheten eller vilken sida de låg på — båda provades.
+       *
+       * Det en riktig blank kabel har på sig är inte ringar utan
+       * speglingar på längden: rummet omkring den syns som svaga band som
+       * följer hela dess längd. De bryter ytan utan att lägga någon skala
+       * på den, och de kostar två drag i stället för sextio.
+       */
+      const speglingar = (pkt: [number, number][], tj: number) => {
+        const linje = (skift: number, bredd: number, farg: string, alfa: number) => {
+          ctx.save()
+          ctx.globalAlpha = alfa
+          ctx.translate(skift * tj, skift * tj * 1.05)
           ctx.beginPath()
-          ctx.moveTo(ax + nx * tj * 0.42, ay + ny * tj * 0.42)
-          ctx.lineTo(ax - nx * tj * 0.42, ay - ny * tj * 0.42)
-          ctx.lineWidth = 1.4
-          ctx.strokeStyle = tonA(120, 132, 148, 0.16)
+          ctx.moveTo(pkt[0][0], pkt[0][1])
+          for (let i = 1; i < pkt.length - 1; i++) {
+            ctx.quadraticCurveTo(
+              pkt[i][0], pkt[i][1],
+              (pkt[i][0] + pkt[i + 1][0]) / 2, (pkt[i][1] + pkt[i + 1][1]) / 2,
+            )
+          }
+          ctx.lineTo(pkt[pkt.length - 1][0], pkt[pkt.length - 1][1])
+          ctx.lineWidth = bredd
+          ctx.strokeStyle = farg
           ctx.stroke()
+          ctx.restore()
         }
-        ctx.restore()
+        // Ett svalt band strax innanför skuggkanten: himlen ovanför.
+        linje(0.12, tj * 0.09, ton('#eef2f6'), 0.45)
+        // Och ett mörkare mellan det och högdagern, där ytan vänder bort.
+        linje(-0.06, tj * 0.07, ton('#9aa6b3'), 0.3)
       }
 
       /**
@@ -788,7 +865,7 @@ export function Cord() {
         // Ledarna grovnar med manteln. Ett knippe hårstrån ur en
         // brandslang är inte samma föremål som en kabel som skalats upp.
         const ltj = l.tj * (TJ / 58)
-        dra(pkt, ltj, l.kant, l.farg, VIT, 3, false)
+        dra(pkt, ltj, l.kant, l.farg, VIT, 3, false, 0.55 * (0.5 + l.djup * 0.5))
 
         // Spetsen glöder alltid, inte bara medan den växer. Det är
         // glöden mot det ljusa som gör bilden — en vit kabel som slutar i
@@ -805,8 +882,8 @@ export function Cord() {
         const y = -TJ * 1.6 + ((snitt + TJ * 1.6) * i) / n
         mp.push([mantelX(y), y])
       }
-      dra(mp, TJ, MANTEL_KANT, MANTEL_MITT, VIT)
-      ringa(mp, TJ)
+      dra(mp, TJ, MANTEL_KANT, MANTEL_MITT, VIT, 7, true, 0.9)
+      speglingar(mp, TJ)
 
       /* ── Snittet: två flikar som viker sig utåt ──────────────────────── */
       {
@@ -830,7 +907,7 @@ export function Cord() {
             fy += Math.cos(vinkel) * (langdF / 10)
             flik.push([fx, fy])
           }
-          dra(flik, TJ * 0.4, MANTEL_KANT, MANTEL_MITT, VIT, 4)
+          dra(flik, TJ * 0.4, MANTEL_KANT, MANTEL_MITT, VIT, 4, true, 0.75)
         }
         // Den ljusa insidan av snittet, där manteln är genomskuren.
         ctx.save()

@@ -7,7 +7,6 @@
 
 export const STUDIO = {
   name: 'Vantage Design Studio',
-  founded: 2026,
   /**
    * Båda adresserna gäller lika mycket, och skrivs därför lika stort.
    * Ingen av dem är huvudadress — den som hör av sig ska inte behöva
@@ -16,7 +15,19 @@ export const STUDIO = {
   emails: ['viktor.vantage@gmail.com', 'arvid.vantage@gmail.com'],
   /** Skrivet för läsbarhet; tel-länken rensar bort mellanslagen. */
   phone: '070 790 48 76',
-  location: 'Sverige',
+  /**
+   * Varför studion finns, och inte när den startade eller var den ligger.
+   *
+   * Ett årtal och ett landsnamn säger ingenting till den som funderar på
+   * att höra av sig. Ett skäl gör det: det placerar studion i förhållande
+   * till de två alternativ läsaren redan känner till, och säger vad hen
+   * får som hen inte får där.
+   */
+  why: 'De flesta som driver något litet får välja mellan en mall som ser '
+    + 'ut som alla andras och en byrå som kostar som en anställd. Vi '
+    + 'startade studion för att det ska finnas något däremellan: handkodat '
+    + 'för just er verksamhet, till ett pris ni får veta innan vi börjar, '
+    + 'och utan någon emellan er och den som bygger.',
 } as const
 
 export type Offering = {
@@ -208,7 +219,7 @@ export const FAQ = [
 ]
 
 export const STATS = [
-  { value: '2026', label: 'Året studion grundades. Vi är nya, tar få uppdrag och ger dem hela vår uppmärksamhet.' },
+  { value: '3', label: 'Vyer ritas för varje sida — dator, surfplatta och mobil. Ingen enhet blir en efterhandsanpassning.' },
   { value: '0', label: 'Mallar. Er webbplats byggs för er verksamhet, inte anpassad från någon annans.' },
   { value: '100%', label: 'Av koden blir er egen. Inga licenser att förnya och ingen som sitter på nycklarna.' },
   { value: '1:1', label: 'Ni pratar alltid direkt med dem som utför arbetet.' },
