@@ -197,6 +197,10 @@ export const FAQ = [
     a: 'Det beror på omfattningen, och vi säger ingen siffra innan vi vet vad ni behöver. Efter ett första samtal får ni ett fast pris för hela arbetet, uppdelat per steg, så att ni ser vad varje del kostar innan ni tackar ja.',
   },
   {
+    q: 'När betalar vi?',
+    a: 'Femton procent när vi sätter i gång, och resten först när sajten är klar och ni är nöjda. Ingen delfakturering på vägen. Det betyder att vi bär arbetet nästan hela sträckan själva, och det är precis meningen: ni ska inte betala för något ni ännu inte sett fungera.',
+  },
+  {
     q: 'Hur lång tid tar det?',
     a: 'En mindre webbplats tar oftast tre till fem veckor från start till lansering, en större längre. Ni får datum i samband med förslaget, och hör av er från oss i tid om något behöver flyttas.',
   },
@@ -219,7 +223,7 @@ export const FAQ = [
 ]
 
 export const STATS = [
-  { value: '3', label: 'Vyer ritas för varje sida — dator, surfplatta och mobil. Ingen enhet blir en efterhandsanpassning.' },
+  { value: '15%', label: 'I förskott. Resten betalar ni först när sajten är klar och ni är nöjda.' },
   { value: '0', label: 'Mallar. Er webbplats byggs för er verksamhet, inte anpassad från någon annans.' },
   { value: '100%', label: 'Av koden blir er egen. Inga licenser att förnya och ingen som sitter på nycklarna.' },
   { value: '1:1', label: 'Ni pratar alltid direkt med dem som utför arbetet.' },
