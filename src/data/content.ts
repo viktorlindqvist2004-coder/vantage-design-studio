@@ -136,8 +136,8 @@ export const SERVICES = [
     desc: 'Laddtid, tillgänglighet och sökbarhet — det som avgör om någon stannar kvar.',
   },
   {
-    name: 'Förvaltning',
-    desc: 'Vi finns kvar efter lansering och fortsätter mäta och justera så länge ni vill.',
+    name: 'Drift och förvaltning',
+    desc: 'Sajten kan ligga hos oss och hållas uppdaterad, mätt och justerad så länge ni vill.',
   },
 ]
 
@@ -175,7 +175,7 @@ export const PROCESS = [
   },
   {
     title: 'Lansering',
-    body: 'Vi flyttar upp, mäter och justerar, och lämnar över koden till er. Sedan finns vi kvar för det som behöver ses om när verkligheten möter planen.',
+    body: 'Vi flyttar upp, mäter och justerar, och lämnar över koden till er. Sedan finns vi kvar för det som behöver ses om när verkligheten möter planen — och vill ni det sköter vi driften på vår egen server.',
     gives: 'Sajten uppe, koden överlämnad och mätningen på plats.',
     takes: 'En dag, och tiden efter',
   },
@@ -219,6 +219,10 @@ export const FAQ = [
   {
     q: 'Vad händer efter lansering?',
     a: 'Vi finns kvar. Små ändringar, mätning av hur sajten faktiskt används, och justeringar utifrån det. Ni väljer om ni vill ha en löpande överenskommelse eller bara höra av er när något dyker upp.',
+  },
+  {
+    q: 'Kan ni sköta driften åt oss?',
+    a: 'Ja. För 249 kr i månaden ligger sajten på vår egen server och vi håller den uppe och uppdaterad, med löpande underhåll och de små ändringar som dyker upp. Det är ett tillval och inte ett villkor: koden är er, och vill ni flytta sajten någon annanstans — eller sköta den själva — går det utan att något behöver byggas om.',
   },
 ]
 
