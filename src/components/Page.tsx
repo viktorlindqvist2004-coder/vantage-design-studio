@@ -96,8 +96,9 @@ export function Hero() {
           ))}
         </div>
         <Sweep className="hero__intro" delay={340}>
-          Vi ritar och bygger webbplatser för hand. Ni pratar med dem som
-          utför arbetet, hela vägen.
+          Vi ritar och bygger webbplatser och system för hand — från sajten
+          till bokningen bakom den. Ni pratar med dem som utför arbetet,
+          hela vägen.
         </Sweep>
       </div>
 
@@ -400,8 +401,9 @@ export function Offer() {
         <div className="travel__head">
           <Kinetic className="head__title" text={'Vad vi bygger.'} />
           <Sweep className="head__lead" delay={160}>
-            Vilken sorts webbplats ni än behöver, och oavsett bransch.
-            Behöver ni något som inte står här bygger vi det också.
+            Vilken sorts webbplats ni än behöver, och oavsett bransch — plus
+            systemen bakom den. Behöver ni något som inte står här bygger vi
+            det också.
           </Sweep>
         </div>
 

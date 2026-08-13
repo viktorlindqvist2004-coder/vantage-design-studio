@@ -81,10 +81,10 @@ export const OFFERINGS: Offering[] = [
     palette: ['#cabfad', '#7d7263', '#191613'],
   },
   {
-    name: 'Bokning och tjänster',
+    name: 'Bokningssystem',
     sketch: 'booking',
-    kind: 'Tjänsteföretag',
-    desc: 'Era kunder ska kunna boka, beställa eller höra av sig utan att först behöva ringa.',
+    kind: 'Tjänster och tider',
+    desc: 'Tider, bekräftelser och avbokning som fungerar på riktigt — inte ett formulär som skickar ett mejl.',
     seed: 43,
     palette: ['#bcbab5', '#68665f', '#141415'],
   },
@@ -130,6 +130,10 @@ export const SERVICES = [
   {
     name: 'Rörelse',
     desc: 'Animation som vägleder i stället för att ta uppmärksamhet från det ni vill säga.',
+  },
+  {
+    name: 'System och verktyg',
+    desc: 'Bokning, inloggning, register och det interna som annars sköts i ett kalkylark.',
   },
   {
     name: 'Prestanda',
@@ -192,6 +196,10 @@ export const PROCESS = [
  * Ett spann är ärligare än en siffra som ändå spricker.
  */
 export const FAQ = [
+  {
+    q: 'Bygger ni bara webbplatser?',
+    a: 'Nej. Vi utvecklar också system: bokning med tider, bekräftelser och avbokning, inloggade portaler, register och de interna verktyg som annars sköts i ett kalkylark. Oftast hänger det ihop med sajten, men det måste det inte — vi bygger systemet även när webbplatsen redan finns.',
+  },
   {
     q: 'Vad kostar en webbplats?',
     a: 'Det beror på omfattningen, och vi säger ingen siffra innan vi vet vad ni behöver. Efter ett första samtal får ni ett fast pris för hela arbetet, uppdelat per steg, så att ni ser vad varje del kostar innan ni tackar ja.',
