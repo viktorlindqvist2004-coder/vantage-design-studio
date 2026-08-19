@@ -3,6 +3,7 @@ import {
   Contact, Dialogue, Faq, Hero, Manifest, Offer, Process, Showcase, Stats,
   Ticker, Why,
 } from './components/Page'
+import { Film } from './components/Film'
 import { useToneUnderNav } from './lib/motion'
 import { useSmooth } from './lib/smooth'
 
@@ -29,6 +30,7 @@ export default function App() {
 
       <main>
         <Hero />
+        <Film />
         <Ticker />
         <Manifest />
         <Why />
