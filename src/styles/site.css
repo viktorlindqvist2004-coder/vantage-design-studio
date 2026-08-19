@@ -1383,10 +1383,14 @@ html[data-tone='dark'] .grain {
    osynkade rörelsen som gör att man läser två personer och inte två
    former. Ritningen dras fram när den kommer in i rutan. */
 .folk {
+  display: block;
   width: 100%;
   max-width: 40rem;
   height: auto;
-  margin-top: clamp(2rem, 5vh, 3.5rem);
+  /* Centrerad i spalten. Vänsterställd hamnade den under rubriken och
+     brödtexten som om den hörde till dem; centrerad står den för sig och
+     läser som en bild i stället för som ett vidhäng. */
+  margin: clamp(2rem, 5vh, 3.5rem) auto 0;
   color: var(--ink);
   overflow: visible;
 }
@@ -1402,9 +1406,9 @@ html[data-tone='dark'] .grain {
   stroke-linecap: round;
 }
 
-.folk__en { transform-origin: 158px 244px; }
-.folk__tva { transform-origin: 403px 244px; }
-.folk__arm { transform-origin: 379px 120px; }
+.folk__en { transform-origin: 146px 244px; }
+.folk__tva { transform-origin: 412px 244px; }
+.folk__arm { transform-origin: 382px 144px; }
 
 .folk.in .folk__en { animation: andas 5.2s ease-in-out infinite; }
 .folk.in .folk__tva { animation: andas 6.1s ease-in-out infinite 0.9s; }
