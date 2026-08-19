@@ -28,14 +28,37 @@ export const reducedMotion = () =>
 
 type Tick = (now: number) => void
 
+/**
+ * Den som måste köra först i bildrutan.
+ *
+ * Mjuka rullningen flyttar sidans rullningsläge inifrån bildrutevarvet.
+ * Allt annat på sidan läser det läget — genom `getBoundingClientRect` eller
+ * `scrollY` — och skulle läsa förra rutans värde om det inte var avgjort
+ * att rullningen räknas om innan de andra släpps in. En bildruta fel är
+ * inte mycket, men det är hela skillnaden mellan text som sitter fast i
+ * bilden och text som halkar en aning efter den.
+ *
+ * En egen plats och inte bara "prenumerera först": ordningen i en mängd är
+ * den ordning man råkade montera i, och den är inte något att bygga på.
+ */
+let forst: Tick | null = null
+
 const tickers = new Set<Tick>()
 let rafId = 0
 
 function loop(now: number) {
+  forst?.(now)
   // Kopia, så att en prenumerant som säger upp sig mitt i varvet inte
   // ändrar mängden vi går igenom.
   for (const t of [...tickers]) t(now)
-  rafId = tickers.size ? requestAnimationFrame(loop) : 0
+  rafId = tickers.size || forst ? requestAnimationFrame(loop) : 0
+}
+
+/** Sätter den som ska köra först i varje bildruta. */
+export function setForst(t: Tick | null) {
+  forst = t
+  if (forst && !rafId) rafId = requestAnimationFrame(loop)
+  return () => { if (forst === t) forst = null }
 }
 
 /** Prenumererar på bildrutevarvet. Varvet startas och stoppas av sig självt. */
@@ -44,7 +67,7 @@ export function onTick(t: Tick) {
   if (!rafId) rafId = requestAnimationFrame(loop)
   return () => {
     tickers.delete(t)
-    if (!tickers.size && rafId) {
+    if (!tickers.size && !forst && rafId) {
       cancelAnimationFrame(rafId)
       rafId = 0
     }

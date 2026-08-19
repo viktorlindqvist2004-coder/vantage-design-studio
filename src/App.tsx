@@ -4,6 +4,7 @@ import {
   Ticker, Why,
 } from './components/Page'
 import { useToneUnderNav } from './lib/motion'
+import { useSmooth } from './lib/smooth'
 
 /**
  * SIDAN
@@ -17,6 +18,7 @@ import { useToneUnderNav } from './lib/motion'
  */
 
 export default function App() {
+  useSmooth()
   useToneUnderNav()
 
   return (
