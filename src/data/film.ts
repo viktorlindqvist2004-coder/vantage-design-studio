@@ -1,21 +1,29 @@
 /**
  * FILMEN
  * ══════
- * Fem tagningar som bär arbetet i bild, och fem rubriker som säger vad vi
+ * Fem tagningar som bär arbetet i bild, och femton rader som säger vad vi
  * gör. Ordningen är arbetsgången: vad studion är, vad vi bygger, hur det
  * bestäms, hur det byggs, och vad som händer efter lansering.
  *
- * RUBRIKERNA HANDLAR OM ARBETET, INTE OM BILDEN
- * Första omgången rubriker beskrev tagningen — kameran som gick in mellan
- * pelarna, stenen som togs bort. Det var vackert och det var fel: den som
- * läser vill veta vad vi gör, och en bildbeskrivning svarar inte på det.
- * Filmen får bära stämningen. Texten säger saken. Av samma skäl står det
- * inte längre vad kameran gör — en tagningsanvisning är något för den som
- * spelar in, inte för den som funderar på att höra av sig.
+ * MAN RULLAR GENOM FILMEN, DEN GÅR INTE AV SIG SJÄLV
+ * Tagningarna spelas inte upp. Rullningen är deras tidslinje: står man
+ * still står bilden still, rullar man framåt går den framåt, rullar man
+ * bakåt går den baklänges. Filerna är därför omkodade så att varje
+ * bildruta är en nyckelruta — se `Verk.tsx` för varför det är hela
+ * skillnaden mellan en film man rullar igenom och en som hackar.
  *
- * Inga räkneord i rubrikerna heller. "Fem steg" och "fyra saker" låter
- * läsaren börja räkna i stället för att läsa, och siffran är alltid det
- * minst intressanta i meningen.
+ * RADERNA AVLÖSER VARANDRA
+ * Varje tagning bär flera rader och inte en. En rubrik som står kvar
+ * genom hela tagningen blir en skylt man rullar förbi; rader som byts
+ * medan bilden går blir textremsor i en film. Raden byts vid jämna delar
+ * av tagningen, så den hör ihop med det man ser just då.
+ *
+ * RADERNA HANDLAR OM ARBETET, INTE OM BILDEN
+ * Första omgången beskrev tagningen — kameran som gick in mellan pelarna,
+ * stenen som togs bort. Det var vackert och det svarade inte på något:
+ * den som läser vill veta vad vi gör. Filmen får bära stämningen, texten
+ * säger saken. Inga räkneord heller; siffran är alltid det minst
+ * intressanta i meningen.
  *
  * Varje tagning har sin egen kamerarörelse, och varje tagning har därför
  * också sin egen övergång. Rörelsen i rutan och rörelsen i sidan ska vara
@@ -31,9 +39,10 @@ export type Tagning = {
   fil: string
   /** Vilken övergång lagret bär. Se `.verk__lager[data-rorelse]` i site.css. */
   rorelse: Rorelse
-  /** Var i arbetsgången man är. Står som etikett över rubriken. */
+  /** Var i arbetsgången man är. Står som etikett över raden. */
   ort: string
-  rubrik: string
+  /** Raderna som avlöser varandra medan man rullar genom tagningen. */
+  repliker: string[]
 }
 
 export const FILM: Tagning[] = [
@@ -42,34 +51,54 @@ export const FILM: Tagning[] = [
     fil: '/film/1-portik.mp4',
     rorelse: 'dyk',
     ort: 'Studion',
-    rubrik: 'Vi bygger webbplatser\noch system för hand',
+    repliker: [
+      'Vi bygger webbplatser\noch system för hand',
+      'Ingen mall under,\ninga lager av annat ovanpå',
+      'Ni pratar med dem\nsom utför arbetet',
+    ],
   },
   {
     id: 'mejseln',
     fil: '/film/2-mejseln.mp4',
     rorelse: 'svep',
     ort: 'Vad vi bygger',
-    rubrik: 'Sajten, och systemen\nsom ligger bakom den',
+    repliker: [
+      'Sajten, och systemen\nsom ligger bakom den',
+      'Bokning, portaler\noch interna verktyg',
+      'Oavsett bransch\noch oavsett storlek',
+    ],
   },
   {
     id: 'ritningen',
     fil: '/film/3-ritningen.mp4',
     rorelse: 'port',
     ort: 'Arbetsgången',
-    rubrik: 'Fast pris och tidplan\ninnan vi bygger något',
+    repliker: [
+      'Fast pris och tidplan\ninnan vi bygger något',
+      'Ni ser allt\nmedan det är en ritning',
+      'Resten betalar ni\nnär ni är nöjda',
+    ],
   },
   {
     id: 'pelaren',
     fil: '/film/4-pelaren.mp4',
     rorelse: 'pelare',
     ort: 'Bygget',
-    rubrik: 'Handkodat och testat\npå riktiga enheter',
+    repliker: [
+      'Handkodat och testat\npå riktiga enheter',
+      'Tillgänglighet från början,\ninte tillagt sist',
+      'En adress att klicka runt i\nmedan arbetet pågår',
+    ],
   },
   {
     id: 'agoran',
     fil: '/film/5-agoran.mp4',
     rorelse: 'avtack',
     ort: 'Efter lansering',
-    rubrik: 'Ni äger koden,\nvi sköter driften',
+    repliker: [
+      'Ni äger koden\noch alla konton',
+      'Vi sköter driften\npå vår egen server',
+      'Ska vi bygga\nnågot tillsammans?',
+    ],
   },
 ]

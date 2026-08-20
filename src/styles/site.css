@@ -953,14 +953,20 @@
    skrivit sitt första tal, och sidan börjar med en blink. */
 .verk__lager:first-child { --in: 1; }
 
+/* Ingen gradering här.
+   Filmerna är renderade ljusa och kalla och behöver dras mot sidans egen
+   värld, men det gjordes förut med `filter: saturate(.82) contrast(1.06)
+   brightness(.84)` — och ett filter över en video räknas om vid varje
+   avkodad bildruta. När rullningen blev filmens tidslinje kom det en
+   avkodning per sökning i stället för en var tjugofjärde sekund, och
+   filtret var med varje gång. Graderingen är nu inbakad i filerna med
+   samma matris och samma kurva; skillnaden mot filtret är åtta tiondels
+   procent, mindre än omkodningens eget brus. */
 .verk__film {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  /* Filmerna är renderade ljusa och kalla. Graderingen drar dem mot sidans
-     egen värld utan att röra själva filerna. */
-  filter: saturate(0.82) contrast(1.06) brightness(0.84);
 }
 
 /* Diset. Mörkast där texten ligger — vänsterkanten och nederkanten — och
@@ -1010,8 +1016,14 @@
   text-transform: uppercase;
   margin: 0;
   /* Ristat i sten: en mörk kant nedåt och en ljus uppåt. Mycket svagt —
-     syns det tydligt är det en effekt, syns det knappt är det material. */
-  text-shadow: 0 1px 0 rgba(16, 20, 28, 0.55), 0 -1px 0 rgba(239, 233, 222, 0.14);
+     syns det tydligt är det en effekt, syns det knappt är det material.
+     Under dem en vid, svag skugga. Den syns inte som skugga; den håller
+     bara raden läsbar när tagningen råkar vara ljus just där den står, och
+     nu när rullningen spolar filmen råkar den vara allt möjligt. */
+  text-shadow:
+    0 1px 0 rgba(16, 20, 28, 0.55),
+    0 -1px 0 rgba(239, 233, 222, 0.14),
+    0 2px 26px rgba(16, 20, 28, 0.78);
 }
 
 .verk__rad { display: block; }
@@ -1119,6 +1131,17 @@
     calc((1 - var(--in)) * 28%) calc((1 - var(--in)) * 24%)
   );
   transform: scale(calc(1.02 + (1 - var(--in)) * 0.12));
+}
+
+/* Ett färdigsvept lager släpper sin klippbana. Vid fullt insvep beskriver
+   både `clip-path` och `mask-image` hela rutan — de gör ingenting, men de
+   räknas ändå om varje gång bilden under dem byts, och med rullningen som
+   tidslinje sker det ideligen. Skalningen står kvar: den är en enda
+   sammansättningsegenskap och kostar inget att låta ligga, och `avtack`
+   behöver sin. Se Verk.tsx för mätningen. */
+.verk__lager[data-klar='true'] {
+  clip-path: none;
+  mask-image: none;
 }
 
 /* ── Spalten som rullar ───────────────────────────────────────────────── */
@@ -1328,6 +1351,27 @@
 
   /* Inget eget mellanrum: aktens egen lucka mellan sina delar räcker. */
   .akt__titel { display: block; }
+
+  /* Etiketten ligger på filmen här och inte på en botten. Brons mot ljus
+     sten är för lite skillnad; den behöver samma skugga som raden under. */
+  .akt__titel .verk__ort {
+    text-shadow: 0 1px 14px rgba(16, 20, 28, 0.9);
+  }
+
+  /* Dimman läggs om från snett till rakt.
+     Den lutar 78 grader, vilket på en bred ruta lägger det mörka i vänstra
+     kanten där texten står. På en hög och smal ruta går samma lutning
+     nästan rakt nedåt i stället, och då hamnar större delen av filmen i
+     det mörkaste bandet — man rullar genom en tagning man knappt ser. Här
+     räcker det att dämpa överkanten under listen och underkanten, för
+     texten står i egna rutor med egen botten och behöver ingen hjälp av
+     dimman. */
+  .verk__dis {
+    background:
+      linear-gradient(180deg, rgba(16, 20, 28, 0.78) 0%, rgba(16, 20, 28, 0.28) 26%,
+        rgba(16, 20, 28, 0.28) 68%, rgba(16, 20, 28, 0.82) 100%),
+      radial-gradient(130% 78% at 50% 46%, transparent 42%, rgba(16, 20, 28, 0.5) 100%);
+  }
 
   .akt {
     width: 100%;

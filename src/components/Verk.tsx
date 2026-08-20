@@ -28,10 +28,61 @@ import { Arrow } from './Chrome'
  * i fem lika delar hade betytt att bilden byts mitt i ett stycke. I stället
  * mäts var akternas egna avsnitt i spalten befinner sig, och tagningen byts
  * när avsnittet gör det. Bilden och texten hör alltid ihop.
+ *
+ * RULLNINGEN ÄR FILMENS TIDSLINJE
+ * Tagningarna spelas inte upp. Rullningen är deras tid: står man still står
+ * bilden still, rullar man framåt går den framåt, rullar man bakåt går den
+ * baklänges. Det är rullningen som är uppspelningen.
+ *
+ * Det gick inte förut, och skälet var filerna och inte koden. En vanlig
+ * mp4 har en nyckelruta med långa spann emellan, och resten av rutorna är
+ * bara skillnader mot dem. Att hoppa till en godtycklig tidpunkt tvingar
+ * avkodaren tillbaka till närmaste nyckelruta och framåt igen, ruta för
+ * ruta. Rullar man jämnt blir det en följd av sådana sökningar, och bilden
+ * hackar i exakt den takten — det var därför tagningarna först spelades i
+ * sin egen hastighet.
+ *
+ * Filerna är nu omkodade så att varje bildruta är en nyckelruta. Då är en
+ * sökning bara en avkodning, aldrig en kedja, och man kan sätta tiden en
+ * gång per bildruta utan att bilden släpar. Det kostade ingenting i vikt:
+ * elva megabyte mot tolv, för materialet är kort och rör sig mycket, och
+ * sådant komprimerar dåligt mellan rutor ändå.
  */
 
 /** Hur stor del av en akt som går åt till att svepa in den. */
 const SVEP = 0.34
+
+/** En bildruta. Alla fem tagningarna är inspelade i samma takt. */
+const RUTA = 1 / 24
+
+/**
+ * Ställer en tagning på den bildruta rullningen pekar ut.
+ *
+ * Två spärrar, båda mätta och båda nödvändiga. Den första: en sökning som
+ * inte flyttar sig en hel bildruta byter ingen bild men kostar ändå en
+ * avkodning, och utan den spärren söker vi sextio gånger i sekunden även
+ * när sidan står still. Den andra: sätter man tiden igen medan förra
+ * sökningen pågår avbryts den, och vid snabb rullning blir följden att
+ * ingen sökning någonsin hinner bli klar — bilden fryser just när den
+ * borde röra sig mest. Vi hoppar över varvet i stället och tar nästa;
+ * eftersom varvet går varje bildruta hinner den ifatt av sig själv.
+ */
+function spola(v: HTMLVideoElement, p: number) {
+  const mal = p * v.duration
+  if (Math.abs(v.currentTime - mal) < RUTA * 0.5) return
+  if (v.seeking) return
+  v.currentTime = mal
+}
+
+/**
+ * Hur stor del av aktens rullning som filmen använder.
+ *
+ * Filmen är framme innan akten är slut. Sista biten av en akt bär bara den
+ * sista textrutan, och en bild som fortfarande rör sig då drar blicken från
+ * det man håller på att läsa. Bilden landar och blir stillbild medan man
+ * läser klart.
+ */
+const SPOLNING = 0.86
 
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
@@ -40,6 +91,8 @@ export function Verk() {
   const avsnitt = useRef<(HTMLElement | null)[]>([])
   const scen = useRef<HTMLDivElement>(null)
   const [akt, setAkt] = useState(0)
+  /** Vilken av den gällande tagningens rader som står i rutan. */
+  const [replik, setReplik] = useState(0)
   const [visar, setVisar] = useState<string | null>(null)
   /** Vilka tagningar som fått hämta sin fil. Aldrig fler än den som syns
    *  och den som står näst på tur. */
@@ -54,14 +107,23 @@ export function Verk() {
      * Varje akts läge läses ur dess eget avsnitt i spalten: hur långt
      * rutans mittlinje har vandrat genom avsnittet, från strax innan det
      * börjar till strax innan det slutar.
+     *
+     * Första akten räknas från sidans överkant och inte från mittlinjen.
+     * Dess avsnitt börjar vid sidans nollpunkt, så mittlinjen står redan en
+     * halv skärm in i det innan man rört rullhjulet — och då hade filmen
+     * mött besökaren en sjättedel inspelad. Båda slutar på samma ställe:
+     * när avsnittets nederkant passerar mittlinjen.
      */
     let aktiv = 0
+    let aktivGenom = 0
     const in_: number[] = []
     for (let i = 0; i < AKTER.length; i++) {
       const a = avsnitt.current[i]
       if (!a) { in_.push(i === 0 ? 1 : 0); continue }
       const r = a.getBoundingClientRect()
-      const genom = clamp01((mitt - r.top) / Math.max(1, r.height))
+      const genom = i === 0
+        ? clamp01(-r.top / Math.max(1, r.height - mitt))
+        : clamp01((mitt - r.top) / Math.max(1, r.height))
       /**
        * Insvepet sker över aktens första tredjedel och står sedan kvar.
        *
@@ -70,9 +132,35 @@ export function Verk() {
        * halvöppen ruta som drar ihop sig innan man ens rört rullhjulet.
        */
       in_.push(i === 0 ? 1 : clamp01(genom / SVEP))
-      if (genom > 0 && genom < 1) aktiv = i
-      else if (genom >= 1) aktiv = Math.min(AKTER.length - 1, i + 1)
+      if (genom > 0 && genom < 1) { aktiv = i; aktivGenom = genom }
+      else if (genom >= 1) {
+        aktiv = Math.min(AKTER.length - 1, i + 1)
+        // Sista akten tar inte slut i något efterföljande avsnitt. Har man
+        // rullat förbi dess slut står den ändå kvar, och då är den framme.
+        aktivGenom = aktiv === i ? 1 : 0
+      }
     }
+
+    /**
+     * Filmen spolas av rullningen.
+     *
+     * Bara den gällande tagningen, och bara den som står näst på tur medan
+     * den sveper in — en tagning som ingen ser ska inte kosta en sökning.
+     * Den som står på tur ställs på sin första ruta, så att den är rätt från
+     * den bildpunkt den blir synlig.
+     */
+    for (let i = 0; i < FILM.length; i++) {
+      const v = filmer.current[i]
+      if (!v || !v.duration) continue
+      if (i > aktiv + 1 || i < aktiv - 1) continue
+      const genom = i === aktiv ? aktivGenom : (i < aktiv ? 1 : 0)
+      spola(v, clamp01(genom / SPOLNING))
+    }
+
+    // Raderna byts vid jämna delar av tagningen, så den som står i rutan
+    // hör ihop med det man ser just då.
+    const rader = FILM[Math.min(aktiv, FILM.length - 1)].repliker.length
+    const r = Math.min(rader - 1, Math.floor(aktivGenom / SPOLNING * rader))
 
     for (let i = 0; i < FILM.length; i++) {
       const l = lager.current[i]
@@ -85,10 +173,23 @@ export function Verk() {
         // Ett lager som inte hunnit börja svepa in har ingenting att visa
         // och ska inte kosta en bildruta.
         l.style.visibility = v > 0.001 ? 'visible' : 'hidden'
+        /**
+         * Ett färdigsvept lager har ingen klippbana kvar att räkna på.
+         *
+         * Insvepen är `clip-path` och `mask-image`, och vid fullt insvep
+         * beskriver de hela rutan — de gör ingenting, men de kostar ändå,
+         * för de måste räknas om varje gång bilden under dem byts. Med
+         * rullningen som tidslinje byts den bilden ideligen. Övergången
+         * varar en tredjedel av en akt; resten av tiden är det bortkastat
+         * arbete på varenda tagning i rutan.
+         */
+        const klar = String(v > 0.999)
+        if (l.dataset.klar !== klar) l.dataset.klar = klar
       }
     }
 
     setAkt((f) => (f === aktiv ? f : aktiv))
+    setReplik((f) => (f === r ? f : r))
   }, !reducedMotion())
 
   /** Hämtar filen till den akt som syns och den som står näst på tur. */
@@ -102,15 +203,6 @@ export function Verk() {
       return andrad ? n : f
     })
   }, [akt])
-
-  /** Bara den tagning som ligger överst spelar. De andra pausas. */
-  useEffect(() => {
-    filmer.current.forEach((v, i) => {
-      if (!v) return
-      if (i === akt) v.play().catch(() => {})
-      else v.pause()
-    })
-  }, [akt, laddad])
 
   const nu = FILM[Math.min(akt, FILM.length - 1)]
 
@@ -126,15 +218,25 @@ export function Verk() {
             key={t.id}
             ref={(n) => { lager.current[i] = n }}
           >
+            {/* Ingen `loop` och ingen `autoPlay`: tagningen spelas aldrig
+                upp, den ställs. `preload="auto"` för att en sökning kräver
+                att filen finns — med `metadata` hade första rullningen
+                mötts av en tom ruta medan resten hämtades. */}
             <video
               className="verk__film"
               ref={(n) => { filmer.current[i] = n }}
               src={laddad[i] ? t.fil : undefined}
               muted
-              loop
               playsInline
-              preload="none"
+              preload="auto"
               tabIndex={-1}
+              onLoadedMetadata={(e) => {
+                // En knuff så att första rutan målas. En pausad video som
+                // aldrig fått vare sig en sökning eller en uppspelning
+                // ritar ingenting alls i vissa webbläsare.
+                const v = e.currentTarget
+                if (v.currentTime === 0) v.currentTime = RUTA * 0.5
+              }}
             />
           </div>
         ))}
@@ -142,17 +244,19 @@ export function Verk() {
         <span className="verk__dis" />
         <Meander />
 
-        {/* Akttiteln står i rutan och inte i spalten: den hör till bilden,
-            och byts när bilden byts. På en telefon finns inte plats för
-            både en titel i rutan och en spalt som täcker hela bredden —
-            där står titeln i spalten i stället, se `.akt__titel`. */}
-        {/* Ingen etikett här. Mätaren strax ovanför säger redan vilken akt
+        {/* Raden i rutan. Den hör till bilden och inte till spalten, och den
+            byts medan man rullar genom tagningen — som en textremsa i en
+            film, inte som en skylt man rullar förbi. Nyckeln bär både
+            tagning och rad, så bytet spelar sin egen ingång.
+
+            Ingen etikett här: mätaren strax ovanför säger redan vilken akt
             man är i, och samma ord två gånger i samma ruta är inte en
-            orientering utan ett eko. I spalten står etiketten kvar — där
-            finns ingen mätare. */}
-        <div className="verk__akt" key={nu.id}>
+            orientering utan ett eko. På en telefon finns inte plats för
+            både rad och spalt, och där står den i spalten i stället — se
+            `.akt__titel`. */}
+        <div className="verk__akt" key={`${nu.id}-${replik}`}>
           <h2 className="verk__rubrik">
-            {nu.rubrik.split('\n').map((rad) => (
+            {(nu.repliker[replik] ?? nu.repliker[0]).split('\n').map((rad) => (
               <span className="verk__rad" key={rad}>{rad}</span>
             ))}
           </h2>
@@ -176,11 +280,15 @@ export function Verk() {
             ref={(n) => { avsnitt.current[i] = n }}
           >
             {/* Titeln i spalten. Syns bara på smala skärmar, där den i
-                stället för att ligga bakom panelerna står före dem. */}
+                stället för att ligga bakom panelerna står före dem. Här
+                står tagningens första rad och inte den som gäller just nu:
+                den här titeln rullar med sidan i stället för att ligga
+                still, och en rad som byts under tiden hade bytts mitt i
+                läsningen av sig själv. */}
             <div className="akt__titel">
               <span className="verk__ort">{FILM[i]?.ort ?? a.namn}</span>
               <h2 className="verk__rubrik">
-                {(FILM[i]?.rubrik ?? a.namn).split('\n').map((rad) => (
+                {(FILM[i]?.repliker[0] ?? a.namn).split('\n').map((rad) => (
                   <span className="verk__rad" key={rad}>{rad}</span>
                 ))}
               </h2>
