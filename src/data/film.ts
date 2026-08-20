@@ -17,13 +17,12 @@ export type Rorelse = 'dyk' | 'svep' | 'port' | 'pelare' | 'avtack'
 export type Tagning = {
   id: string
   fil: string
-  /** Vilken övergång rutan bär. Se `.scen[data-rorelse]` i site.css. */
+  /** Vilken övergång lagret bär. Se `.verk__lager[data-rorelse]` i site.css. */
   rorelse: Rorelse
   /** Kamerarörelsen i klippet, skriven som en tagningsanvisning. */
   kamera: string
   ort: string
   rubrik: string
-  brod: string
 }
 
 export const FILM: Tagning[] = [
@@ -34,7 +33,6 @@ export const FILM: Tagning[] = [
     kamera: 'Kameran går in',
     ort: 'Först',
     rubrik: 'Vi går in\noch ser oss om',
-    brod: 'Ingen ritar något innan vi förstått vad huset ska användas till. Vi börjar med er verksamhet, era kunder och vad som faktiskt ska hända när någon hittar hit.',
   },
   {
     id: 'mejseln',
@@ -43,7 +41,6 @@ export const FILM: Tagning[] = [
     kamera: 'Kameran kretsar',
     ort: 'Hantverket',
     rubrik: 'Sten tas bort,\ninget läggs till',
-    brod: 'Vi skriver koden för hand, rad för rad. Det som blir kvar är det som behövs — ingen mall under, inga lager av annat folks lösningar ovanpå.',
   },
   {
     id: 'ritningen',
@@ -52,7 +49,6 @@ export const FILM: Tagning[] = [
     kamera: 'Kameran sänker sig',
     ort: 'Riktningen',
     rubrik: 'Allt ligger\npå bordet',
-    brod: 'Ni ser form, omfattning, tidplan och fast pris innan vi bygger något. Vill ni ändra er gör ni det medan det bara är en ritning.',
   },
   {
     id: 'pelaren',
@@ -61,7 +57,6 @@ export const FILM: Tagning[] = [
     kamera: 'Kameran ser uppåt',
     ort: 'Bygget',
     rubrik: 'Det reses\nkomponent för komponent',
-    brod: 'Handkodat och testat i riktiga webbläsare på riktiga enheter. Tillgänglighet är med från början, inte tillagt sist när det är dyrt.',
   },
   {
     id: 'agoran',
@@ -70,6 +65,5 @@ export const FILM: Tagning[] = [
     kamera: 'Kameran drar bakåt',
     ort: 'Sedan',
     rubrik: 'Och så\nöppnar det',
-    brod: 'Vi flyttar upp, mäter och lämnar över koden till er. Femton procent i förskott, resten först när ni är nöjda.',
   },
 ]
