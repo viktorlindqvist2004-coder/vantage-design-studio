@@ -11,6 +11,13 @@ import { FAQ, OFFERINGS, PROCESS, STATS, STUDIO, WHY } from './content'
  * Ordningen är samma resonemang som förut — påståendet, vad man kan få, hur
  * det går till, hur det byggs, och vad som händer sedan — men det finns
  * inte längre några partier att bläddra mellan. Det är en enda rullning.
+ *
+ * INGA RÄKNEORD I RUBRIKERNA
+ * "Fyra saker avgör" och "fem steg" fick läsaren att börja räkna i stället
+ * för att läsa, och siffran var i båda fallen det minst intressanta i
+ * meningen. Punkterna räknar sig ändå själva när man ser dem. Detsamma
+ * gäller aktnamnen: de säger nu vad avsnittet handlar om och inte var i
+ * ordningen det står.
  */
 
 export type Panel = {
@@ -20,7 +27,14 @@ export type Panel = {
   kort?: { namn: string; slag: string; om: string; exempel?: string }[]
   tal?: { varde: string; text: string }[]
   fragor?: { q: string; a: string }[]
-  knapp?: { text: string; href: string }
+  /**
+   * Flera knappar och inte en.
+   *
+   * Båda adresserna gäller lika mycket. Stod bara den ena här vore den i
+   * praktiken huvudadress, och den som hör av sig skulle få gissa vem av
+   * oss man helst vänder sig till.
+   */
+  knappar?: { text: string; href: string }[]
 }
 
 export type Akt = {
@@ -32,25 +46,25 @@ export type Akt = {
 export const AKTER: Akt[] = [
   {
     id: 'forst',
-    namn: 'Först',
+    namn: 'Studion',
     paneler: [
       {
         rubrik: 'De flesta bestämmer sig på några sekunder',
         brod: 'Vårt arbete går ut på att de sekunderna räcker. Vi ritar och bygger webbplatser och system för hand, och ni pratar med dem som utför arbetet hela vägen.',
       },
       {
-        rubrik: 'Fyra saker avgör om en webbplats gör nytta',
-        brod: 'Inget av dem handlar om smak, och alla fyra går att ha åsikter om innan vi bygger något.',
+        rubrik: 'Det här avgör om en webbplats gör nytta',
+        brod: 'Inget av det handlar om smak, och allt går att ha åsikter om innan vi bygger något.',
         punkter: WHY.map((w) => ({ titel: w.title, text: w.body })),
       },
     ],
   },
   {
     id: 'hantverket',
-    namn: 'Hantverket',
+    namn: 'Vad vi bygger',
     paneler: [
       {
-        rubrik: 'Vad vi bygger',
+        rubrik: 'Alla sorters sajter, alla branscher',
         brod: 'Vilken sorts webbplats ni än behöver, och oavsett bransch — plus systemen bakom den. Behöver ni något som inte står här bygger vi det också.',
         kort: OFFERINGS.map((o) => ({
           namn: o.name,
@@ -67,10 +81,10 @@ export const AKTER: Akt[] = [
   },
   {
     id: 'riktningen',
-    namn: 'Riktningen',
+    namn: 'Arbetsgången',
     paneler: [
       {
-        rubrik: 'Fem steg, inget dolt',
+        rubrik: 'Så går arbetet till, steg för steg',
         punkter: PROCESS.map((p) => ({ titel: p.title, text: `${p.body} Ni får: ${p.gives} Tid: ${p.takes.toLowerCase()}.` })),
       },
       {
@@ -99,7 +113,7 @@ export const AKTER: Akt[] = [
   },
   {
     id: 'sedan',
-    namn: 'Sedan',
+    namn: 'Efter lansering',
     paneler: [
       {
         rubrik: 'Kort om oss',
@@ -112,7 +126,7 @@ export const AKTER: Akt[] = [
       {
         rubrik: 'Ska vi bygga något tillsammans?',
         brod: STUDIO.why,
-        knapp: { text: `Skriv till ${STUDIO.emails[0]}`, href: `mailto:${STUDIO.emails[0]}` },
+        knappar: STUDIO.emails.map((e) => ({ text: `Skriv till ${e}`, href: `mailto:${e}` })),
       },
     ],
   },

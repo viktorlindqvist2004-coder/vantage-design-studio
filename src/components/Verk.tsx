@@ -146,14 +146,16 @@ export function Verk() {
             och byts när bilden byts. På en telefon finns inte plats för
             både en titel i rutan och en spalt som täcker hela bredden —
             där står titeln i spalten i stället, se `.akt__titel`. */}
+        {/* Ingen etikett här. Mätaren strax ovanför säger redan vilken akt
+            man är i, och samma ord två gånger i samma ruta är inte en
+            orientering utan ett eko. I spalten står etiketten kvar — där
+            finns ingen mätare. */}
         <div className="verk__akt" key={nu.id}>
-          <span className="verk__ort">{nu.ort}</span>
           <h2 className="verk__rubrik">
             {nu.rubrik.split('\n').map((rad) => (
               <span className="verk__rad" key={rad}>{rad}</span>
             ))}
           </h2>
-          <span className="verk__kamera">{nu.kamera}</span>
         </div>
 
         {/* Var i verket man befinner sig. Fem streck, ett per akt. */}
@@ -223,10 +225,14 @@ function Grupp({ panel, onVisa }: { panel: PanelData; onVisa: (id: string) => vo
       <Blad>
         <h3 className="panel__rubrik">{panel.rubrik}</h3>
         {panel.brod && <p className="panel__brod">{panel.brod}</p>}
-        {panel.knapp && (
-          <a className="panel__knapp" href={panel.knapp.href}>
-            {panel.knapp.text}<Arrow />
-          </a>
+        {panel.knappar && (
+          <div className="panel__knappar">
+            {panel.knappar.map((k) => (
+              <a className="panel__knapp" href={k.href} key={k.href}>
+                {k.text}<Arrow />
+              </a>
+            ))}
+          </div>
         )}
         {panel.tal && (
           <dl className="panel__tal">

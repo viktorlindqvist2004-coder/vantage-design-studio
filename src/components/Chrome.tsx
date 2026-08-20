@@ -12,11 +12,18 @@ import { onTick, reducedMotion, useMagnetic, useTick } from '../lib/motion'
 
 /* ── Listen ───────────────────────────────────────────────────────────── */
 
+/**
+ * Länkarna pekar på akterna i verket, och heter samma sak som dem.
+ *
+ * De pekade tidigare på partier som sidan bestod av innan filmen tog över
+ * hela den, och de partierna finns inte längre — varje länk ledde till en
+ * ankare som inte fanns, och klicket gjorde ingenting alls.
+ */
 const LINKS = [
-  { href: '#arbetet', text: 'Arbetet' },
-  { href: '#bygger', text: 'Vi bygger' },
-  { href: '#gangen', text: 'Arbetsgången' },
-  { href: '#fragor', text: 'Frågor' },
+  { href: '#hantverket', text: 'Vad vi bygger' },
+  { href: '#riktningen', text: 'Arbetsgången' },
+  { href: '#bygget', text: 'Bygget' },
+  { href: '#sedan', text: 'Frågor' },
 ]
 
 export function Nav() {
@@ -34,7 +41,7 @@ export function Nav() {
 
   return (
     <header className="nav" ref={ref} data-lifted="false">
-      <a className="nav__logo" href="#topp" aria-label="Vantage Design Studio, till toppen">
+      <a className="nav__logo" href="#forst" aria-label="Vantage Design Studio, till toppen">
         <LogoMark />
         <span>Vantage</span>
       </a>
@@ -45,7 +52,7 @@ export function Nav() {
         ))}
       </nav>
 
-      <a className="btn btn--solid" href="#kontakt" ref={knapp}>
+      <a className="btn btn--solid" href="#sedan" ref={knapp}>
         Ta kontakt
         <Arrow />
       </a>

@@ -1016,16 +1016,6 @@
 
 .verk__rad { display: block; }
 
-.verk__kamera {
-  display: block;
-  margin-top: 1.2rem;
-  font-family: var(--mono);
-  font-size: var(--t-label);
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--marmor) 42%, transparent);
-}
-
 /* ── Aktmätaren ───────────────────────────────────────────────────────── */
 
 .verk__mat {
@@ -1302,8 +1292,17 @@
   color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
 }
 
-.panel__knapp {
+/* Adresserna radbryter hellre än krymper: två knappar bredvid varandra i en
+   spalt som är trettio rem bred hade tvingat fram avstavade e-postadresser,
+   och en adress man inte kan läsa i ett svep är ingen adress. */
+.panel__knappar {
   margin-top: 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.panel__knapp {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
