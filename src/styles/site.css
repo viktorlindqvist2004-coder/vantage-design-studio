@@ -1084,64 +1084,65 @@
    faller tillbaka på 300 × 150 bildpunkter. */
 .verk__band { display: block; width: 100%; height: 16px; flex: none; }
 
-/* ═══ De fem rörelserna ═════════════════════════════════════════════════
-   Var och en svarar mot kameran i sitt eget klipp. Lagret sveper in över
-   det förra och stannar sedan kvar tills nästa tar över. */
+/* ═══ FÄRDEN ════════════════════════════════════════════════════════════
+   Man rör sig i filmen. Det är inte en film som går bakom sidan; det är ett
+   rum man färdas genom, och rullningen är både klippets tid och kamerans
+   väg.
 
-/* Kameran går in mellan pelarna: ridå som öppnar uppifrån och nerifrån. */
+   VARFÖR RIDÅERNA ÄR BORTA
+   Varje tagning kom förut in med sin egen figur: en ridå som öppnade sig,
+   en ruta som svepte in från höger, en portal som växte, lodräta stavar som
+   fylldes i. Var och en var fin att se på, och alla fem gjorde samma skada
+   — en figur som ritar upp nästa bild säger "här kommer nästa bild". Det
+   läser som att bläddra, och det var precis det som gjorde att sidan kändes
+   som en film i bakgrunden i stället för som ett rum man rör sig genom.
+   Tagningarna möts nu i stället: den nya kommer emot en medan den förra
+   fortsätter framåt förbi kanterna, och kameran hejdar sig aldrig.
+
+   VARJE TAGNING HAR ÄNDÅ SIN EGEN VÄG
+   Variationen ligger i färdriktningen och inte i övergången. Man går in
+   mellan pelarna, förbi arbetsbänkarna, ned över ritbordet, uppför pelaren
+   och till sist bakåt ut över staden. Fem rörelser, men ingen skarv. */
+
+.verk__lager {
+  /* Ankomsten. Det nya rummet kommer emot en och lägger sig till rätta.
+     Kort med flit — en lång toning är en toning man ser, och då är den en
+     övergång igen. Se SVEP i Verk.tsx. */
+  opacity: clamp(0, calc(var(--in) * 2.4), 1);
+}
+
+/* Rakt fram, in mellan pelarna och genom porten. */
 .verk__lager[data-rorelse='dyk'] {
-  clip-path: inset(calc((1 - var(--in)) * 50%) 0);
-  transform: scale(calc(1.14 - var(--in) * 0.14));
+  transform: scale(calc(1.04 - var(--in) * 0.04)) scale(calc(1 + var(--gang) * 0.22));
 }
 
-/* Kameran kretsar: rutan sveper in från höger. */
+/* Förbi arbetet i sidled medan man samtidigt närmar sig det. */
 .verk__lager[data-rorelse='svep'] {
-  clip-path: inset(0 0 0 calc((1 - var(--in)) * 100%));
-  transform: translate3d(calc((1 - var(--in)) * 12%), 0, 0)
-    scale(calc(1.08 - var(--in) * 0.08));
+  transform: scale(calc(1.04 - var(--in) * 0.04))
+    translate3d(calc(5% - var(--gang) * 10%), 0, 0)
+    scale(calc(1.08 + var(--gang) * 0.12));
 }
 
-/* Kameran sänker sig: en portal med rundad hjässa växer nedifrån. */
+/* Ned över ritbordet. */
 .verk__lager[data-rorelse='port'] {
-  clip-path: inset(
-    calc((1 - var(--in)) * 64%) calc((1 - var(--in)) * 32%) 0 calc((1 - var(--in)) * 32%)
-    round calc((1 - var(--in)) * 24vw) calc((1 - var(--in)) * 24vw) 0 0
-  );
-  transform: scale(calc(1.1 - var(--in) * 0.1));
+  transform: scale(calc(1.04 - var(--in) * 0.04))
+    translate3d(0, calc(-5% + var(--gang) * 10%), 0)
+    scale(calc(1.1 + var(--gang) * 0.1));
 }
 
-/* Kameran ser uppåt längs pelaren: lodräta stavar fylls i, en i taget. */
+/* Uppför pelaren, hela vägen till kapitälet. Den längsta resan av dem — det
+   är den rörelse man känner tydligast, för allt i bild vandrar nedåt medan
+   man själv stiger. */
 .verk__lager[data-rorelse='pelare'] {
-  --stav: calc(100% / 7);
-  mask-image: repeating-linear-gradient(
-    90deg,
-    #000 0,
-    #000 calc(var(--stav) * var(--in)),
-    transparent calc(var(--stav) * var(--in)),
-    transparent var(--stav)
-  );
-  transform: translate3d(0, calc((1 - var(--in)) * 5%), 0)
-    scale(calc(1.06 - var(--in) * 0.06));
+  transform: scale(calc(1.04 - var(--in) * 0.04))
+    translate3d(0, calc(10% - var(--gang) * 20%), 0)
+    scale(calc(1.12 + var(--gang) * 0.1));
 }
 
-/* Kameran drar bakåt: ett fönster mitt i bilden vidgar sig till hela rutan. */
+/* Bakåt och uppåt, ut över staden. Enda gången man färdas från något i
+   stället för mot det, och därför den enda som slutar vidöppen. */
 .verk__lager[data-rorelse='avtack'] {
-  clip-path: inset(
-    calc((1 - var(--in)) * 28%) calc((1 - var(--in)) * 24%)
-    calc((1 - var(--in)) * 28%) calc((1 - var(--in)) * 24%)
-  );
-  transform: scale(calc(1.02 + (1 - var(--in)) * 0.12));
-}
-
-/* Ett färdigsvept lager släpper sin klippbana. Vid fullt insvep beskriver
-   både `clip-path` och `mask-image` hela rutan — de gör ingenting, men de
-   räknas ändå om varje gång bilden under dem byts, och med rullningen som
-   tidslinje sker det ideligen. Skalningen står kvar: den är en enda
-   sammansättningsegenskap och kostar inget att låta ligga, och `avtack`
-   behöver sin. Se Verk.tsx för mätningen. */
-.verk__lager[data-klar='true'] {
-  clip-path: none;
-  mask-image: none;
+  transform: scale(calc(1.04 - var(--in) * 0.04)) scale(calc(1.28 - var(--gang) * 0.28));
 }
 
 /* ── Spalten som rullar ───────────────────────────────────────────────── */

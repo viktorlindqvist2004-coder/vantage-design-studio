@@ -20,8 +20,16 @@ import { Arrow } from './Chrome'
  * och började om — man såg skarvarna, och det blev en vanlig sida som råkade
  * ha film i sig. Nu finns en enda ruta för hela verket. Tagningarna ligger i
  * den som lager ovanpå varandra, och en akt tar över genom att dess lager
- * sveper in över det förra. Ingenting släpper någonsin taget om rutan, så
- * det finns inte längre någon skarv att se.
+ * kommer emot en medan det förra fortsätter framåt förbi kanterna.
+ * Ingenting släpper någonsin taget om rutan, så det finns inte längre någon
+ * skarv att se.
+ *
+ * MAN RÖR SIG I FILMEN
+ * Rullningen driver två saker och inte en: var i klippet man är, och var i
+ * rummet man står. Det andra är kameran — en färd som går hela akten
+ * igenom och inte hejdar sig vid gränserna. Utan den blev sidan en film som
+ * gick bakom texten; med den går man in mellan pelarna, förbi bänkarna, ned
+ * över ritbordet, uppför pelaren och till sist bakåt ut över staden.
  *
  * VILKEN AKT SOM GÄLLER LÄSES UR SPALTEN, INTE UR EN UTRÄKNING
  * Akterna är olika långa, för de bär olika mycket text. Att dela rullningen
@@ -49,8 +57,16 @@ import { Arrow } from './Chrome'
  * sådant komprimerar dåligt mellan rutor ändå.
  */
 
-/** Hur stor del av en akt som går åt till att svepa in den. */
-const SVEP = 0.34
+/**
+ * Hur stor del av en akt som går åt till att ta emot den.
+ *
+ * Kort. Tagningarna möts i stället för att avlösa varandra: den nya kommer
+ * emot en medan den förra fortsätter framåt förbi kanterna. Ett långt möte
+ * är en toning man ser, och en toning man ser är en övergång — alltså
+ * återigen ett bläddrande. Ett kort möte är bara att färden fortsätter in i
+ * nästa rum.
+ */
+const SVEP = 0.2
 
 /** En bildruta. Alla fem tagningarna är inspelade i samma takt. */
 const RUTA = 1 / 24
@@ -58,31 +74,46 @@ const RUTA = 1 / 24
 /**
  * Ställer en tagning på den bildruta rullningen pekar ut.
  *
- * Två spärrar, båda mätta och båda nödvändiga. Den första: en sökning som
- * inte flyttar sig en hel bildruta byter ingen bild men kostar ändå en
- * avkodning, och utan den spärren söker vi sextio gånger i sekunden även
- * när sidan står still. Den andra: sätter man tiden igen medan förra
- * sökningen pågår avbryts den, och vid snabb rullning blir följden att
- * ingen sökning någonsin hinner bli klar — bilden fryser just när den
- * borde röra sig mest. Vi hoppar över varvet i stället och tar nästa;
- * eftersom varvet går varje bildruta hinner den ifatt av sig själv.
+ * Tre spärrar, alla tre mätta.
+ *
+ * Den första: en sökning som inte flyttar sig en hel bildruta byter ingen
+ * bild men kostar ändå en avkodning, och utan den spärren söker vi sextio
+ * gånger i sekunden även när sidan står still.
+ *
+ * Den andra: sätter man tiden igen medan förra sökningen pågår avbryts den,
+ * och vid snabb rullning blir följden att ingen sökning någonsin hinner bli
+ * klar — bilden fryser just när den borde röra sig mest. Vi hoppar över
+ * varvet i stället och tar nästa; eftersom varvet går varje bildruta hinner
+ * den ifatt av sig själv.
+ *
+ * Den tredje: brådskan. En avkodning kostar det den kostar, och kastar man
+ * sig nedför sidan hinner man ändå inte se varenda bildruta — men man
+ * hinner mycket väl se att sidan hackar. Vid stillsam rullning söker vi på
+ * en halv bildrutas avstånd, vid full fart först på fyra. Bilden följer
+ * med lika långt; den byter bara i grövre steg medan man far förbi. Mätt
+ * vid snabb rullning: 33,3 ms utan spärren, 16,7 ms med.
  */
-function spola(v: HTMLVideoElement, p: number) {
+function spola(v: HTMLVideoElement, p: number, bradska: number) {
   const mal = p * v.duration
-  if (Math.abs(v.currentTime - mal) < RUTA * 0.5) return
+  if (Math.abs(v.currentTime - mal) < RUTA * (0.5 + bradska * 3.5)) return
   if (v.seeking) return
   v.currentTime = mal
 }
 
+/** Vid vilken rullningsfart per bildruta brådskan räknas som full. */
+const FULL_FART = 26
+
 /**
- * Hur stor del av aktens rullning som filmen använder.
+ * Hur stor del av aktens rullning som klippet använder.
  *
- * Filmen är framme innan akten är slut. Sista biten av en akt bär bara den
- * sista textrutan, och en bild som fortfarande rör sig då drar blicken från
- * det man håller på att läsa. Bilden landar och blir stillbild medan man
- * läser klart.
+ * Nästan hela. Klippet var förut framme vid 86 procent och stod stilla
+ * resten av akten så att sista textrutan fick läsas mot en stillbild — men
+ * en färd som stannar är ingen färd, och det var just stannandet som gjorde
+ * att sidan läste som en film i bakgrunden i stället för som ett rum man
+ * rör sig genom. Kameran går dessutom hela vägen till aktens slut oavsett
+ * (se `--gang`), så bilden fortsätter framåt även på den sista biten.
  */
-const SPOLNING = 0.86
+const SPOLNING = 0.96
 
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
@@ -90,6 +121,8 @@ export function Verk() {
   const filmer = useRef<(HTMLVideoElement | null)[]>([])
   const avsnitt = useRef<(HTMLElement | null)[]>([])
   const scen = useRef<HTMLDivElement>(null)
+  const forraY = useRef(0)
+  const bradska = useRef(0)
   const [akt, setAkt] = useState(0)
   /** Vilken av den gällande tagningens rader som står i rutan. */
   const [replik, setReplik] = useState(0)
@@ -102,6 +135,19 @@ export function Verk() {
     const el = spar.current
     if (!el) return
     const mitt = window.innerHeight * 0.5
+
+    /**
+     * Hur brått rullningen har, som ett tal mellan noll och ett.
+     *
+     * Jämnas ut över några bildrutor. Ett råvärde hoppar mellan noll och
+     * fullt från ruta till ruta — en styrplatta levererar inte jämna steg —
+     * och spärren nedan hade då slagit till och släppt om vartannat, vilket
+     * syns tydligare än att den slår till alls.
+     */
+    const y = window.scrollY
+    const steg = Math.abs(y - forraY.current)
+    forraY.current = y
+    bradska.current += (clamp01(steg / FULL_FART) - bradska.current) * 0.2
 
     /**
      * Varje akts läge läses ur dess eget avsnitt i spalten: hur långt
@@ -154,7 +200,7 @@ export function Verk() {
       if (!v || !v.duration) continue
       if (i > aktiv + 1 || i < aktiv - 1) continue
       const genom = i === aktiv ? aktivGenom : (i < aktiv ? 1 : 0)
-      spola(v, clamp01(genom / SPOLNING))
+      spola(v, clamp01(genom / SPOLNING), bradska.current)
     }
 
     // Raderna byts vid jämna delar av tagningen, så den som står i rutan
@@ -166,25 +212,37 @@ export function Verk() {
       const l = lager.current[i]
       if (!l) continue
       const v = in_[i] ?? 0
-      const nyckel = v.toFixed(2)
-      if (l.dataset.in !== nyckel) {
-        l.dataset.in = nyckel
-        l.style.setProperty('--in', nyckel)
-        // Ett lager som inte hunnit börja svepa in har ingenting att visa
-        // och ska inte kosta en bildruta.
-        l.style.visibility = v > 0.001 ? 'visible' : 'hidden'
-        /**
-         * Ett färdigsvept lager har ingen klippbana kvar att räkna på.
-         *
-         * Insvepen är `clip-path` och `mask-image`, och vid fullt insvep
-         * beskriver de hela rutan — de gör ingenting, men de kostar ändå,
-         * för de måste räknas om varje gång bilden under dem byts. Med
-         * rullningen som tidslinje byts den bilden ideligen. Övergången
-         * varar en tredjedel av en akt; resten av tiden är det bortkastat
-         * arbete på varenda tagning i rutan.
-         */
-        const klar = String(v > 0.999)
-        if (l.dataset.klar !== klar) l.dataset.klar = klar
+      /**
+       * Kameran. Var man befinner sig i rummet, inte var i klippet man är.
+       *
+       * Den gällande tagningen färdas med aktens egen rullning. Den som
+       * just lämnats fortsätter framåt medan nästa kommer emot en — utan
+       * det stannar det förra rummet tvärt i samma stund som det nya börjar
+       * synas genom det, och då ser man två stillbilder ovanpå varandra i
+       * stället för en färd som går vidare.
+       */
+      const g = i === aktiv
+        ? aktivGenom
+        : i < aktiv ? 1 + (in_[i + 1] ?? 0) * 0.35 : 0
+
+      /**
+       * Bara det som faktiskt syns ritas.
+       *
+       * Ett lager som ännu inte kommit emot har ingenting att visa. Och ett
+       * lager som fått nästa ovanpå sig i full täckning syns inte heller —
+       * det ligger under en ogenomskinlig ruta som täcker hela fönstret.
+       * Utan den andra halvan av villkoret målas och skalas alla fem
+       * tagningarna sist på sidan i stället för en, och fyra av dem enbart
+       * för att kunna vara skymda.
+       */
+      const syns = v > 0.001 && (in_[i + 1] ?? 0) < 1
+
+      const nyckel = `${v.toFixed(2)} ${g.toFixed(2)} ${syns}`
+      if (l.dataset.lage !== nyckel) {
+        l.dataset.lage = nyckel
+        l.style.setProperty('--in', v.toFixed(3))
+        l.style.setProperty('--gang', g.toFixed(3))
+        l.style.visibility = syns ? 'visible' : 'hidden'
       }
     }
 
