@@ -1,48 +1,31 @@
 import { Cursor, Grain, Nav, Rail } from './components/Chrome'
-import {
-  Contact, Dialogue, Faq, Hero, Manifest, Offer, Process, Showcase, Stats,
-  Ticker, Why,
-} from './components/Page'
-import { Film } from './components/Film'
-import { useToneUnderNav } from './lib/motion'
+import { Verk } from './components/Verk'
 import { useSmooth } from './lib/smooth'
 
 /**
  * SIDAN
  * ═════
- * Ordningen är resonemanget: först påståendet, sedan skälen, sedan vad man
- * kan få, hur det går till, vem man pratar med, och sist hur man hör av
- * sig. Frågorna ligger näst sist, där de flesta invändningar dyker upp.
+ * Sidan är ett enda verk: en film som ligger fast i rutan hela vägen, med
+ * upplysningarna rullande vid dess sida. Det finns inga partier att bläddra
+ * mellan och ingen vanlig sida under filmen — det var precis det som gjorde
+ * den förra versionen till en vanlig sida som råkade ha film i sig.
  *
- * Ljust och mörkt växlar hela vägen ned. Varje parti bär sin ton själv;
- * listen läser av vilken som råkar ligga under den och byter färg i takt.
+ * Allt innehåll bor i data/akter.ts och delas i fem akter som följer
+ * tagningarna. Bilden och texten hör ihop: man ser hantverket medan man
+ * läser om vad vi bygger, ritningen medan man läser om priset.
  */
 
 export default function App() {
   useSmooth()
-  useToneUnderNav()
 
   return (
     <>
-      <a className="skip-link" href="#arbetet">Hoppa till innehållet</a>
+      <a className="skip-link" href="#forst">Hoppa till innehållet</a>
       <Rail />
       <Nav />
-
       <main>
-        <Hero />
-        <Film />
-        <Ticker />
-        <Manifest />
-        <Why />
-        <Showcase />
-        <Offer />
-        <Process />
-        <Dialogue />
-        <Stats />
-        <Faq />
-        <Contact />
+        <Verk />
       </main>
-
       <Grain />
       <Cursor />
     </>

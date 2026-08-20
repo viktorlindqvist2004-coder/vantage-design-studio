@@ -8,8 +8,15 @@
 
 :root {
   /* Kornet, ritat en gång som SVG-brus och lagt som bakgrundsbild. En
-     bildfil hade vägt tiotals kilobyte för samma sak. */
-  --grain-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+     bildfil hade vägt tiotals kilobyte för samma sak.
+
+     Bruset görs vitt med brusig genomskinlighet i stället för grått och
+     täckande. Färgmatrisen sätter alla tre färgkanalerna till ett och
+     flyttar rödkanalens brus till genomskinligheten: kvar blir vita
+     stänk som mörknar bort mot ingenting. Det är precis vad
+     `mix-blend-mode: screen` gjorde mot en mörk sida — men det kan ritas
+     rakt av, och det kunde inte blandningsläget. Se `.grain`. */
+  --grain-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ── Byggstenar för rörelse ───────────────────────────────────────────── */
@@ -290,24 +297,25 @@
    Ett stillastående brus över hela sidan. Stora släta färgytor på en skärm
    ser digitala ut och band sig i toningarna; ett svagt korn bryter upp dem
    och ger sidan yta. Det ligger still — brus som rör sig är en effekt man
-   ser, och det här ska bara kännas. */
+   ser, och det här ska bara kännas.
+
+   INGET BLANDNINGSLÄGE
+   Kornet låg förut i `mix-blend-mode: screen`, och det kostade en hel
+   bildruta. Ett blandningsläge över hela rutan tvingar sammansättaren att
+   läsa tillbaka allt som ligger under innan den kan rita, varje bildruta,
+   och den läsningen gick inte att göra på den tid en ruta har: mätt vid
+   rullning tog en bildruta 33,3 ms med kornet och 16,7 ms utan det — halva
+   bildfrekvensen för ett brus man knappt ser. Nu är stänken vita redan i
+   filen (se `--grain-src`) och ritas som vilken bild som helst. Det ser
+   likadant ut och kostar ingenting mätbart. */
 .grain {
   position: fixed;
   inset: 0;
   z-index: 55;
   pointer-events: none;
-  opacity: 0.2;
-  mix-blend-mode: multiply;
+  opacity: 0.075;
   background-image: var(--grain-src);
   background-size: 180px 180px;
-}
-
-/* Mot svart måste kornet ljusna i stället för att mörkna, annars syns det
-   inte alls. Screen tar däremot i betydligt hårdare än multiply gör mot
-   ljust, så styrkan är en tredjedel. */
-html[data-tone='dark'] .grain {
-  mix-blend-mode: screen;
-  opacity: 0.07;
 }
 
 /* ── Markören ─────────────────────────────────────────────────────────────
@@ -2413,18 +2421,16 @@ html[data-tone='dark'] .grain {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   FILMEN
-   Fem tagningar man rullar igenom. Varje tagning naglas fast i rutan
-   medan spåret under den rullar förbi, och släpper först när nästa tar
-   över.
+   VERKET
+   Hela sidan är en film. Rutan ligger fast från första bildpunkten till
+   sista; det som rullar är spalten med upplysningar vid dess sida.
 
-   Rullningen kommer in som två tal, `--in` och `--ut`, skrivna på den
-   fastnaglade rutan av Film.tsx. Allt härunder är uttryckt i dem — och
-   olika för varje `data-rorelse`, för att rörelsen i rutan ska vara samma
-   rörelse som kameran gör i bilden.
+   Tagningarna ligger som lager i samma ruta, staplade på z-index. En akt
+   tar över genom att dess lager sveper in över det förra — ingen släpper
+   någonsin taget om rutan, så det finns ingen skarv att se.
    ═══════════════════════════════════════════════════════════════════════ */
 
-.film {
+.verk {
   --marmor: #efe9de;
   --djup: #10141c;
   --terrakotta: #c8562f;
@@ -2435,191 +2441,195 @@ html[data-tone='dark'] .grain {
   color: var(--marmor);
 }
 
-.scen {
-  /* Spårets höjd avgör hur länge tagningen håller rutan. Två skärmhöjder
-     till är lagom: kortare och tagningen hinner aldrig stå still, längre
-     och man rullar i tomma intet mitt i den. */
-  position: relative;
-  height: 310vh;
-}
-
-.scen__fast {
-  --in: 0;
-  --ut: 0;
+/* Rutan. Fastnaglad hela verket igenom. */
+.verk__scen {
   position: sticky;
   top: 0;
   height: 100vh;
   height: 100svh;
   overflow: clip;
-  display: grid;
-  place-items: end start;
-  isolation: isolate;
-}
-
-/* Rutan som filmen ligger i. Varje rörelse formar den på sitt sätt. */
-.scen__ruta {
-  position: absolute;
-  inset: 0;
   z-index: 0;
-  overflow: clip;
-  will-change: transform, clip-path;
-  /* Mark under filmen, och inte svart.
-     Filmen är tolv megabyte i fem filer — den första bildrutan finns inte
-     där i samma stund som rutan gör det, och på en långsam förbindelse
-     dröjer den. En ruta som väntar på sin film ska se ut som marmor i
-     motljus, inte som ett hål. Samma mark räddar också den webbläsare som
-     av något skäl inte kan spela filen alls: formen, ramen och texten står
-     kvar och partiet är fortfarande en bild. */
+  isolation: isolate;
+  /* Mark under filmen, och inte svart: den första bildrutan finns inte i
+     samma stund som rutan gör det, och en ruta som väntar på sin film ska
+     se ut som marmor i motljus. Samma mark bär formen i en webbläsare som
+     inte kan spela filen alls. */
   background:
     radial-gradient(120% 90% at 22% 18%, rgba(239, 233, 222, 0.16), transparent 62%),
     linear-gradient(168deg, #232b38 0%, #161c26 46%, #0e131a 100%);
 }
 
-.scen__film {
+.verk__lager {
+  --in: 0;
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  will-change: transform, clip-path;
+}
+
+/* Första tagningen är inte något som sveper in — den är marken man redan
+   står på när sidan öppnar sig. Värdet sätts här och inte bara i koden, för
+   annars står lagret stängt den bildruta som hinner målas innan varvet
+   skrivit sitt första tal, och sidan börjar med en blink. */
+.verk__lager:first-child { --in: 1; }
+
+.verk__film {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  /* Filmerna är renderade ljusa och kalla. Den här graderingen drar dem
-     mot sidans egen värld utan att röra själva filerna: en aning mörkare,
-     en aning varmare, en aning mindre mättade än verkligheten. */
-  filter: saturate(0.82) contrast(1.06) brightness(0.86);
+  /* Filmerna är renderade ljusa och kalla. Graderingen drar dem mot sidans
+     egen värld utan att röra själva filerna. */
+  filter: saturate(0.82) contrast(1.06) brightness(0.84);
 }
 
-/* Diset över filmen. Två lager: en mörkning nedåt vänster där texten
-   ligger, och en kall vinjett i kanterna. Utan det ligger vit text på
-   solbelyst marmor, vilket är oläsbart oavsett hur bra filmen är. */
-.scen__dis {
+/* Diset. Mörkast där texten ligger — vänsterkanten och nederkanten — och
+   en kall vinjett runtom. Utan det ligger ljus text på solbelyst marmor. */
+.verk__dis {
   position: absolute;
   inset: 0;
+  z-index: 90;
   pointer-events: none;
   background:
-    linear-gradient(75deg, rgba(16, 20, 28, 0.92) 0%, rgba(16, 20, 28, 0.62) 34%, rgba(16, 20, 28, 0) 68%),
-    linear-gradient(0deg, rgba(16, 20, 28, 0.72) 0%, rgba(16, 20, 28, 0) 42%),
-    radial-gradient(120% 90% at 50% 40%, transparent 42%, rgba(16, 20, 28, 0.55) 100%);
+    linear-gradient(78deg, rgba(16, 20, 28, 0.94) 0%, rgba(16, 20, 28, 0.66) 30%, rgba(16, 20, 28, 0.05) 62%),
+    linear-gradient(0deg, rgba(16, 20, 28, 0.6) 0%, rgba(16, 20, 28, 0) 38%),
+    radial-gradient(130% 95% at 50% 40%, transparent 40%, rgba(16, 20, 28, 0.6) 100%);
 }
 
-/* ── Texten ─────────────────────────────────────────────────────────────
-   Inskriptionen. Versaler, hårt spärrat, ingen kursiv — så skrevs det i
-   sten, och det är den enda grekiska referensen som inte är en bild. */
+/* ── Akttiteln i rutan ────────────────────────────────────────────────── */
 
-.scen__text {
-  position: relative;
-  z-index: 1;
-  max-width: min(46rem, 88vw);
-  padding: 0 var(--gutter) clamp(4rem, 12vh, 9rem);
-  /* Texten kommer underifrån när tagningen tar rutan och lämnar uppåt när
-     den släpper. Samma rörelse för alla fem: det är rutan som ska skilja
-     dem åt, inte texten. */
-  transform: translate3d(0, calc((1 - var(--in)) * 3.5rem - var(--ut) * 4rem), 0);
-  opacity: calc(var(--in) * (1 - var(--ut)));
-  transition: none;
+.verk__akt {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(3.5rem, 11vh, 8rem);
+  z-index: 92;
+  max-width: min(26rem, 46vw);
+  animation: aktin 900ms var(--out) both;
 }
 
-.scen__ort {
+@keyframes aktin {
+  from { opacity: 0; transform: translate3d(0, 1.4rem, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+.verk__ort {
   display: block;
   font-family: var(--mono);
   font-size: var(--t-label);
   letter-spacing: 0.42em;
   text-transform: uppercase;
   color: var(--brons);
-  margin-bottom: clamp(1rem, 2vh, 1.6rem);
+  margin-bottom: 0.9rem;
 }
 
-.scen__rubrik {
-  font-size: clamp(2.2rem, 6.4vw, 5.4rem);
+.verk__rubrik {
+  font-size: clamp(2rem, 4.2vw, 3.9rem);
   font-weight: 600;
   line-height: 1.02;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  margin: 0 0 clamp(1rem, 2.4vh, 1.8rem);
+  margin: 0;
   /* Ristat i sten: en mörk kant nedåt och en ljus uppåt. Mycket svagt —
      syns det tydligt är det en effekt, syns det knappt är det material. */
-  text-shadow:
-    0 1px 0 rgba(16, 20, 28, 0.55),
-    0 -1px 0 rgba(239, 233, 222, 0.14);
+  text-shadow: 0 1px 0 rgba(16, 20, 28, 0.55), 0 -1px 0 rgba(239, 233, 222, 0.14);
 }
 
-.scen__rad { display: block; }
+.verk__rad { display: block; }
 
-.scen__brod {
-  font-size: var(--t-md);
-  line-height: 1.55;
-  max-width: 40ch;
-  color: color-mix(in srgb, var(--marmor) 80%, var(--djup));
-}
-
-.scen__kamera {
+.verk__kamera {
   display: block;
-  margin-top: clamp(1.4rem, 3vh, 2.4rem);
+  margin-top: 1.2rem;
   font-family: var(--mono);
   font-size: var(--t-label);
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--marmor) 45%, transparent);
+  color: color-mix(in srgb, var(--marmor) 42%, transparent);
 }
+
+/* ── Aktmätaren ───────────────────────────────────────────────────────── */
+
+.verk__mat {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--nav-h) + clamp(2rem, 6vh, 4rem));
+  z-index: 92;
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.verk__mat li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: color-mix(in srgb, var(--marmor) 34%, transparent);
+  transition: color 420ms var(--out);
+}
+
+.verk__mat i {
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  transition: width 460ms var(--out), background-color 420ms var(--out);
+}
+
+.verk__mat li[data-nu='true'] { color: var(--marmor); }
+.verk__mat li[data-nu='true'] i { width: 40px; background: var(--terrakotta); }
 
 /* ── Meandern ─────────────────────────────────────────────────────────── */
 
-.scen__ram {
+.verk__ram {
   position: absolute;
-  inset: clamp(1rem, 2.6vh, 2.2rem) clamp(1rem, 2.6vw, 2.2rem);
-  /* Övre bandet läggs under listen. Ovanför den ligger det bakom en svart
-     platta och syns till hälften, vilket ser ut som ett fel och inte som
-     en ram. */
   inset: calc(var(--nav-h) + clamp(1rem, 2.6vh, 2.2rem)) clamp(1rem, 2.6vw, 2.2rem)
     clamp(1rem, 2.6vh, 2.2rem);
-  z-index: 1;
+  z-index: 91;
   pointer-events: none;
   color: var(--brons);
-  opacity: calc(var(--in) * (1 - var(--ut)) * 0.55);
+  opacity: 0.42;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-/* Måtten måste sättas på varje band. En SVG utan bredd, höjd och viewBox
-   faller tillbaka på trehundra gånger etthundrafemtio bildpunkter, och
-   bandet blev då en kort trasa uppe i vänstra hörnet i stället för en ram. */
-.scen__band {
-  display: block;
-  width: 100%;
-  height: 16px;
-  flex: none;
-  opacity: 0.8;
-}
+/* Måtten måste sättas på varje band: en SVG utan bredd, höjd och viewBox
+   faller tillbaka på 300 × 150 bildpunkter. */
+.verk__band { display: block; width: 100%; height: 16px; flex: none; }
 
 /* ═══ De fem rörelserna ═════════════════════════════════════════════════
-   Var och en svarar mot kameran i sitt eget klipp. */
+   Var och en svarar mot kameran i sitt eget klipp. Lagret sveper in över
+   det förra och stannar sedan kvar tills nästa tar över. */
 
-/* Kameran går in mellan pelarna: ridån öppnar sig uppifrån och nedifrån
-   samtidigt som bilden sjunker in i sitt eget djup. */
-.scen[data-rorelse='dyk'] .scen__ruta {
-  clip-path: inset(calc((1 - var(--in)) * 50%) 0 calc((1 - var(--in)) * 50%) 0);
-  transform: scale(calc(1.16 - var(--in) * 0.16 + var(--ut) * 0.06));
+/* Kameran går in mellan pelarna: ridå som öppnar uppifrån och nerifrån. */
+.verk__lager[data-rorelse='dyk'] {
+  clip-path: inset(calc((1 - var(--in)) * 50%) 0);
+  transform: scale(calc(1.14 - var(--in) * 0.14));
 }
 
-/* Kameran kretsar: rutan sveper in från höger och lämnar åt vänster, som
-   om man såg samma sak från ett nytt håll. */
-.scen[data-rorelse='svep'] .scen__ruta {
+/* Kameran kretsar: rutan sveper in från höger. */
+.verk__lager[data-rorelse='svep'] {
   clip-path: inset(0 0 0 calc((1 - var(--in)) * 100%));
-  transform: translate3d(calc((1 - var(--in)) * 14% - var(--ut) * 10%), 0, 0)
+  transform: translate3d(calc((1 - var(--in)) * 12%), 0, 0)
     scale(calc(1.08 - var(--in) * 0.08));
 }
 
-/* Kameran sänker sig: en portal öppnar sig — rundad upptill som en båge,
-   och den växer nedifrån och upp tills den är hela rutan. */
-.scen[data-rorelse='port'] .scen__ruta {
+/* Kameran sänker sig: en portal med rundad hjässa växer nedifrån. */
+.verk__lager[data-rorelse='port'] {
   clip-path: inset(
-    calc((1 - var(--in)) * 62%) calc((1 - var(--in)) * 30%) 0 calc((1 - var(--in)) * 30%)
-    round calc((1 - var(--in)) * 22vw) calc((1 - var(--in)) * 22vw) 0 0
+    calc((1 - var(--in)) * 64%) calc((1 - var(--in)) * 32%) 0 calc((1 - var(--in)) * 32%)
+    round calc((1 - var(--in)) * 24vw) calc((1 - var(--in)) * 24vw) 0 0
   );
-  transform: scale(calc(1.1 - var(--in) * 0.1 + var(--ut) * 0.05));
+  transform: scale(calc(1.1 - var(--in) * 0.1));
 }
 
-/* Kameran ser uppåt längs pelaren: bilden avtäcks av lodräta stavar som
-   fylls i, som pelare som reses en efter en. */
-.scen[data-rorelse='pelare'] .scen__ruta {
+/* Kameran ser uppåt längs pelaren: lodräta stavar fylls i, en i taget. */
+.verk__lager[data-rorelse='pelare'] {
   --stav: calc(100% / 7);
   mask-image: repeating-linear-gradient(
     90deg,
@@ -2628,34 +2638,266 @@ html[data-tone='dark'] .grain {
     transparent calc(var(--stav) * var(--in)),
     transparent var(--stav)
   );
-  transform: translate3d(0, calc((1 - var(--in)) * 6% - var(--ut) * 4%), 0)
+  transform: translate3d(0, calc((1 - var(--in)) * 5%), 0)
     scale(calc(1.06 - var(--in) * 0.06));
 }
 
-/* Kameran drar bakåt: rutan börjar som ett fönster mitt i bilden och
-   vidgar sig till hela skärmen. */
-.scen[data-rorelse='avtack'] .scen__ruta {
+/* Kameran drar bakåt: ett fönster mitt i bilden vidgar sig till hela rutan. */
+.verk__lager[data-rorelse='avtack'] {
   clip-path: inset(
-    calc((1 - var(--in)) * 26%) calc((1 - var(--in)) * 22%)
-    calc((1 - var(--in)) * 26%) calc((1 - var(--in)) * 22%)
+    calc((1 - var(--in)) * 28%) calc((1 - var(--in)) * 24%)
+    calc((1 - var(--in)) * 28%) calc((1 - var(--in)) * 24%)
   );
-  transform: scale(calc(1.02 + (1 - var(--in)) * 0.12 - var(--ut) * 0.04));
+  transform: scale(calc(1.02 + (1 - var(--in)) * 0.12));
 }
 
-/* Den som bett om lugn får filmerna stilla och rutorna hela. Utan det här
-   står `--in` kvar på noll — Film.tsx skriver ingenting då — och varje
-   ruta hade blivit en tom skärm. */
+/* ── Spalten som rullar ───────────────────────────────────────────────── */
+
+.verk__spalt {
+  position: relative;
+  z-index: 1;
+  /* Spalten ligger ovanpå rutan och drar upp den under sig. Den negativa
+     marginalen är exakt en skärmhöjd: rutan har redan tagit sin plats i
+     flödet, och utan det hade spalten börjat först under den — alltså en
+     tom skärm mellan filmens början och första texten. */
+  margin-top: -100vh;
+  margin-top: -100svh;
+  pointer-events: none;
+  display: grid;
+  justify-items: end;
+  padding: 0 var(--gutter);
+}
+
+.akt {
+  width: min(30rem, 46vw);
+  display: grid;
+  gap: clamp(4rem, 14vh, 10rem);
+  /* En akt börjar en bit ned så att första panelen inte krockar med
+     akttiteln i rutan, och slutar med luft så att bilden hinner byta
+     innan nästa akts text är framme. */
+  padding: 60vh 0;
+}
+
+/* Första akten börjar lägre än de andra: den öppnande bilden ska stå ensam
+   en stund innan första rutan seglar in i den. */
+.akt:first-child { padding-top: 108vh; }
+
+/* Titeln i spalten hör till telefonen. På en bred skärm står den i rutan. */
+.akt__titel { display: none; }
+
+/* En grupp är en rubrik med sina rutor. Mellanrummet inuti gruppen är
+   mindre än det mellan grupper, så att de läses ihop utan att sitta ihop —
+   och genom glipan syns filmen. */
+.grupp {
+  display: grid;
+  gap: clamp(1.6rem, 5vh, 3.4rem);
+}
+
+.panel {
+  pointer-events: auto;
+  padding: clamp(1.6rem, 3vw, 2.4rem);
+  border: 1px solid color-mix(in srgb, var(--marmor) 14%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, #0b0f16 76%, transparent);
+  backdrop-filter: blur(14px) saturate(0.9);
+  opacity: 0;
+  transform: translate3d(0, 2.2rem, 0);
+  transition: opacity 900ms var(--out), transform 900ms var(--out);
+}
+
+.panel[data-in='true'] { opacity: 1; transform: none; }
+
+.panel__rubrik {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  margin: 0 0 1rem;
+}
+
+.panel__brod {
+  font-size: var(--t-small);
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--marmor) 76%, var(--djup));
+  margin: 0;
+}
+
+/* Rutorna som bär en punkt, ett kort eller en fråga. Smalare än sin rubrik
+   och lite indragna: de hänger under den, de står inte bredvid den. */
+.panel--liten {
+  display: grid;
+  gap: 0.4rem;
+  margin-left: clamp(0rem, 3vw, 2.6rem);
+  padding: clamp(1.2rem, 2.2vw, 1.7rem);
+  background: color-mix(in srgb, #0b0f16 68%, transparent);
+}
+
+.panel__titel { font-weight: 600; font-size: var(--t-small); }
+.panel--liten .panel__slag + .panel__titel { font-size: var(--t-md); }
+
+.panel__text {
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
+}
+
+.panel__slag {
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brons);
+}
+
+.panel__se {
+  justify-self: start;
+  margin-top: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font: inherit;
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--marmor);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--marmor) 26%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 320ms var(--out), color 320ms var(--out);
+}
+
+.panel__se:hover {
+  border-color: var(--terrakotta);
+  color: var(--terrakotta);
+}
+
+.panel__tal {
+  margin: 1.4rem 0 0;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.panel__tal dt {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--marmor);
+}
+
+.panel__tal dd {
+  margin: 0.4rem 0 0;
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
+}
+
+.panel__fragor { margin-top: 1.2rem; display: grid; }
+
+.panel__fragor details {
+  border-top: 1px solid color-mix(in srgb, var(--marmor) 12%, transparent);
+  padding: 0.9rem 0;
+}
+
+.panel__fragor summary {
+  cursor: pointer;
+  font-size: var(--t-small);
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel__fragor summary::-webkit-details-marker { display: none; }
+.panel__fragor summary::after { content: '+'; color: var(--brons); }
+.panel__fragor details[open] summary::after { content: '–'; }
+
+.panel__fragor p {
+  margin: 0.7rem 0 0;
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
+}
+
+.panel__knapp {
+  margin-top: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.4rem;
+  font-size: var(--t-small);
+  color: var(--djup);
+  background: var(--marmor);
+  border-radius: 999px;
+  transition: background-color 320ms var(--out);
+}
+
+.panel__knapp:hover { background: var(--terrakotta); color: var(--marmor); }
+
+/* ── Mindre skärmar ───────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  /* På en telefon täcker spalten hela bredden, och då finns ingen plats
+     kvar i rutan. Mätaren och titeln i rutan tas bort — titeln flyttar in
+     i spalten och står före sina paneler i stället för bakom dem, vilket
+     är den enda ordning som inte innebär att de ligger på varandra. */
+  .verk__mat,
+  .verk__akt { display: none; }
+
+  /* Inget eget mellanrum: aktens egen lucka mellan sina delar räcker. */
+  .akt__titel { display: block; }
+
+  .akt {
+    width: 100%;
+    padding: 34vh 0 26vh;
+  }
+
+  /* Första akten börjar under en hel bildruta film: man ska se den öppnande
+     tagningen ensam innan något står i den. */
+  .akt:first-child { padding-top: 86vh; }
+
+  .verk__spalt { justify-items: stretch; }
+}
+
+/* Den som bett om lugn får rutan hel, filmen stilla och spalten som en
+   vanlig sida. Utan det står `--in` kvar på noll — Verk.tsx skriver
+   ingenting då — och varje lager hade varit osynligt. */
 @media (prefers-reduced-motion: reduce) {
-  .scen { height: 100vh; }
-  .scen__fast { --in: 1; --ut: 0; }
-  .scen__ruta,
-  .scen[data-rorelse='dyk'] .scen__ruta,
-  .scen[data-rorelse='svep'] .scen__ruta,
-  .scen[data-rorelse='port'] .scen__ruta,
-  .scen[data-rorelse='pelare'] .scen__ruta,
-  .scen[data-rorelse='avtack'] .scen__ruta {
+  .verk__scen { position: relative; height: 62vh; }
+
+  /* Spalten står vid filmens sida så länge filmen ligger bakom den. Ligger
+     den i stället ovanför som ett stillbild­block är en smal spalt längst ut
+     till höger bara en udda marginal — då är det en vanlig sida, och en
+     vanlig sida läses på mitten. */
+  .verk__spalt { margin-top: 0; justify-items: center; }
+  .akt { width: min(38rem, 100%); }
+
+  /* Titeln och mätaren hör till den fastnaglade rutan. Står rutan stilla i
+     flödet har de ingenting att sitta fast i, och låg kvar ovanpå varandra
+     i toppen. Titeln flyttar in i spalten, precis som på en telefon. */
+  .verk__akt,
+  .verk__mat { display: none; }
+  .akt__titel { display: block; }
+
+  .verk__lager { visibility: visible !important; }
+  .verk__lager[data-rorelse] {
     clip-path: none;
     mask-image: none;
     transform: none;
   }
+  /* Bara första tagningen syns när ingenting rullar. Syskonväljaren och
+     inte `nth-last-of-type`: den räknar bland alla div-syskon i rutan, och
+     där ligger även ramen och akttiteln — regeln hade tagit alla fem
+     lagren och lämnat rutan tom. */
+  .verk__lager ~ .verk__lager { opacity: 0; }
+  /* Luften i akterna är mätt i skärmhöjder för att bilden ska hinna byta
+     medan man rullar. Utan rörelse finns ingenting att hinna med, och då
+     är den bara tomrum. */
+  .akt,
+  .akt:first-child { padding: clamp(3rem, 8vh, 5rem) 0; }
+  .grupp { gap: 1rem; }
+  .panel { opacity: 1; transform: none; }
 }
