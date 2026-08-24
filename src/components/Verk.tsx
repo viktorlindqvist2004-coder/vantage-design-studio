@@ -131,6 +131,57 @@ export function Verk() {
    *  och den som står näst på tur. */
   const [laddad, setLaddad] = useState<boolean[]>(() => FILM.map((_, i) => i === 0))
 
+  /**
+   * GRUNDNINGEN
+   * En film som aldrig spelats målar ingen bildruta på iOS.
+   *
+   * Sättet den här sidan visar film på är att aldrig spela den — bara
+   * ställa den på den bildruta rullningen pekar ut. På en dator räcker det:
+   * en sökning tvingar fram en målning. På iPhone gör den inte det. Där
+   * ritas ingenting alls ur en video som inte har spelat minst en gång, och
+   * resultatet blev en tom ruta med texten kvar ovanpå — sidan såg ut att
+   * ha tappat filmen.
+   *
+   * Botemedlet är en enda uppspelning som avbryts direkt. Den varar inte
+   * ens en bildruta, men den får avkodaren att måla, och därefter fungerar
+   * varje sökning som den ska. `muted` och `playsInline` är villkoren för
+   * att den uppspelningen ska tillåtas utan att någon rört skärmen; båda
+   * står redan på filmen.
+   */
+  const grunda = (v: HTMLVideoElement | null) => {
+    // Utan källa finns ingenting att grunda, och uppspelningen skulle bara
+    // avvisas. Tagningar hämtas först när de närmar sig.
+    if (!v || !v.currentSrc || v.dataset.grundad === 'ja') return
+    v.dataset.grundad = 'ja'
+    const p = v.play()
+    // Nekas uppspelningen släpper vi märket igen, så att beröringen nedan
+    // får försöka på nytt. Ett ohanterat avslag ska inte heller fälla
+    // resten av sidan.
+    p?.then(() => v.pause()).catch(() => { v.dataset.grundad = '' })
+  }
+
+  /**
+   * Reserv: första gången någon rör sidan grundas allt som hunnit laddas.
+   *
+   * Automatisk uppspelning kan vara avstängd — i strömsparläge, eller för
+   * att besökaren själv slagit av den. Då nekas grundningen ovan, och utan
+   * det här hade rutan förblivit tom hela besöket. En beröring eller en
+   * rullning är den gest webbläsaren väntar på, och den kommer ändå: det
+   * enda man kan göra med den här sidan är att rulla.
+   */
+  useEffect(() => {
+    const av = () => filmer.current.forEach(grunda)
+    const val = { once: true, passive: true } as const
+    addEventListener('touchstart', av, val)
+    addEventListener('pointerdown', av, val)
+    addEventListener('scroll', av, val)
+    return () => {
+      removeEventListener('touchstart', av)
+      removeEventListener('pointerdown', av)
+      removeEventListener('scroll', av)
+    }
+  }, [])
+
   useTick(() => {
     const el = spar.current
     if (!el) return
@@ -288,13 +339,15 @@ export function Verk() {
               playsInline
               preload="auto"
               tabIndex={-1}
-              onLoadedMetadata={(e) => {
-                // En knuff så att första rutan målas. En pausad video som
-                // aldrig fått vare sig en sökning eller en uppspelning
-                // ritar ingenting alls i vissa webbläsare.
-                const v = e.currentTarget
-                if (v.currentTime === 0) v.currentTime = RUTA * 0.5
-              }}
+              onLoadedData={(e) => grunda(e.currentTarget)}
+              /* Spärren. Filmen ska aldrig spela — den ska ställas.
+                 Grundningen ovan startar en uppspelning bara för att tvinga
+                 fram en målad bildruta, och pausar den i samma andetag. Men
+                 pausen ligger i ett löfte, och hinner uppspelningen komma i
+                 gång innan löftet infrias fortsätter den. Det här stoppar
+                 den i den stund den börjar: `playing` betyder att en ruta
+                 nått skärmen, vilket var hela ärendet. */
+              onPlaying={(e) => e.currentTarget.pause()}
             />
           </div>
         ))}
