@@ -1,35 +1,43 @@
 /**
  * FILMEN
  * ══════
- * Fem tagningar som bär arbetet i bild, och femton rader som säger vad vi
- * gör. Ordningen är arbetsgången: vad studion är, vad vi bygger, hur det
- * bestäms, hur det byggs, och vad som händer efter lansering.
+ * En enda resa genom ett tempelbygge, i fem tagningar. Ordningen är
+ * arbetsgången: man kommer fram, ser hantverket, ser ritningen, ser bygget
+ * resa sig, och ser det färdigt bland folk.
+ *
+ * TAGNINGARNA SITTER IHOP, PÅ RIKTIGT
+ * Varje tagning är genererad med föregående tagnings allra sista bildruta
+ * som startbild. Klipp två börjar alltså på exakt den ruta klipp ett
+ * slutade på, och så vidare genom alla fem. Det är inte en skarv som
+ * döljs — det finns ingen skarv. Mätt genom att lägga sista rutan i N
+ * bredvid första rutan i N+1: paren är närmast identiska.
+ *
+ * Materialet är målat och inte fotograferat: gammalt oljemåleri i barock
+ * kyrkomålningsstil, varm ockra och djup umbra, synliga penseldrag och
+ * kraklerad fernissa. Det är en värld man färdas genom, inte en film man
+ * tittar på.
  *
  * MAN RULLAR GENOM FILMEN, DEN GÅR INTE AV SIG SJÄLV
  * Tagningarna spelas inte upp. Rullningen är deras tidslinje: står man
  * still står bilden still, rullar man framåt går den framåt, rullar man
- * bakåt går den baklänges. Filerna är därför omkodade så att varje
- * bildruta är en nyckelruta — se `Verk.tsx` för varför det är hela
- * skillnaden mellan en film man rullar igenom och en som hackar.
+ * bakåt går den baklänges. Filerna är omkodade med nyckelruta var fjärde
+ * bildruta — se `Verk.tsx` för varför det är hela skillnaden mellan en
+ * film man rullar igenom och en som hackar.
  *
  * RADERNA AVLÖSER VARANDRA
- * Varje tagning bär flera rader och inte en. En rubrik som står kvar
- * genom hela tagningen blir en skylt man rullar förbi; rader som byts
- * medan bilden går blir textremsor i en film. Raden byts vid jämna delar
- * av tagningen, så den hör ihop med det man ser just då.
+ * Varje tagning bär flera rader och inte en. En rubrik som står kvar genom
+ * hela tagningen blir en skylt man rullar förbi; rader som byts medan
+ * bilden går blir textremsor i en film. Raden byts vid jämna delar av
+ * tagningen, så den hör ihop med det man ser just då.
  *
- * RADERNA HANDLAR OM ARBETET, INTE OM BILDEN
- * Första omgången beskrev tagningen — kameran som gick in mellan pelarna,
- * stenen som togs bort. Det var vackert och det svarade inte på något:
- * den som läser vill veta vad vi gör. Filmen får bära stämningen, texten
- * säger saken. Inga räkneord heller; siffran är alltid det minst
- * intressanta i meningen.
+ * Raderna handlar om arbetet och inte om bilden, och de bär inga räkneord:
+ * siffran är alltid det minst intressanta i meningen.
  *
- * Varje tagning har sin egen kamerarörelse, och varje tagning har därför
- * också sin egen övergång. Rörelsen i rutan och rörelsen i sidan ska vara
- * samma rörelse: en kamera som dyker in mellan pelare möts av en ridå som
- * öppnar sig, en kran som drar bakåt möts av en ruta som vidgar sig. Fem
- * likadana övergångar hade gjort de fem tagningarna till en enda.
+ * Färdriktningen är olika i varje tagning — rakt fram, förbi i sidled, ned
+ * över bordet, uppför pelaren, bakåt ut över staden. Se
+ * `.verk__lager[data-rorelse]` i site.css. Variationen ligger där, inte i
+ * övergångarna: en figur som ritar upp nästa bild säger "här kommer nästa
+ * bild", och då bläddrar man i stället för att färdas.
  */
 
 export type Rorelse = 'dyk' | 'svep' | 'port' | 'pelare' | 'avtack'
@@ -37,7 +45,7 @@ export type Rorelse = 'dyk' | 'svep' | 'port' | 'pelare' | 'avtack'
 export type Tagning = {
   id: string
   fil: string
-  /** Vilken övergång lagret bär. Se `.verk__lager[data-rorelse]` i site.css. */
+  /** Vilken väg kameran tar. Se `.verk__lager[data-rorelse]` i site.css. */
   rorelse: Rorelse
   /** Var i arbetsgången man är. Står som etikett över raden. */
   ort: string
@@ -47,6 +55,7 @@ export type Tagning = {
 
 export const FILM: Tagning[] = [
   {
+    // Över slätten, in mellan pelarna, in i skuggan.
     id: 'portik',
     fil: '/film/1-portik.mp4',
     rorelse: 'dyk',
@@ -58,8 +67,9 @@ export const FILM: Tagning[] = [
     ],
   },
   {
-    id: 'mejseln',
-    fil: '/film/2-mejseln.mp4',
+    // Ut genom dörren, förbi stenhuggarna, fram till arbetsbordet.
+    id: 'verkstaden',
+    fil: '/film/2-verkstaden.mp4',
     rorelse: 'svep',
     ort: 'Vad vi bygger',
     repliker: [
@@ -69,6 +79,7 @@ export const FILM: Tagning[] = [
     ],
   },
   {
+    // Ned över bordet: ritningar, passare, tempelmodellen i trä.
     id: 'ritningen',
     fil: '/film/3-ritningen.mp4',
     rorelse: 'port',
@@ -80,6 +91,7 @@ export const FILM: Tagning[] = [
     ],
   },
   {
+    // Uppför den halvfärdiga pelaren, förbi ställningarna, till kapitälet.
     id: 'pelaren',
     fil: '/film/4-pelaren.mp4',
     rorelse: 'pelare',
@@ -91,8 +103,9 @@ export const FILM: Tagning[] = [
     ],
   },
   {
-    id: 'agoran',
-    fil: '/film/5-agoran.mp4',
+    // Bakåt och uppåt från kapitälet, ut över den färdiga staden.
+    id: 'staden',
+    fil: '/film/5-staden.mp4',
     rorelse: 'avtack',
     ort: 'Efter lansering',
     repliker: [

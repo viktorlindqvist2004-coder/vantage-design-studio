@@ -970,16 +970,23 @@
 }
 
 /* Diset. Mörkast där texten ligger — vänsterkanten och nederkanten — och
-   en kall vinjett runtom. Utan det ligger ljus text på solbelyst marmor. */
+   en kall vinjett runtom.
+
+   Lättare hand än förut. Den gamla styrkan var satt för fotograferat vitt
+   marmor i sol, som annars sköt igenom raden. Måleriet som ligger där nu är
+   varm mellanton hela vägen, och samma mängd dis kvävde det: vänstra
+   halvan av bilden blev en grå platta där man skulle ha sett ett rum.
+   Raden klarar sig ändå — den har en egen skugga sedan rullningen började
+   spola filmen och bakgrunden därmed kan vara vad som helst. */
 .verk__dis {
   position: absolute;
   inset: 0;
   z-index: 90;
   pointer-events: none;
   background:
-    linear-gradient(78deg, rgba(16, 20, 28, 0.94) 0%, rgba(16, 20, 28, 0.66) 30%, rgba(16, 20, 28, 0.05) 62%),
-    linear-gradient(0deg, rgba(16, 20, 28, 0.6) 0%, rgba(16, 20, 28, 0) 38%),
-    radial-gradient(130% 95% at 50% 40%, transparent 40%, rgba(16, 20, 28, 0.6) 100%);
+    linear-gradient(78deg, rgba(16, 20, 28, 0.82) 0%, rgba(16, 20, 28, 0.46) 30%, rgba(16, 20, 28, 0.03) 62%),
+    linear-gradient(0deg, rgba(16, 20, 28, 0.5) 0%, rgba(16, 20, 28, 0) 38%),
+    radial-gradient(130% 95% at 50% 40%, transparent 44%, rgba(16, 20, 28, 0.5) 100%);
 }
 
 /* ── Akttiteln i rutan ────────────────────────────────────────────────── */
