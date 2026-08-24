@@ -106,14 +106,24 @@ const FULL_FART = 26
 /**
  * Hur stor del av aktens rullning som klippet använder.
  *
- * Nästan hela. Klippet var förut framme vid 86 procent och stod stilla
- * resten av akten så att sista textrutan fick läsas mot en stillbild — men
- * en färd som stannar är ingen färd, och det var just stannandet som gjorde
- * att sidan läste som en film i bakgrunden i stället för som ett rum man
- * rör sig genom. Kameran går dessutom hela vägen till aktens slut oavsett
- * (se `--gang`), så bilden fortsätter framåt även på den sista biten.
+ * Talet är i praktiken filmens växel: ju mindre andel av akten klippet
+ * behöver, desto längre hinner det per rullat hjulsteg. Under en period
+ * stod det på 0,96 — nästan hela akten — och filmen gick då i det
+ * närmaste lika långsamt som spalten, vilket lät bilden släpa efter det
+ * man höll på att göra med handen.
+ *
+ * Nu tar klippet slut en bit innan akten gör det. Färden blir en dryg
+ * sjättedel snabbare, vilket är precis så mycket att bilden känns driven
+ * av rullningen och inte släpad av den — men inte så mycket att man far
+ * förbi tagningen innan man hunnit läsa raden som hör till den.
+ *
+ * Att klippet är framme före akten betyder inte att bilden stannar.
+ * Kameran går hela vägen till aktens slut oavsett (se `--gang`), så den
+ * sista biten är fortfarande en rörelse genom rummet — bara utan att
+ * bildrutorna byts. Det var stannandet som en gång fick sidan att läsa som
+ * en film i bakgrunden, och det stannandet finns inte här.
  */
-const SPOLNING = 0.96
+const SPOLNING = 0.82
 
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
@@ -478,26 +488,38 @@ function Grupp({ panel, onVisa }: { panel: PanelData; onVisa: (id: string) => vo
         )}
       </Blad>
 
-      {panel.punkter?.map((p) => (
-        <Blad klass="panel--liten" key={p.titel}>
-          <b className="panel__titel">{p.titel}</b>
-          <span className="panel__text">{p.text}</span>
-        </Blad>
-      ))}
+      {/* Rutorna står i par och inte på rad.
 
-      {panel.kort?.map((k) => (
-        <Blad klass="panel--liten" key={k.namn}>
-          <span className="panel__slag">{k.slag}</span>
-          <b className="panel__titel">{k.namn}</b>
-          <span className="panel__text">{k.om}</span>
-          {k.exempel && (
-            <button className="panel__se" type="button" onClick={() => onVisa(k.exempel!)}>
-              Se ett exempel<Arrow />
-            </button>
-          )}
-        </Blad>
-      ))}
+          En enda lodrät stapel av lika breda rutor läser som en spalt man
+          betar av, och tolv sådana efter varandra blir enformiga hur väl
+          skrivna de än är — det spelar ingen roll att filmen syns mellan
+          dem när takten är densamma hela vägen ned. I par breder de i
+          stället ut sig i rutan, halveras i höjd, och den lucka som
+          uppstår när antalet är udda är inte ett hål utan ännu ett ställe
+          där man ser filmen. Se `.grupp__rutor`. */}
+      {(panel.punkter || panel.kort) && (
+        <div className="grupp__rutor">
+          {panel.punkter?.map((p) => (
+            <Blad klass="panel--liten" key={p.titel}>
+              <b className="panel__titel">{p.titel}</b>
+              <span className="panel__text">{p.text}</span>
+            </Blad>
+          ))}
 
+          {panel.kort?.map((k) => (
+            <Blad klass="panel--liten" key={k.namn}>
+              <span className="panel__slag">{k.slag}</span>
+              <b className="panel__titel">{k.namn}</b>
+              <span className="panel__text">{k.om}</span>
+              {k.exempel && (
+                <button className="panel__se" type="button" onClick={() => onVisa(k.exempel!)}>
+                  Se ett exempel<Arrow />
+                </button>
+              )}
+            </Blad>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -50,11 +50,11 @@ export const AKTER: Akt[] = [
     paneler: [
       {
         rubrik: 'De flesta bestämmer sig på några sekunder',
-        brod: 'Vårt arbete går ut på att de sekunderna räcker. Vi ritar och bygger webbplatser och system för hand, och ni pratar med dem som utför arbetet hela vägen.',
+        brod: 'Vårt arbete går ut på att de sekunderna räcker. Vi ritar och utvecklar webbplatser och system åt små och medelstora verksamheter — varje projekt från tomt blad, utan mall i botten och utan plattform att hyra.',
       },
       {
         rubrik: 'Det här avgör om en webbplats gör nytta',
-        brod: 'Inget av det handlar om smak, och allt går att ha åsikter om innan vi bygger något.',
+        brod: 'Inget av punkterna handlar om smak, och samtliga går att ta ställning till innan en rad kod skrivs.',
         punkter: WHY.map((w) => ({ titel: w.title, text: w.body })),
       },
     ],
@@ -64,8 +64,8 @@ export const AKTER: Akt[] = [
     namn: 'Vad vi bygger',
     paneler: [
       {
-        rubrik: 'Alla sorters sajter, alla branscher',
-        brod: 'Vilken sorts webbplats ni än behöver, och oavsett bransch — plus systemen bakom den. Behöver ni något som inte står här bygger vi det också.',
+        rubrik: 'Webbplatser för alla slags verksamheter',
+        brod: 'Uppdragen skiljer sig i omfattning, inte i utförande — samma arbetssätt gäller för en enskild kampanjsida som för en e-handel med tusentals artiklar. Behöver ni något som inte står här utvecklar vi det också.',
         kort: OFFERINGS.map((o) => ({
           namn: o.name,
           slag: o.kind,
@@ -74,8 +74,8 @@ export const AKTER: Akt[] = [
         })),
       },
       {
-        rubrik: 'Vi bygger system, inte bara sidor',
-        brod: 'Bokning med tider, bekräftelser och avbokning, inloggade portaler, register och de interna verktyg som annars sköts i ett kalkylark. Oftast hänger det ihop med sajten, men det måste det inte — vi bygger systemet även när webbplatsen redan finns.',
+        rubrik: 'Systemen bakom webbplatsen',
+        brod: 'Bokning med tider, bekräftelser och avbokning. Inloggade portaler, register och de interna verktyg som annars sköts i ett kalkylark. Oftast hänger de ihop med webbplatsen, men det är inget krav — vi utvecklar systemet lika gärna när sajten redan finns.',
       },
     ],
   },
@@ -84,12 +84,13 @@ export const AKTER: Akt[] = [
     namn: 'Arbetsgången',
     paneler: [
       {
-        rubrik: 'Så går arbetet till, steg för steg',
+        rubrik: 'Från första samtalet till lansering',
+        brod: 'Varje steg lämnar ifrån sig något ni kan hålla i handen och ha åsikter om. Ett steg utan leverans är svårt att veta när det är färdigt.',
         punkter: PROCESS.map((p) => ({ titel: p.title, text: `${p.body} Ni får: ${p.gives} Tid: ${p.takes.toLowerCase()}.` })),
       },
       {
-        rubrik: 'Ni betalar när ni är nöjda',
-        brod: 'Femton procent när vi sätter i gång, och resten först när sajten är klar och ni är nöjda. Ingen delfakturering på vägen. Det betyder att vi bär arbetet nästan hela sträckan själva, och det är precis meningen: ni ska inte betala för något ni ännu inte sett fungera.',
+        rubrik: 'Betalningen följer resultatet',
+        brod: 'Femton procent i depositionsavgift när arbetet inleds, resterande belopp först när webbplatsen är levererad och godkänd. Ingen delfakturering däremellan. Vi bär alltså kostnaden för nästan hela uppdraget själva, och det är avsikten: ni ska inte betala för något ni ännu inte sett fungera.',
       },
     ],
   },
@@ -98,16 +99,16 @@ export const AKTER: Akt[] = [
     namn: 'Bygget',
     paneler: [
       {
-        rubrik: 'Handkodat, komponent för komponent',
-        brod: 'Testat i riktiga webbläsare på riktiga enheter. Tillgänglighet är med från början, inte tillagt sist när det är dyrt. Ni får en adress ni kan klicka runt i medan arbetet pågår.',
+        rubrik: 'Utvecklat komponent för komponent',
+        brod: 'Handskriven kod, prövad i riktiga webbläsare på riktiga enheter. Tillgänglighet och laddtid är krav från första komponenten, inte något som åtgärdas sist när det är dyrt. Under hela byggtiden har ni en löpande adress där ni kan följa arbetet.',
       },
       {
-        rubrik: 'Sajten blir er',
-        brod: 'Ni får koden och alla konton, utan licenser att förnya och utan att vi sitter på nycklarna. Vill ni byta leverantör längre fram går det utan att bygga om från början.',
+        rubrik: 'Ni äger det färdiga arbetet',
+        brod: 'Källkoden och samtliga konton överlämnas till er vid lansering. Inga licenser att förnya, inga nycklar kvar hos oss. Väljer ni en annan leverantör längre fram sker bytet utan att något behöver byggas om.',
       },
       {
-        rubrik: 'Drift om ni vill',
-        brod: 'För 249 kr i månaden ligger sajten på vår egen server och vi håller den uppe och uppdaterad, med löpande underhåll och de små ändringar som dyker upp. Ett tillval och inte ett villkor.',
+        rubrik: 'Drift och förvaltning som tillval',
+        brod: 'För 249 kr i månaden ligger webbplatsen på vår egen server, med övervakning, uppdateringar, löpande underhåll och de mindre ändringar som dyker upp längs vägen. Ett tillval och inte ett villkor — koden är er oavsett.',
       },
     ],
   },
@@ -116,7 +117,7 @@ export const AKTER: Akt[] = [
     namn: 'Efter lansering',
     paneler: [
       {
-        rubrik: 'Kort om oss',
+        rubrik: 'Det här kan ni räkna med',
         tal: STATS.map((s) => ({ varde: s.value, text: s.label })),
       },
       {

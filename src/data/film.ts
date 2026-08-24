@@ -33,6 +33,17 @@
  * Raderna handlar om arbetet och inte om bilden, och de bär inga räkneord:
  * siffran är alltid det minst intressanta i meningen.
  *
+ * RADERNA ÄR KORTA AV EN MÄTT ANLEDNING
+ * Titeln i rutan är versal, halvfet och sätts i ungefär sextio bildpunkter
+ * mot en ruta på fyrahundra. Det rymmer omkring femton tecken på en rad.
+ * En replikrad på tjugo till tjugotre tecken blir alltså två rader i bild,
+ * vilket är den stapel formen är gjord för; en på tjugoåtta blir tre eller
+ * fyra, och den sista bär då ett eller två ord ensamma. Ett enstaka ord på
+ * egen rad i en versal stapel läser inte som eftertryck utan som ett fel i
+ * ombrytningen. Ett ord längre än ungefär tolv tecken går dessutom inte att
+ * bryta alls och skjuter ut ur rutan — därav 'Resten betalar ni' och inte
+ * 'Slutbetalningen sker'.
+ *
  * Färdriktningen är olika i varje tagning — rakt fram, förbi i sidled, ned
  * över bordet, uppför pelaren, bakåt ut över staden. Se
  * `.verk__lager[data-rorelse]` i site.css. Variationen ligger där, inte i
@@ -81,9 +92,9 @@ export const FILM: Tagning[] = [
     rorelse: 'dyk',
     ort: 'Studion',
     repliker: [
-      'Vi bygger webbplatser\noch system för hand',
-      'Ingen mall under,\ninga lager av annat ovanpå',
-      'Ni pratar med dem\nsom utför arbetet',
+      'Vi ritar och utvecklar\nwebbplatser och system',
+      'Inga mallar,\ningen hyrd plattform',
+      'Ni arbetar direkt med\ndem som utför arbetet',
     ],
   },
   {
@@ -93,9 +104,9 @@ export const FILM: Tagning[] = [
     rorelse: 'svep',
     ort: 'Vad vi bygger',
     repliker: [
-      'Sajten, och systemen\nsom ligger bakom den',
-      'Bokning, portaler\noch interna verktyg',
-      'Oavsett bransch\noch oavsett storlek',
+      'Sajten, och tekniken\nsom ligger bakom den',
+      'Bokning, kundportaler\noch interna verktyg',
+      'Samma arbetssätt\noavsett omfattning',
     ],
   },
   {
@@ -105,9 +116,9 @@ export const FILM: Tagning[] = [
     rorelse: 'port',
     ort: 'Arbetsgången',
     repliker: [
-      'Fast pris och tidplan\ninnan vi bygger något',
-      'Ni ser allt\nmedan det är en ritning',
-      'Resten betalar ni\nnär ni är nöjda',
+      'Fast pris och tidplan\ninnan vi börjar bygga',
+      'Varje vy granskas\nmedan den är en ritning',
+      'Resten betalar ni\nförst när ni är nöjda',
     ],
   },
   {
@@ -117,9 +128,9 @@ export const FILM: Tagning[] = [
     rorelse: 'pelare',
     ort: 'Bygget',
     repliker: [
-      'Handkodat och testat\npå riktiga enheter',
-      'Tillgänglighet från början,\ninte tillagt sist',
-      'En adress att klicka runt i\nmedan arbetet pågår',
+      'Handskriven kod, prövad\npå riktiga enheter',
+      'Tillgängligt och snabbt\nfrån första komponenten',
+      'En löpande adress\natt följa arbetet i',
     ],
   },
   {
@@ -129,8 +140,8 @@ export const FILM: Tagning[] = [
     rorelse: 'avtack',
     ort: 'Efter lansering',
     repliker: [
-      'Ni äger koden\noch alla konton',
-      'Vi sköter driften\npå vår egen server',
+      'Koden och kontona\növerlämnas till er',
+      'Drift och underhåll\npå vår egen server',
       'Ska vi bygga\nnågot tillsammans?',
     ],
   },

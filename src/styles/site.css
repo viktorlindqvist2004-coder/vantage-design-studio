@@ -996,7 +996,20 @@
   left: var(--gutter);
   bottom: clamp(3.5rem, 11vh, 8rem);
   z-index: 92;
-  max-width: min(26rem, 46vw);
+  /* Bredden följer typsnittsgraden, inte rotens fyra pixlar.
+
+     Rubriken sätts i `clamp(2rem, 4.2vw, 3.9rem)` och växer alltså med
+     fönstret — men rutan stod länge i 26rem, som är samma 416 bildpunkter
+     på varje skärm. Följden var att titeln bröts prydligt på en liten skärm
+     och sönder på en stor: vid 1440 var graden 60 punkter och rutan rymde
+     femton tecken, så var replikrad blev tre bildrader och den sista bar
+     ett ensamt ord. Nu tar rutan 42vw, samma väg som graden, och en
+     replikrad är två bildrader vid varje bredd.
+
+     Taket vid 34rem finns för att raden inte ska bli längre än den går att
+     hitta tillbaka i, och 42vw för att titeln aldrig ska nå in under
+     spalten till höger — se `.akt`, som lämnar plats för just det här. */
+  max-width: min(34rem, 42vw);
   animation: aktin 900ms var(--out) both;
 }
 
@@ -1169,9 +1182,22 @@
   padding: 0 var(--gutter);
 }
 
+/* Akten är bredare än sin text.
+
+   Rubrikpanelen håller sig kvar på ungefär den bredd den alltid haft — en
+   rubrik med brödtext vill inte vara bredare än så, för då blir raderna
+   för långa att hitta tillbaka i. Det som växer är fältet den står i, och
+   det gör den för rutornas skull: två rutor i bredd behöver plats som en
+   ensam spalt inte har.
+
+   Bredden är hejdad vid 48vw. Akttiteln ligger nere i rutans vänstra hörn
+   och tar 42vw plus rännan; 48 och 42 går ihop med marginal vid varje
+   bredd, medan 52 lät rutorna glida in över titeln kring 1200 punkter —
+   mätt, inte gissat. */
 .akt {
-  width: min(30rem, 46vw);
+  width: min(40rem, 48vw);
   display: grid;
+  justify-items: end;
   gap: clamp(4rem, 14vh, 10rem);
   /* En akt börjar en bit ned så att första panelen inte krockar med
      akttiteln i rutan, och slutar med luft så att bilden hinner byta
@@ -1191,7 +1217,55 @@
    och genom glipan syns filmen. */
 .grupp {
   display: grid;
+  justify-items: end;
   gap: clamp(1.6rem, 5vh, 3.4rem);
+  width: 100%;
+}
+
+/* Rubrikpanelen är smalare än fältet och står i dess högra kant. Det är
+   den förskjutningen som gör att gruppen läser som något utbrett i rutan
+   och inte som en spalt: rubriken sitter vid kanten, rutorna under den
+   sträcker sig längre in. */
+.grupp > .panel:first-child { width: min(29rem, 100%); }
+
+/* Rutorna, två i bredd.
+
+   VARFÖR INTE EN STAPEL
+   De låg förut rakt under varandra, alla lika breda, tolv stycken genom
+   verket. Var och en var läsbar, men takten var densamma hela vägen ned —
+   samma bredd, samma avstånd, samma sak igen — och en sida med en enda
+   takt läser som en lista oavsett vad som står i den. Två i bredd ger
+   fältet en form: ögat får något att växla mellan, och stapeln blir hälften
+   så hög, vilket är hälften så lång sträcka där filmen står skymd bakom
+   text.
+
+   Udda antal lämnar en tom cell sist. Den är inte ett fel som ska fyllas —
+   det är ett hål rakt igenom texten där man ser rummet man färdas i. */
+.grupp__rutor {
+  display: grid;
+  /* Antalet spalter är inte satt till två utan följer av att en ruta
+     behöver femton rems bredd för att titeln ska rymmas på en rad. Fältet
+     är självt en andel av fönstret, så ett fast tvåtal hade gett rutor på
+     tvåhundratjugo punkter strax ovanför telefonbrytpunkten — två spalter
+     som var för smala för sitt eget innehåll. Nu blir det två när det
+     finns plats för två, annars en. */
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: clamp(0.9rem, 2.4vh, 1.6rem) clamp(0.9rem, 1.8vw, 1.4rem);
+  width: 100%;
+  align-items: start;
+}
+
+/* Varannat par sitter en aning lägre. Två raka led är fortfarande en takt,
+   bara en bredare — förskjutningen bryter den utan att någon ruta hamnar
+   ur linje med sin granne.
+
+   Bara där det säkert står två i bredd. Faller fältet ihop till en spalt
+   blir samma förskjutning en ojämn lucka mitt i en rad rutor. */
+@media (min-width: 1100px) {
+  .grupp__rutor > .panel:nth-child(4n + 2),
+  .grupp__rutor > .panel:nth-child(4n + 3) {
+    margin-top: clamp(0.8rem, 2.4vh, 2rem);
+  }
 }
 
 .panel {
@@ -1223,13 +1297,18 @@
   margin: 0;
 }
 
-/* Rutorna som bär en punkt, ett kort eller en fråga. Smalare än sin rubrik
-   och lite indragna: de hänger under den, de står inte bredvid den. */
+/* Rutorna som bär en punkt eller ett kort. Lättare botten än rubrikens och
+   knappare marginaler: de är många, och en av dem ska väga mindre än den
+   rubrik de hör under.
+
+   Inget indrag längre. Det fanns för att markera att rutan hängde under
+   sin rubrik, vilket den gjorde när den låg ensam på sin rad. I ett fält
+   av två skulle samma indrag bara knuffa hela rutfältet snett. */
 .panel--liten {
   display: grid;
   gap: 0.4rem;
-  margin-left: clamp(0rem, 3vw, 2.6rem);
-  padding: clamp(1.2rem, 2.2vw, 1.7rem);
+  align-content: start;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
   background: color-mix(in srgb, #0b0f16 68%, transparent);
 }
 
@@ -1386,6 +1465,13 @@
     padding: 34vh 0 26vh;
   }
 
+  /* Spalten går kant i kant här, så förskjutningen som breder ut gruppen
+     i rutan har ingen kant att förskjutas mot. Spaltantalet sköter fältet
+     själv — på den här bredden ryms bara en. */
+  .akt,
+  .grupp { justify-items: stretch; }
+  .grupp > .panel:first-child { width: 100%; }
+
   /* Första akten börjar under en hel bildruta film: man ska se den öppnande
      tagningen ensam innan något står i den. */
   .akt:first-child { padding-top: 86vh; }
@@ -1405,6 +1491,12 @@
      vanlig sida läses på mitten. */
   .verk__spalt { margin-top: 0; justify-items: center; }
   .akt { width: min(38rem, 100%); }
+  /* Spalten är centrerad här och inte lagd mot en kant, så förskjutningen
+     som breder ut gruppen i rutan har ingen kant att förskjutas mot. */
+  .akt,
+  .grupp { justify-items: stretch; }
+  .grupp > .panel:first-child { width: 100%; }
+  .grupp__rutor > .panel { margin-top: 0; }
 
   /* Titeln och mätaren hör till den fastnaglade rutan. Står rutan stilla i
      flödet har de ingenting att sitta fast i, och låg kvar ovanpå varandra
