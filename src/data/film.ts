@@ -40,6 +40,26 @@
  * bild", och då bläddrar man i stället för att färdas.
  */
 
+/**
+ * Filmerna importeras och ligger inte i `public/`.
+ *
+ * En fil i `public/` kopieras rakt igenom med oförändrad adress. Byter man
+ * innehållet men behåller namnet — vilket hände när det här materialet
+ * ersattes — pekar adressen fortfarande på samma sak, och varje webbläsare
+ * och varje mellanlagrande nod som redan hämtat filen fortsätter visa den
+ * gamla filmen. Ingen får någonsin veta att den bytts.
+ *
+ * Importerade filer får i stället ett namn som räknas fram ur innehållet.
+ * Ändras en enda bildruta ändras adressen, och då finns ingen gammal
+ * version kvar att servera. Det är inte en försiktighetsåtgärd — det är den
+ * enda ordning där ett filmbyte säkert når fram.
+ */
+import portik from '../film/1-portik.mp4'
+import verkstaden from '../film/2-verkstaden.mp4'
+import ritningen from '../film/3-ritningen.mp4'
+import pelaren from '../film/4-pelaren.mp4'
+import staden from '../film/5-staden.mp4'
+
 export type Rorelse = 'dyk' | 'svep' | 'port' | 'pelare' | 'avtack'
 
 export type Tagning = {
@@ -57,7 +77,7 @@ export const FILM: Tagning[] = [
   {
     // Över slätten, in mellan pelarna, in i skuggan.
     id: 'portik',
-    fil: '/film/1-portik.mp4',
+    fil: portik,
     rorelse: 'dyk',
     ort: 'Studion',
     repliker: [
@@ -69,7 +89,7 @@ export const FILM: Tagning[] = [
   {
     // Ut genom dörren, förbi stenhuggarna, fram till arbetsbordet.
     id: 'verkstaden',
-    fil: '/film/2-verkstaden.mp4',
+    fil: verkstaden,
     rorelse: 'svep',
     ort: 'Vad vi bygger',
     repliker: [
@@ -81,7 +101,7 @@ export const FILM: Tagning[] = [
   {
     // Ned över bordet: ritningar, passare, tempelmodellen i trä.
     id: 'ritningen',
-    fil: '/film/3-ritningen.mp4',
+    fil: ritningen,
     rorelse: 'port',
     ort: 'Arbetsgången',
     repliker: [
@@ -93,7 +113,7 @@ export const FILM: Tagning[] = [
   {
     // Uppför den halvfärdiga pelaren, förbi ställningarna, till kapitälet.
     id: 'pelaren',
-    fil: '/film/4-pelaren.mp4',
+    fil: pelaren,
     rorelse: 'pelare',
     ort: 'Bygget',
     repliker: [
@@ -105,7 +125,7 @@ export const FILM: Tagning[] = [
   {
     // Bakåt och uppåt från kapitälet, ut över den färdiga staden.
     id: 'staden',
-    fil: '/film/5-staden.mp4',
+    fil: staden,
     rorelse: 'avtack',
     ort: 'Efter lansering',
     repliker: [
