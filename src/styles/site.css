@@ -944,7 +944,18 @@
   position: absolute;
   inset: 0;
   overflow: clip;
-  will-change: transform, clip-path;
+  /* `clip-path` är struket ur löftet. Det stod kvar från den tid tagningarna
+     svepte in med ridåer; figuren är borta sedan länge, men löftet om den
+     bad fortfarande webbläsaren förbereda något som aldrig kom.
+
+     `transform` står kvar, och står kvar statiskt. Att i stället sätta det
+     från koden bara på de lager som syns är den uppenbara besparingen — och
+     den är dyrare än den är värd. Prövat och mätt: varje gång löftet ges
+     eller tas tillbaka byggs lagret om, och vid en aktgräns sker det mitt i
+     rullningen. Andelen sena bildrutor gick från 8,4 till 12,4 procent på
+     strypt processor. Fem stillastående lager kostar mindre än ett lager
+     som byggs om medan man tittar på det. */
+  will-change: transform;
 }
 
 /* Första tagningen är inte något som sveper in — den är marken man redan
@@ -1455,9 +1466,9 @@
      dimman. */
   .verk__dis {
     background:
-      linear-gradient(180deg, rgba(16, 20, 28, 0.78) 0%, rgba(16, 20, 28, 0.28) 26%,
-        rgba(16, 20, 28, 0.28) 68%, rgba(16, 20, 28, 0.82) 100%),
-      radial-gradient(130% 78% at 50% 46%, transparent 42%, rgba(16, 20, 28, 0.5) 100%);
+      linear-gradient(180deg, rgba(16, 20, 28, 0.78) 0%, rgba(16, 20, 28, 0.44) 26%,
+        rgba(16, 20, 28, 0.44) 68%, rgba(16, 20, 28, 0.84) 100%),
+      radial-gradient(130% 78% at 50% 46%, transparent 38%, rgba(16, 20, 28, 0.56) 100%);
   }
 
   .akt {
@@ -1471,6 +1482,123 @@
   .akt,
   .grupp { justify-items: stretch; }
   .grupp > .panel:first-child { width: 100%; }
+
+  /* ── Rutorna slutar vara rutor ──────────────────────────────────────
+     Det här är hela skillnaden mellan en film som är sidan och en film
+     som ligger bakom den.
+
+     På en bred skärm står texten i en smal spalt vid rutans kant, och
+     filmen syns bredvid den hela tiden — man är kvar i rummet medan man
+     läser. På en telefon finns inget "bredvid". Panelerna tog hela
+     bredden, och var och en hade ram, egen botten och frostat glas. Fjorton
+     sådana efter varandra läser som ark staplade ovanpå en bakgrund, och
+     det var precis så det såg ut: en sida byggd ovanpå videon.
+
+     Här har de varken ram eller botten. Texten står direkt på filmen, som
+     titeln alltid gjort, och bärs av sin egen skugga i stället för av en
+     platta. Då finns det inga ark kvar att stapla — det finns bara film,
+     och ord i den.
+
+     Skuggan är två lager med flit: en tät och kort som ger bokstaven kant
+     mot vad som helst, och en vid och svag som sänker hela fältet under
+     texten utan att någonstans få en synlig gräns. En platta har alltid en
+     kant, och det är kanten som avslöjar den som en platta. */
+  .panel {
+    border: 0;
+    background: none;
+    /* Frostat glas kostar mest av allt som står i den här filen: varje
+       ruta tvingar fram en ny läsning av filmen under sig, varje bildruta,
+       medan filmen samtidigt spolas av rullningen. Mätt till drygt en
+       fjärdedel av allt hack sidan hade. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+    /* En skugga och inte två, och med kort radie.
+
+       Den började som två lager: en tät som gav bokstaven kant, och en vid
+       på fyrtiosex bildpunkter som skulle sänka hela fältet under texten
+       utan synlig gräns. Den vida såg bra ut och var det dyraste som fanns
+       kvar på sidan — en suddning över varje glyf, ommålad medan filmen
+       under den byter bildruta. Mätt: två punkter av allt hack sidan hade,
+       mer än frostade glaset kostade.
+
+       Samma sänkning görs nu av dimman över hela rutan, som ändå ligger
+       där och ändå målas. Ett svep över hela bilden kostar en gång; samma
+       svep runt varje bokstav kostar en gång per bokstav. */
+    text-shadow: 0 1px 10px rgba(16, 20, 28, 0.95);
+  }
+
+  /* Rutorna hänger fortfarande under sin rubrik, men nu på indrag i
+     stället för på egen botten. Filmen syns hela vägen ned längs kanten,
+     och det är den remsan som säger att man är kvar i rummet. */
+  .grupp { gap: 1.9rem; }
+  .grupp__rutor { gap: 1.7rem; }
+  .grupp__rutor > .panel { padding-left: 1.1rem; border-left: 1px solid color-mix(in srgb, var(--brons) 46%, transparent); }
+  .akt { width: 88%; }
+
+  /* Knapparna och frågorna behåller sina kanter. De är sådant man trycker
+     på, och det ska synas att de går att trycka på — en yta utan kant är
+     text, inte en knapp. */
+  .panel__knapp {
+    background: color-mix(in srgb, #0b0f16 82%, transparent);
+    text-shadow: none;
+  }
+  .panel__se { text-shadow: none; }
+  .panel__fragor details {
+    border-top-color: color-mix(in srgb, var(--marmor) 26%, transparent);
+  }
+
+  /* Aktmätaren stannar dold här, och det är ett beslut och inte en glömska.
+
+     Den prövades på tre platser. Nere vid underkanten hamnade den mitt i
+     akttiteln — versal, fyra rader hög — och två sorters text ovanpå
+     varandra läser som ett fel. Uppe i listens toning blev den läslig men
+     låg i stället bakom brödtexten. Det finns ingen plats på en
+     telefonskärm där innehåll inte passerar, för allt innehåll passerar
+     allt. På en bred skärm går det: där står texten i en spalt vid sidan
+     och mätaren i ett hörn spalten aldrig når.
+
+     Den kostade dessutom knappt en procentenhet av bildrutorna, mätt, för
+     fem streck och ett ord. Akten står i stället i spalten där den alltid
+     stått, rullar med sitt eget innehåll och krockar med ingenting.
+
+     Det som gör att filmen läser som sidan här är inte mätaren. Det är att
+     texten ligger direkt på bilden i stället för på ark ovanpå den. */
+
+  /* Meandern dämpas till textur.
+     På en bred skärm löper den runt en ruta som texten står bredvid, och
+     då är den en ram. Här går texten rakt igenom den, och ett flätverk i
+     full styrka tvärs över en versal rubrik läser som ett streck genom
+     ordet. Svagare blir den vad den ska vara på den här bredden: något
+     som finns i bilden, inte något som ligger över den. */
+  .verk__ram { opacity: 0.2; }
+
+  /* Listens hinna byts från frostat glas till en toning.
+
+     Två skäl, och båda väger.
+
+     Det ena är att den syns. Hinnan har en underkant, och texten som rullar
+     upp under listen blir avhuggen tvärs över en rad — mitt i ett ord, med
+     en linjal. På en bred skärm ligger spalten vid sidan och möter kanten
+     sällan; här går allt innehåll rakt igenom den. En toning har ingen
+     kant, och texten tonar bort i stället för att kapas.
+
+     Det andra är att den kostar. Frostat glas läser om det som ligger
+     under sig varje bildruta, och under listen ligger filmen — som
+     dessutom byter bildruta medan man rullar. Det är samma utgift som
+     panelerna nyss blev av med, betald en gång till, längst upp i rutan,
+     under hela besöket. */
+  .nav::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--paper) 92%, transparent) 0%,
+      color-mix(in srgb, var(--paper) 78%, transparent) 58%,
+      transparent 100%);
+  }
+
+  /* Toningen behöver mer höjd än listen för att hinna ta slut mjukt. */
+  .nav::before { bottom: -1.6rem; }
 
   /* Första akten börjar under en hel bildruta film: man ska se den öppnande
      tagningen ensam innan något står i den. */

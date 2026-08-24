@@ -50,11 +50,16 @@ import { Arrow } from './Chrome'
  * hackar i exakt den takten — det var därför tagningarna först spelades i
  * sin egen hastighet.
  *
- * Filerna är nu omkodade så att varje bildruta är en nyckelruta. Då är en
- * sökning bara en avkodning, aldrig en kedja, och man kan sätta tiden en
- * gång per bildruta utan att bilden släpar. Det kostade ingenting i vikt:
- * elva megabyte mot tolv, för materialet är kort och rör sig mycket, och
- * sådant komprimerar dåligt mellan rutor ändå.
+ * Filerna är omkodade med tät nyckelruta — var fjärde bildruta — så att en
+ * sökning aldrig behöver arbeta sig långt fram från närmaste nyckelruta.
+ * Resten av arbetet gör `spola` genom att lägga målet på nyckelrutan när
+ * det går fort; se den.
+ *
+ * Att gå hela vägen och göra varenda bildruta till nyckelruta är den
+ * uppenbara tanken, och den är fel. Prövat och mätt: filerna växer till det
+ * tredubbla, varje enskild ruta blir dyrare att avkoda än den kedja man
+ * slipper, och andelen sena bildrutor gick från 5,7 till 8,5 procent. Tätt
+ * är rätt; varje är för mycket.
  */
 
 /**
@@ -70,6 +75,24 @@ const SVEP = 0.2
 
 /** En bildruta. Alla fem tagningarna är inspelade i samma takt. */
 const RUTA = 1 / 24
+
+/**
+ * Hur glest nyckelrutorna sitter i filerna. Se film.ts.
+ *
+ * Talet är inte en smaksak utan en avläsning av materialet: filerna är
+ * kodade med `-g 4`, alltså en nyckelruta följd av tre rutor som bara är
+ * skillnader mot den. Ändras kodningen måste talet ändras med.
+ */
+const NYCKELSTEG = 4
+
+/**
+ * Vid vilken brådska sökningen börjar snappa till nyckelrutan.
+ *
+ * Lågt. Redan en stillsam fingerrullning ligger över det här, och det är
+ * meningen: gränsen ska skilja "läser och rullar knappt" från "rullar", inte
+ * "rullar" från "kastar sig nedför sidan".
+ */
+const SNAPP_VID = 0.25
 
 /**
  * Ställer en tagning på den bildruta rullningen pekar ut.
@@ -90,11 +113,52 @@ const RUTA = 1 / 24
  * sig nedför sidan hinner man ändå inte se varenda bildruta — men man
  * hinner mycket väl se att sidan hackar. Vid stillsam rullning söker vi på
  * en halv bildrutas avstånd, vid full fart först på fyra. Bilden följer
- * med lika långt; den byter bara i grövre steg medan man far förbi. Mätt
- * vid snabb rullning: 33,3 ms utan spärren, 16,7 ms med.
+ * med lika långt; den byter bara i grövre steg medan man far förbi.
+ *
+ * OCH SÅ SNAPPNINGEN, SOM ÄR DEN DYRASTE DETALJEN AV ALLA
+ * Alla sökningar är inte lika dyra. Landar man på en nyckelruta räcker det
+ * att avkoda den; landar man tre rutor efter den måste avkodaren hämta
+ * nyckelrutan och arbeta sig fram, ruta för ruta. Med `-g 4` kostar en
+ * sökning på måfå i snitt två och en halv avkodning i stället för en, och
+ * det är den skillnaden som får en telefon att hacka.
+ *
+ * Över `SNAPP_VID` läggs därför måltiden på en nyckelruta, och varje
+ * sökning blir en enda avkodning i stället för i snitt två och en halv.
+ *
+ * OCH RUTNÄTET GLESNAR MED FARTEN
+ * Det räcker inte att välja rätt ruta; vid full fart ska det också vara
+ * färre av dem. Steget växer därför från fyra rutor till tolv allteftersom
+ * brådskan stiger. Innehållet i filmen byter då två gånger i sekunden i
+ * stället för tjugofyra — men kameran går på egen hand i sextio bilder i
+ * sekunden hela tiden (se `--gang`), och det är kameran man ser röra sig.
+ * Att frysa den prövades: det gjorde ingen mätbar skillnad alls för takten,
+ * vilket säger att färden genom rummet är gratis och att allt som kostar
+ * sitter i avkodningen. Alltså finns det ingen anledning att snåla med
+ * rörelsen, och all anledning att snåla med sökningarna.
+ *
+ * Under gränsen snappas ingenting. Där står man still eller läser, där är
+ * sökningarna få ändå, och då ska filmen ha varenda bildruta den har.
+ *
+ * MÄTT, INTE ANTAGET
+ * Strypt processor, filmen verkligen avkodad, fem varv per rad, andel
+ * bildrutor över 20 ms vid olika rutnät: 8,8 % utan snappning, 6,9 % vid
+ * två rutor, 6,2 % vid fyra, 5,6 % vid åtta, 3,4 % vid tolv. Kurvan är
+ * entydig, och det är den som bestämmer skalan ovan.
+ *
+ * Att i stället göra varje bildruta till nyckelruta är den uppenbara
+ * tanken och den är fel: prövat och mätt till 8,5 % mot 5,7 %, för filerna
+ * växer till det tredubbla och varje enskild ruta blir dyrare att avkoda
+ * än den kedja man slipper.
  */
 function spola(v: HTMLVideoElement, p: number, bradska: number) {
-  const mal = p * v.duration
+  let mal = p * v.duration
+  if (bradska > SNAPP_VID) {
+    // Rutnätet glesnar med farten: fyra rutor, åtta, tolv. Alla tre är
+    // multiplar av nyckelrutans avstånd, så målet hamnar på en nyckelruta
+    // oavsett vilket av dem som gäller.
+    const steg = RUTA * NYCKELSTEG * Math.min(3, 1 + Math.floor(bradska * 3))
+    mal = Math.round(mal / steg) * steg
+  }
   if (Math.abs(v.currentTime - mal) < RUTA * (0.5 + bradska * 3.5)) return
   if (v.seeking) return
   v.currentTime = mal
