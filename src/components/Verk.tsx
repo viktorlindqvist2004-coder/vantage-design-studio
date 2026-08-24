@@ -165,6 +165,80 @@ function spola(v: HTMLVideoElement, p: number, bradska: number) {
   v.currentTime = mal
 }
 
+/**
+ * PEKSKÄRM ELLER INTE — OCH VARFÖR DET AVGÖR ALLT
+ * ═══════════════════════════════════════════════
+ * En dator söker gärna i en film. En telefon gör det inte.
+ *
+ * Att spola är att sätta `currentTime` och be avkodaren hoppa. På en dator
+ * är det billigt nog att göra sextio gånger i sekunden. På en iPhone går
+ * varje sådant hopp genom hårdvaruavkodaren, tar tiotals millisekunder, och
+ * begäranden som kommer medan en sökning pågår ställer sig på kö. Rullar
+ * man med fingret kommer de fortare än de hinner betas av, och resultatet
+ * är inte en film som spolas utan en bild som står still i ryck.
+ *
+ * Det syntes aldrig i mätningarna här, av ett skäl som är värt att skriva
+ * ned: webbläsaren i den här maskinen saknar avkodare för H.264 helt och
+ * hållet. Varje bildrutetakt jag mätt över spolningen mättes alltså på en
+ * sida där filmen inte avkodades alls. Siffrorna var sanna och mätte fel
+ * sak.
+ *
+ * Så på pekskärm spolar vi inte. Vi låter filmen spela, och styr i stället
+ * hur fort den spelar så att den hinner ifatt det rullningen pekar ut.
+ * Linjär avkodning är precis vad en telefon är byggd för, och det som
+ * återstår att göra per bildruta är ett tal i `playbackRate`. Man rullar
+ * fortfarande genom filmen — det är fortfarande rullningen som bestämmer
+ * var i klippet man är — men vägen dit är den billiga i stället för den
+ * dyra.
+ */
+const pekskarm = () =>
+  typeof window !== 'undefined'
+  && window.matchMedia('(hover: none), (pointer: coarse)').matches
+
+/**
+ * Låter filmen spela i kapp det rullningen pekar ut.
+ *
+ * Ligger målet framför oss spelar vi, och fortare ju längre bort det är —
+ * en enkel jakt som hinner ifatt utan att slå över. Ligger vi redan rätt
+ * pausar vi; en film som spelar vidare medan handen står still har lämnat
+ * rullningen bakom sig.
+ *
+ * Bakåt kan ingen film spela, så där måste vi ändå söka. Men bara när man
+ * gått en bra bit tillbaka, och högst några gånger i sekunden: det är den
+ * enda dyra saken kvar, och den ska vara sällsynt.
+ */
+function jaga(v: HTMLVideoElement, p: number, nu: number, sista: { t: number }) {
+  const mal = p * v.duration
+  const fel = mal - v.currentTime
+  if (fel > 0.03) {
+    if (v.paused) v.play().catch(() => {})
+    // Taket på tre är telefonens och inte vårt: högre hastigheter hoppar
+    // över bildrutor i stället för att spela dem fortare.
+    v.playbackRate = Math.min(3, Math.max(0.4, fel * 5))
+  } else if (fel < -0.45) {
+    if (!v.paused) v.pause()
+    if (nu - sista.t > 150 && !v.seeking) {
+      v.currentTime = mal
+      sista.t = nu
+    }
+  } else if (!v.paused) {
+    v.pause()
+  }
+}
+
+/**
+ * Ställer en tagning som inte är den gällande på sin rätta ruta, en gång.
+ *
+ * Den som just lämnats ska stå på sista rutan och den som står på tur på
+ * första. Ingen av dem rör sig, så det räcker med en sökning när de kommit
+ * fel — och framför allt ska ingen av dem spela.
+ */
+function stall(v: HTMLVideoElement, p: number) {
+  if (!v.paused) v.pause()
+  const mal = p * v.duration
+  if (Math.abs(v.currentTime - mal) > 0.1 && !v.seeking) v.currentTime = mal
+}
+
 /** Vid vilken rullningsfart per bildruta brådskan räknas som full. */
 const FULL_FART = 26
 
@@ -363,6 +437,11 @@ export function Verk() {
   const scen = useRef<HTMLDivElement>(null)
   const forraY = useRef(0)
   const bradska = useRef(0)
+  /** Avgörs en gång. Ett medievillkor som frågas sextio gånger i sekunden
+   *  är sextio frågor för mycket om svaret är detsamma hela besöket. */
+  const pek = useRef(false)
+  /** När den senaste bakåtsökningen gjordes, så de kan hållas sällsynta. */
+  const sistaSok = useRef({ t: 0 })
   const [akt, setAkt] = useState(0)
   /** Vilket parti som står framme, och därmed vilken rubrik rutan bär. */
   const [parti, setParti] = useState(0)
@@ -393,11 +472,16 @@ export function Verk() {
     // avvisas. Tagningar hämtas först när de närmar sig.
     if (!v || !v.currentSrc || v.dataset.grundad === 'ja') return
     v.dataset.grundad = 'ja'
+    v.dataset.grundar = 'ja'
     const p = v.play()
     // Nekas uppspelningen släpper vi märket igen, så att beröringen nedan
     // får försöka på nytt. Ett ohanterat avslag ska inte heller fälla
     // resten av sidan.
-    p?.then(() => v.pause()).catch(() => { v.dataset.grundad = '' })
+    p?.then(() => {
+      if (v.dataset.grundar !== 'ja') return
+      delete v.dataset.grundar
+      v.pause()
+    }).catch(() => { v.dataset.grundad = '' })
   }
 
   /**
@@ -409,6 +493,8 @@ export function Verk() {
    * rullning är den gest webbläsaren väntar på, och den kommer ändå: det
    * enda man kan göra med den här sidan är att rulla.
    */
+  useEffect(() => { pek.current = pekskarm() }, [])
+
   useEffect(() => {
     const av = () => filmer.current.forEach(grunda)
     const val = { once: true, passive: true } as const
@@ -422,7 +508,7 @@ export function Verk() {
     }
   }, [])
 
-  useTick(() => {
+  useTick((nu) => {
     const el = spar.current
     if (!el) return
     const mitt = window.innerHeight * 0.5
@@ -491,7 +577,13 @@ export function Verk() {
       if (!v || !v.duration) continue
       if (i > aktiv + 1 || i < aktiv - 1) continue
       const genom = i === aktiv ? aktivGenom : (i < aktiv ? 1 : 0)
-      spola(v, clamp01(genom / SPOLNING), bradska.current)
+      const p = clamp01(genom / SPOLNING)
+      if (pek.current) {
+        if (i === aktiv) jaga(v, p, nu, sistaSok.current)
+        else stall(v, p)
+      } else {
+        spola(v, p, bradska.current)
+      }
     }
 
     /**
@@ -647,15 +739,25 @@ export function Verk() {
     setParti((f) => (f === framme ? f : framme))
   }, !reducedMotion())
 
-  /** Hämtar filen till den akt som syns och den som står näst på tur. */
+  /**
+   * Bara tre tagningar åt gången har en källa: den gällande, den man just
+   * lämnat och den som står på tur.
+   *
+   * Listan var förut enkelriktad — en tagning som fått sin fil behöll den
+   * — så den som rullat hela vägen ned hade fem videoelement med var sin
+   * avkodad film igång samtidigt. En dator bryr sig inte. En iPhone har ett
+   * litet antal hårdvaruavkodare, och när de tar slut börjar den kasta ut
+   * och läsa in filmer om vartannat medan man rullar. Det är inte något man
+   * ser som långsamhet utan som ryck, och det var med all sannolikhet en
+   * stor del av hacket.
+   *
+   * Tre räcker med marginal: den man lämnat syns bara medan den nya sveper
+   * in över den, och den på tur ska ha hunnit läsas in innan den syns.
+   */
   useEffect(() => {
     setLaddad((f) => {
-      const n = [...f]
-      let andrad = false
-      for (const i of [akt, akt + 1]) {
-        if (i < FILM.length && !n[i]) { n[i] = true; andrad = true }
-      }
-      return andrad ? n : f
+      const n = FILM.map((_, i) => i >= akt - 1 && i <= akt + 1)
+      return n.every((x, i) => x === f[i]) ? f : n
     })
   }, [akt])
 
@@ -686,14 +788,25 @@ export function Verk() {
               preload="auto"
               tabIndex={-1}
               onLoadedData={(e) => grunda(e.currentTarget)}
-              /* Spärren. Filmen ska aldrig spela — den ska ställas.
-                 Grundningen ovan startar en uppspelning bara för att tvinga
-                 fram en målad bildruta, och pausar den i samma andetag. Men
-                 pausen ligger i ett löfte, och hinner uppspelningen komma i
-                 gång innan löftet infrias fortsätter den. Det här stoppar
-                 den i den stund den börjar: `playing` betyder att en ruta
-                 nått skärmen, vilket var hela ärendet. */
-              onPlaying={(e) => e.currentTarget.pause()}
+              /* Spärren gäller bara grundningen.
+
+                 Grundningen startar en uppspelning enbart för att tvinga
+                 fram en målad bildruta, och pausar den i samma andetag —
+                 men pausen ligger i ett löfte, och hinner uppspelningen
+                 komma i gång innan löftet infrias fortsätter den. Det här
+                 stoppar den i den stund den börjar.
+
+                 Villkoret är nytt och nödvändigt. Utan det stoppade spärren
+                 även den uppspelning som `jaga` startar med flit på
+                 pekskärm, och filmen stod still oavsett hur mycket man
+                 rullade. Märket sätts före uppspelningen och tas bort här,
+                 så spärren gäller den enda uppspelning den var till för. */
+              onPlaying={(e) => {
+                const v = e.currentTarget
+                if (v.dataset.grundar !== 'ja') return
+                delete v.dataset.grundar
+                v.pause()
+              }}
             />
           </div>
         ))}
