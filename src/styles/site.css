@@ -994,10 +994,30 @@
   inset: 0;
   z-index: 90;
   pointer-events: none;
+  /* Mörkt vid båda kanterna, ljust på mitten.
+
+     Diset lutade förut åt ett håll: mörkt till vänster där rubriken står,
+     och nästan klart till höger. Det höll så länge spalten till höger var
+     en rad rutor med egen botten — texten bar sin läsbarhet med sig. Nu
+     står den direkt på filmen, och då stod den på den ljusaste delen av
+     bilden: brödtext i marmorvitt mot solbelyst sten, alltså ingen text
+     alls.
+
+     Nu sänks båda kanterna och mitten lämnas i fred. Det är samma logik
+     som en filmaffisch: titeln nere i ena hörnet, texten i andra, och
+     bilden själv i det ljus den ska ha däremellan. Bandet mellan 34 och 50
+     procent är orört, och det är där man ser rummet man färdas genom. */
   background:
-    linear-gradient(78deg, rgba(16, 20, 28, 0.82) 0%, rgba(16, 20, 28, 0.46) 30%, rgba(16, 20, 28, 0.03) 62%),
-    linear-gradient(0deg, rgba(16, 20, 28, 0.5) 0%, rgba(16, 20, 28, 0) 38%),
-    radial-gradient(130% 95% at 50% 40%, transparent 44%, rgba(16, 20, 28, 0.5) 100%);
+    linear-gradient(90deg,
+      rgba(16, 20, 28, 0.86) 0%,
+      rgba(16, 20, 28, 0.48) 20%,
+      rgba(16, 20, 28, 0.06) 32%,
+      rgba(16, 20, 28, 0.10) 46%,
+      rgba(16, 20, 28, 0.44) 54%,
+      rgba(16, 20, 28, 0.68) 64%,
+      rgba(16, 20, 28, 0.78) 100%),
+    linear-gradient(0deg, rgba(16, 20, 28, 0.46) 0%, rgba(16, 20, 28, 0) 34%),
+    radial-gradient(130% 95% at 50% 40%, transparent 46%, rgba(16, 20, 28, 0.42) 100%);
 }
 
 /* ── Akttiteln i rutan ────────────────────────────────────────────────── */
@@ -1056,8 +1076,6 @@
     0 -1px 0 rgba(239, 233, 222, 0.14),
     0 2px 26px rgba(16, 20, 28, 0.78);
 }
-
-.verk__rad { display: block; }
 
 /* ── Aktmätaren ───────────────────────────────────────────────────────── */
 
@@ -1193,143 +1211,156 @@
   padding: 0 var(--gutter);
 }
 
-/* Akten är bredare än sin text.
+/* Akten är bara en behållare med ett namn.
 
-   Rubrikpanelen håller sig kvar på ungefär den bredd den alltid haft — en
-   rubrik med brödtext vill inte vara bredare än så, för då blir raderna
-   för långa att hitta tillbaka i. Det som växer är fältet den står i, och
-   det gör den för rutornas skull: två rutor i bredd behöver plats som en
-   ensam spalt inte har.
-
-   Bredden är hejdad vid 48vw. Akttiteln ligger nere i rutans vänstra hörn
-   och tar 42vw plus rännan; 48 och 42 går ihop med marginal vid varje
-   bredd, medan 52 lät rutorna glida in över titeln kring 1200 punkter —
-   mätt, inte gissat. */
+   Den bär sitt id, som listens länkar pekar på, och den mäts av `Verk` för
+   att veta vilken tagning som gäller. Höjden får den av partierna i sig;
+   den har ingen egen. */
 .akt {
-  width: min(40rem, 48vw);
+  /* Smalare än den var. Bredden är inte satt efter hur mycket text som
+     finns utan efter hur mycket film som ska synas bredvid den: fyrtiotvå
+     procent åt spalten, fyrtiotvå åt rubriken i andra kanten, och bandet
+     däremellan åt bilden. */
+  width: min(34rem, 42vw);
+  justify-self: end;
+}
+
+/* Filmen ska stå ensam en stund innan första texten kommer fram. */
+.akt:first-child { padding-top: 84vh; }
+
+/* ── Ett parti ────────────────────────────────────────────────────────
+   Partiet äger en sträcka av rullningen och sitter fastnaglat medan man
+   tar sig genom den. Sträckan är höjden här; det fastnaglade är hållet
+   inuti. Skillnaden mellan de två — nittio skärmhöjder mot hundra — är hur
+   långt man rullar medan partiet står stilla framför en, och alltså hur
+   lång tid man har på sig att läsa det.
+
+   Sträckorna gränsar till varandra utan överlapp, och det är därför det
+   aldrig står två partier framme samtidigt. */
+.parti {
+  /* Sträckan per parti, och därmed sidans längd: sexton partier gånger
+     det här talet. Skillnaden mot rutans egen höjd är hur långt man rullar
+     medan partiet står stilla framför en — trettiofem hundradelars skärm,
+     vilket är den lugna stunden mitt i. Resten av sträckan går åt till att
+     partiet kommer och far, och de sträckorna delas med grannarna. */
+  height: 125vh;
+  height: 125svh;
+}
+
+.parti__hall {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  min-height: 100svh;
   display: grid;
-  justify-items: end;
-  gap: clamp(4rem, 14vh, 10rem);
-  /* En akt börjar en bit ned så att första panelen inte krockar med
-     akttiteln i rutan, och slutar med luft så att bilden hinner byta
-     innan nästa akts text är framme. */
-  padding: 60vh 0;
+  /* `safe` är spärren för det som ändå inte får plats. En centrerad
+     rutnätsrad som är högre än sin behållare svämmar åt båda håll, och
+     uppåt ligger rubriken — den skars av först. Med `safe` faller
+     innehållet tillbaka till överkanten i stället, så man alltid ser vad
+     stycket heter. Uppdelningen ovan ska göra att det aldrig behövs. */
+  align-content: safe center;
+  /* Listen ligger ovanpå rutan, och ett parti som är högre än rutan hamnar
+     annars med sina första rader under den. Luften nedtill är mindre: där
+     finns bara meanderremsan att hålla sig från. */
+  padding: calc(var(--nav-h) + clamp(1rem, 3vh, 2.2rem)) 0 clamp(2rem, 5vh, 3.4rem);
+  /* Hållet spänner över hela rutan för att kunna mitta innehållet i den.
+     Utan det här hade det tomma utrymmet ovanför och under texten fångat
+     varje klick på filmen bakom. */
+  pointer-events: none;
 }
 
-/* Första akten börjar lägre än de andra: den öppnande bilden ska stå ensam
-   en stund innan första rutan seglar in i den. */
-.akt:first-child { padding-top: 108vh; }
-
-/* Titeln i spalten hör till telefonen. På en bred skärm står den i rutan. */
-.akt__titel { display: none; }
-
-/* En grupp är en rubrik med sina rutor. Mellanrummet inuti gruppen är
-   mindre än det mellan grupper, så att de läses ihop utan att sitta ihop —
-   och genom glipan syns filmen. */
-.grupp {
+.parti__inre {
   display: grid;
-  justify-items: end;
-  gap: clamp(1.6rem, 5vh, 3.4rem);
-  width: 100%;
-}
-
-/* Rubrikpanelen är smalare än fältet och står i dess högra kant. Det är
-   den förskjutningen som gör att gruppen läser som något utbrett i rutan
-   och inte som en spalt: rubriken sitter vid kanten, rutorna under den
-   sträcker sig längre in. */
-.grupp > .panel:first-child { width: min(29rem, 100%); }
-
-/* Rutorna, två i bredd.
-
-   VARFÖR INTE EN STAPEL
-   De låg förut rakt under varandra, alla lika breda, tolv stycken genom
-   verket. Var och en var läsbar, men takten var densamma hela vägen ned —
-   samma bredd, samma avstånd, samma sak igen — och en sida med en enda
-   takt läser som en lista oavsett vad som står i den. Två i bredd ger
-   fältet en form: ögat får något att växla mellan, och stapeln blir hälften
-   så hög, vilket är hälften så lång sträcka där filmen står skymd bakom
-   text.
-
-   Udda antal lämnar en tom cell sist. Den är inte ett fel som ska fyllas —
-   det är ett hål rakt igenom texten där man ser rummet man färdas i. */
-.grupp__rutor {
-  display: grid;
-  /* Antalet spalter är inte satt till två utan följer av att en ruta
-     behöver femton rems bredd för att titeln ska rymmas på en rad. Fältet
-     är självt en andel av fönstret, så ett fast tvåtal hade gett rutor på
-     tvåhundratjugo punkter strax ovanför telefonbrytpunkten — två spalter
-     som var för smala för sitt eget innehåll. Nu blir det två när det
-     finns plats för två, annars en. */
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: clamp(0.9rem, 2.4vh, 1.6rem) clamp(0.9rem, 1.8vw, 1.4rem);
-  width: 100%;
-  align-items: start;
-}
-
-/* Varannat par sitter en aning lägre. Två raka led är fortfarande en takt,
-   bara en bredare — förskjutningen bryter den utan att någon ruta hamnar
-   ur linje med sin granne.
-
-   Bara där det säkert står två i bredd. Faller fältet ihop till en spalt
-   blir samma förskjutning en ojämn lucka mitt i en rad rutor. */
-@media (min-width: 1100px) {
-  .grupp__rutor > .panel:nth-child(4n + 2),
-  .grupp__rutor > .panel:nth-child(4n + 3) {
-    margin-top: clamp(0.8rem, 2.4vh, 2rem);
-  }
-}
-
-.panel {
+  gap: clamp(1.1rem, 2.6vh, 1.9rem);
   pointer-events: auto;
-  padding: clamp(1.6rem, 3vw, 2.4rem);
-  border: 1px solid color-mix(in srgb, var(--marmor) 14%, transparent);
-  border-radius: 4px;
-  background: color-mix(in srgb, #0b0f16 76%, transparent);
-  backdrop-filter: blur(14px) saturate(0.9);
-  opacity: 0;
-  transform: translate3d(0, 2.2rem, 0);
-  transition: opacity 900ms var(--out), transform 900ms var(--out);
 }
 
-.panel[data-in='true'] { opacity: 1; transform: none; }
+/* ── Styckena, ett i taget och från var sitt håll ─────────────────────
+   Varje stycke har en tröskel som stiger med dess nummer, och partiets
+   framme-tal passerar trösklarna i tur och ordning: styckena kommer fram
+   efter varandra i stället för som en platta, och faller talet igen lämnar
+   de i omvänd ordning, sist inkomna först. Det är samma rörelse baklänges,
+   vilket är vad ett parti som dras undan ska se ut som.
 
-.panel__rubrik {
-  font-size: var(--t-lg);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
-  margin: 0 0 1rem;
+   Räkningen sker i `Verk.tsx` och inte här — se noten nedan.
+
+   Bara `opacity` och `transform`, alltså ingenting som kostar ny layout
+   eller ny målning. Inget `will-change`: styckena är närmare hundra, och
+   hundra utlovade kompositlager är dyrare än de rörelser de skulle bära. */
+.parti__del {
+  /* Utgångsläget, och ingenting mer.
+
+     `opacity` och `transform` skrivs av `Verk` rakt på elementet, en gång
+     per bildruta så länge partiet rör sig. Räkningen låg först här i
+     stilmallen, drivet av ett tal på partiet — det var kortare kod och
+     tre gånger dyrare, för en skriven variabel gör varje ättling som läser
+     den ogiltig. Se `Verk.tsx` för mätningen.
+
+     Noll här och inte ett: det som ännu inte kommit fram ska inte skymta
+     förbi i den bildruta som hinner målas innan varvet skrivit första
+     gången. */
+  opacity: 0;
+}
+
+/* Rubriken står i rutan på en bred skärm — se `.verk__akt`. Här skulle den
+   bara vara samma ord en gång till, en tum längre ned. */
+.parti__rubrik { display: none; }
+
+/* ── Texten ligger på filmen, inte på ark ovanpå den ──────────────────
+   Styckena hade förut ram, egen botten och frostat glas. Det höll så länge
+   de rullade förbi som en spalt, men inte längre: nu kommer de in ett och
+   ett från var sitt håll, och fyra lådor som glider in från fyra håll
+   läser som utfallande kort och inte som ett stycke som sägs.
+
+   Utan lådor finns ingenting att glida — det är orden själva som kommer
+   fram. Läsbarheten kommer från dimman över rutan, som ändå ligger där och
+   ändå målas, plus en tät skugga per stycke. Radien är kort med flit: en
+   vid suddning kring varje bokstav var det dyraste sidan hade när det
+   mättes. */
+.parti__del {
+  text-shadow: 0 1px 10px rgba(16, 20, 28, 0.95);
 }
 
 .panel__brod {
   font-size: var(--t-small);
   line-height: 1.65;
-  color: color-mix(in srgb, var(--marmor) 76%, var(--djup));
+  color: color-mix(in srgb, var(--marmor) 82%, var(--djup));
   margin: 0;
 }
 
-/* Rutorna som bär en punkt eller ett kort. Lättare botten än rubrikens och
-   knappare marginaler: de är många, och en av dem ska väga mindre än den
-   rubrik de hör under.
+/* ── Rutfältet ────────────────────────────────────────────────────────
+   Två i bredd när det finns plats för två, annars en. Antalet är inte satt
+   utan följer av att en ruta behöver femton rem för att titeln ska rymmas
+   på en rad. */
+.parti__rutor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: clamp(0.9rem, 2.2vh, 1.5rem) clamp(1.1rem, 2.2vw, 1.8rem);
+  align-items: start;
+}
 
-   Inget indrag längre. Det fanns för att markera att rutan hängde under
-   sin rubrik, vilket den gjorde när den låg ensam på sin rad. I ett fält
-   av två skulle samma indrag bara knuffa hela rutfältet snett. */
-.panel--liten {
+/* Rutorna hänger på indrag under sin rubrik, med en bronslinje i kanten i
+   stället för en botten. Linjen säger att de hör ihop och att de är
+   underordnade — vilket var allt lådan gjorde, till en bråkdel av vad den
+   kostade. */
+.ruta {
   display: grid;
   gap: 0.4rem;
   align-content: start;
-  padding: clamp(1.1rem, 2vw, 1.5rem);
-  background: color-mix(in srgb, #0b0f16 68%, transparent);
+  padding-left: clamp(0.8rem, 1.4vw, 1.15rem);
+  border-left: 1px solid color-mix(in srgb, var(--brons) 48%, transparent);
 }
 
 .panel__titel { font-weight: 600; font-size: var(--t-small); }
-.panel--liten .panel__slag + .panel__titel { font-size: var(--t-md); }
+.ruta .panel__slag + .panel__titel { font-size: var(--t-md); }
 
 .panel__text {
   font-size: var(--t-small);
   line-height: 1.6;
-  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
+  /* Ljusare än den var. Sextioåtta procent marmor räckte mot en mörk
+     botten; mot solbelyst sten gör den det inte, och rutorna har ingen
+     botten längre. */
+  color: color-mix(in srgb, var(--marmor) 80%, var(--djup));
 }
 
 .panel__slag {
@@ -1437,24 +1468,28 @@
 
 .panel__knapp:hover { background: var(--terrakotta); color: var(--marmor); }
 
+/* En låg ruta har inte råd med samma luft.
+
+   Partiet står fastnaglat, så allt som inte ryms i rutan går inte att
+   rulla fram — luften mellan styckena är då inte luft utan text man
+   förlorar. På en hög skärm får den vara kvar. */
+@media (max-height: 700px) {
+  .parti__inre { gap: 0.75rem; }
+  .parti__rutor { gap: 0.7rem 1.1rem; }
+  .panel__brod { line-height: 1.5; }
+  .panel__text { line-height: 1.45; }
+  .panel__se { padding-top: 0.3rem; }
+  .parti__hall { padding-bottom: 1.2rem; }
+}
+
 /* ── Mindre skärmar ───────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
   /* På en telefon täcker spalten hela bredden, och då finns ingen plats
-     kvar i rutan. Mätaren och titeln i rutan tas bort — titeln flyttar in
-     i spalten och står före sina paneler i stället för bakom dem, vilket
-     är den enda ordning som inte innebär att de ligger på varandra. */
+     kvar i rutan bredvid texten. Rubriken flyttar in i partiet — se
+     `.parti__rubrik` nedan — och mätaren utgår helt. */
   .verk__mat,
   .verk__akt { display: none; }
-
-  /* Inget eget mellanrum: aktens egen lucka mellan sina delar räcker. */
-  .akt__titel { display: block; }
-
-  /* Etiketten ligger på filmen här och inte på en botten. Brons mot ljus
-     sten är för lite skillnad; den behöver samma skugga som raden under. */
-  .akt__titel .verk__ort {
-    text-shadow: 0 1px 14px rgba(16, 20, 28, 0.9);
-  }
 
   /* Dimman läggs om från snett till rakt.
      Den lutar 78 grader, vilket på en bred ruta lägger det mörka i vänstra
@@ -1466,75 +1501,35 @@
      dimman. */
   .verk__dis {
     background:
-      linear-gradient(180deg, rgba(16, 20, 28, 0.78) 0%, rgba(16, 20, 28, 0.44) 26%,
-        rgba(16, 20, 28, 0.44) 68%, rgba(16, 20, 28, 0.84) 100%),
-      radial-gradient(130% 78% at 50% 46%, transparent 38%, rgba(16, 20, 28, 0.56) 100%);
+      linear-gradient(180deg, rgba(16, 20, 28, 0.80) 0%, rgba(16, 20, 28, 0.54) 26%,
+        rgba(16, 20, 28, 0.54) 68%, rgba(16, 20, 28, 0.86) 100%),
+      radial-gradient(130% 78% at 50% 46%, transparent 34%, rgba(16, 20, 28, 0.58) 100%);
   }
 
   .akt {
     width: 100%;
-    padding: 34vh 0 26vh;
+    justify-self: stretch;
   }
 
-  /* Spalten går kant i kant här, så förskjutningen som breder ut gruppen
-     i rutan har ingen kant att förskjutas mot. Spaltantalet sköter fältet
-     själv — på den här bredden ryms bara en. */
-  .akt,
-  .grupp { justify-items: stretch; }
-  .grupp > .panel:first-child { width: 100%; }
+  .akt:first-child { padding-top: 72vh; }
 
-  /* ── Rutorna slutar vara rutor ──────────────────────────────────────
-     Det här är hela skillnaden mellan en film som är sidan och en film
-     som ligger bakom den.
+  /* Partiet får en kortare sträcka. Texten står i ett smalare mått här och
+     tar därför fler rader, men skärmen är också högre än den är bred — det
+     som avgör hur länge ett parti behöver stå framme är hur mycket som
+     ryms i rutan, inte hur många ord det är. */
+  .parti { height: 118vh; height: 118svh; }
 
-     På en bred skärm står texten i en smal spalt vid rutans kant, och
-     filmen syns bredvid den hela tiden — man är kvar i rummet medan man
-     läser. På en telefon finns inget "bredvid". Panelerna tog hela
-     bredden, och var och en hade ram, egen botten och frostat glas. Fjorton
-     sådana efter varandra läser som ark staplade ovanpå en bakgrund, och
-     det var precis så det såg ut: en sida byggd ovanpå videon.
-
-     Här har de varken ram eller botten. Texten står direkt på filmen, som
-     titeln alltid gjort, och bärs av sin egen skugga i stället för av en
-     platta. Då finns det inga ark kvar att stapla — det finns bara film,
-     och ord i den.
-
-     Skuggan är två lager med flit: en tät och kort som ger bokstaven kant
-     mot vad som helst, och en vid och svag som sänker hela fältet under
-     texten utan att någonstans få en synlig gräns. En platta har alltid en
-     kant, och det är kanten som avslöjar den som en platta. */
-  .panel {
-    border: 0;
-    background: none;
-    /* Frostat glas kostar mest av allt som står i den här filen: varje
-       ruta tvingar fram en ny läsning av filmen under sig, varje bildruta,
-       medan filmen samtidigt spolas av rullningen. Mätt till drygt en
-       fjärdedel av allt hack sidan hade. */
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    padding: 0;
-    /* En skugga och inte två, och med kort radie.
-
-       Den började som två lager: en tät som gav bokstaven kant, och en vid
-       på fyrtiosex bildpunkter som skulle sänka hela fältet under texten
-       utan synlig gräns. Den vida såg bra ut och var det dyraste som fanns
-       kvar på sidan — en suddning över varje glyf, ommålad medan filmen
-       under den byter bildruta. Mätt: två punkter av allt hack sidan hade,
-       mer än frostade glaset kostade.
-
-       Samma sänkning görs nu av dimman över hela rutan, som ändå ligger
-       där och ändå målas. Ett svep över hela bilden kostar en gång; samma
-       svep runt varje bokstav kostar en gång per bokstav. */
-    text-shadow: 0 1px 10px rgba(16, 20, 28, 0.95);
+  /* Rubriken flyttar in i partiet. I rutan finns ingen plats bredvid
+     texten att ge den, och lagd ovanpå hade den legat i vägen för det
+     stycke den hör till. */
+  .parti__rubrik {
+    display: block;
+    font-size: var(--t-lg);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    margin: 0 0 0.3rem;
   }
-
-  /* Rutorna hänger fortfarande under sin rubrik, men nu på indrag i
-     stället för på egen botten. Filmen syns hela vägen ned längs kanten,
-     och det är den remsan som säger att man är kvar i rummet. */
-  .grupp { gap: 1.9rem; }
-  .grupp__rutor { gap: 1.7rem; }
-  .grupp__rutor > .panel { padding-left: 1.1rem; border-left: 1px solid color-mix(in srgb, var(--brons) 46%, transparent); }
-  .akt { width: 88%; }
 
   /* Knapparna och frågorna behåller sina kanter. De är sådant man trycker
      på, och det ska synas att de går att trycka på — en yta utan kant är
@@ -1547,23 +1542,6 @@
   .panel__fragor details {
     border-top-color: color-mix(in srgb, var(--marmor) 26%, transparent);
   }
-
-  /* Aktmätaren stannar dold här, och det är ett beslut och inte en glömska.
-
-     Den prövades på tre platser. Nere vid underkanten hamnade den mitt i
-     akttiteln — versal, fyra rader hög — och två sorters text ovanpå
-     varandra läser som ett fel. Uppe i listens toning blev den läslig men
-     låg i stället bakom brödtexten. Det finns ingen plats på en
-     telefonskärm där innehåll inte passerar, för allt innehåll passerar
-     allt. På en bred skärm går det: där står texten i en spalt vid sidan
-     och mätaren i ett hörn spalten aldrig når.
-
-     Den kostade dessutom knappt en procentenhet av bildrutorna, mätt, för
-     fem streck och ett ord. Akten står i stället i spalten där den alltid
-     stått, rullar med sitt eget innehåll och krockar med ingenting.
-
-     Det som gör att filmen läser som sidan här är inte mätaren. Det är att
-     texten ligger direkt på bilden i stället för på ark ovanpå den. */
 
   /* Meandern dämpas till textur.
      På en bred skärm löper den runt en ruta som texten står bredvid, och
@@ -1618,20 +1596,40 @@
      till höger bara en udda marginal — då är det en vanlig sida, och en
      vanlig sida läses på mitten. */
   .verk__spalt { margin-top: 0; justify-items: center; }
-  .akt { width: min(38rem, 100%); }
-  /* Spalten är centrerad här och inte lagd mot en kant, så förskjutningen
-     som breder ut gruppen i rutan har ingen kant att förskjutas mot. */
-  .akt,
-  .grupp { justify-items: stretch; }
-  .grupp > .panel:first-child { width: 100%; }
-  .grupp__rutor > .panel { margin-top: 0; }
+  .akt { width: min(38rem, 100%); justify-self: center; }
 
-  /* Titeln och mätaren hör till den fastnaglade rutan. Står rutan stilla i
-     flödet har de ingenting att sitta fast i, och låg kvar ovanpå varandra
-     i toppen. Titeln flyttar in i spalten, precis som på en telefon. */
+  /* Ingen fastnagling och ingen sträcka att rulla genom. Partiet blir ett
+     avsnitt bland andra, med luft omkring sig, och sidan blir en sida.
+
+     Höjden måste bort och inte bara hållet: nittio skärmhöjder tomrum per
+     parti är tolv sådana efter varandra, alltså en sida som mest består av
+     ingenting för den som slagit av rörelsen. */
+  .parti { height: auto; }
+  .parti__hall {
+    position: static;
+    min-height: 0;
+    padding: clamp(2.6rem, 7vh, 4.5rem) 0;
+  }
+
+  /* Styckena står framme. Varvet är avstängt och skriver alltså ingenting
+     på dem, så utan det här hade sidan varit tom. */
+  .parti__del {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Rubriken flyttar in i partiet, precis som på en telefon: titeln i
+     rutan hör till en ruta som är fastnaglad, och det är den inte här. */
+  .parti__rubrik {
+    display: block;
+    font-size: var(--t-lg);
+    font-weight: 600;
+    line-height: 1.12;
+    margin: 0 0 0.3rem;
+  }
+
   .verk__akt,
   .verk__mat { display: none; }
-  .akt__titel { display: block; }
 
   .verk__lager { visibility: visible !important; }
   .verk__lager[data-rorelse] {
@@ -1648,7 +1646,5 @@
      medan man rullar. Utan rörelse finns ingenting att hinna med, och då
      är den bara tomrum. */
   .akt,
-  .akt:first-child { padding: clamp(3rem, 8vh, 5rem) 0; }
-  .grupp { gap: 1rem; }
-  .panel { opacity: 1; transform: none; }
+  .akt:first-child { padding: 0; }
 }

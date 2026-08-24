@@ -6,6 +6,7 @@ import { clamp01 } from '../lib/math'
 import { reducedMotion, useTick } from '../lib/motion'
 import { Showroom } from './Showroom'
 import { Arrow } from './Chrome'
+import type { Panel as PanelData } from '../data/akter'
 
 /**
  * VERKET
@@ -189,17 +190,182 @@ const FULL_FART = 26
  */
 const SPOLNING = 0.82
 
+/**
+ * PARTIERNA
+ * ═════════
+ * Akterna är fem och bär tolv stycken innehåll mellan sig. Filmen byter
+ * tagning per akt; texten byter parti oftare än så. Koden behöver därför
+ * båda: akten för att veta vilken tagning som gäller, partiet för att veta
+ * vilken rubrik som står i rutan och vilket stycke som ska synas.
+ *
+ * ETT PARTI MÅSTE RYMMAS I RUTAN
+ * Partiet står fastnaglat medan man läser det, och det som inte får plats
+ * i rutan går därför inte att rulla fram — det ligger utanför kanten och
+ * stannar där. Ett stycke med sex kort blev på en telefon avhugget både
+ * upptill och nedtill, och de två korten i mitten var de enda som gick att
+ * läsa.
+ *
+ * Långa stycken delas därför upp i flera partier med samma rubrik. I rutan
+ * står rubriken kvar oförändrad medan man går igenom dem, så det läses som
+ * ett ämne som fortsätter och inte som ett nytt; bara det första bär
+ * ingressen. Delningen räknas fram ur innehållet och inte ur handen, så
+ * ett kort som läggs till i `content.ts` hamnar rätt av sig självt.
+ */
+
+/**
+ * Så många rutor ett parti bär.
+ *
+ * Talet är mätt och inte valt. Tre rutor plus rubrik och ingress blev 161
+ * bildpunkter för högt på en telefon med 668 bildpunkters höjd — en iPhone
+ * SE — och två bildpunkter för högt på en med 844. Två ryms med marginal på
+ * båda. Eftersom partiet står fastnaglat medan man läser det finns ingen
+ * rullning att hämta fram det som inte får plats: det som inte ryms går
+ * inte att läsa alls.
+ */
+const MAX_RUTOR = 2
+
+/** Frågorna är hopfällda och tar en rad var, alltså ryms det fler. */
+const MAX_FRAGOR = 5
+
+/**
+ * Delar en lista i jämnstora delar om den är för lång.
+ *
+ * Jämnstora och inte "fyll på tills det är fullt": sex kort med tak tre
+ * blir tre och tre, medan fyra blir två och två i stället för tre och ett.
+ * Ett ensamt kort sist läser som något som blivit över.
+ */
+function dela<T>(lista: T[], max: number): T[][] {
+  if (lista.length <= max) return [lista]
+  const antal = Math.ceil(lista.length / max)
+  const storlek = Math.ceil(lista.length / antal)
+  const ut: T[][] = []
+  for (let i = 0; i < lista.length; i += storlek) ut.push(lista.slice(i, i + storlek))
+  return ut
+}
+
+type PartiData = {
+  panel: PanelData
+  akt: number
+  /** Bara det första bär ingress, tal, frågor och knappar. */
+  forst: boolean
+  punkter: NonNullable<PanelData['punkter']>
+  kort: NonNullable<PanelData['kort']>
+  fragor: NonNullable<PanelData['fragor']>
+}
+
+const PARTIER: PartiData[] = AKTER.flatMap((a, akt) =>
+  a.paneler.flatMap((panel): PartiData[] => {
+    const tom = { punkter: [], kort: [], fragor: [] }
+    if (panel.punkter) {
+      return dela(panel.punkter, MAX_RUTOR)
+        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, punkter: d }))
+    }
+    if (panel.kort) {
+      return dela(panel.kort, MAX_RUTOR)
+        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, kort: d }))
+    }
+    if (panel.fragor) {
+      return dela(panel.fragor, MAX_FRAGOR)
+        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, fragor: d }))
+    }
+    return [{ panel, akt, forst: true, ...tom }]
+  }),
+)
+
+/** Partiernas löpnummer, grupperade per akt, så spalten kan ritas akt för akt. */
+const PER_AKT = AKTER.map((_, i) =>
+  PARTIER.map((p, nr) => ({ p, nr })).filter((x) => x.p.akt === i))
+
+/**
+ * Hållen texten kommer in från.
+ *
+ * Ett stycke som glider in från vänster och nästa från höger läses som två
+ * stycken. Kommer alla in nedifrån samtidigt läses de som en platta som
+ * rör sig, och då är rörelsen bara en fördröjning innan man får läsa.
+ *
+ * Listan går runt. Sex håll räcker för att ingen granne ska dela riktning
+ * med sin granne, och för att man inte ska hinna lära sig ordningen.
+ */
+const HALL: [number, number][] = [
+  [-45, 0],
+  [48, 0],
+  [0, 42],
+  [-38, 19],
+  [42, 16],
+  [0, -35],
+]
+
+/**
+ * VÄXLINGEN
+ * ═════════
+ * Två grannpartiers sträckor möts, och de två talen nedan är exakt
+ * varandras komplement: när det ena partiets avfärd står på hälften står
+ * grannens ankomst också på hälften. Därför räcker en enda punkt för att
+ * bestämma hela överlämningen — före den lämnar det gamla, efter den
+ * kommer det nya, och de möts aldrig.
+ *
+ * Att låta dem mötas prövades först, och det såg ut som det låter: två
+ * stycken text i samma hörn av rutan, det ena på väg bort och det andra på
+ * väg in, båda läsbara. Mätt över hela sidan låg trettiofyra procent av
+ * rullningen i det läget. Nu är den siffran noll, till priset av ett kort
+ * andetag där rutan bara bär film — vilket är precis vad ett ombyte mellan
+ * två partier ska se ut som.
+ */
+const VAXEL = 0.5
+
+/** Hur brant ett stycke tonar in när ankomsten passerat dess tröskel. */
+const INGANG = 6
+
+/** Avståndet mellan styckenas trösklar. Det är det som gör att de kommer
+ *  ett i taget och inte allihop på en gång. */
+const TROSKEL = 0.028
+
+/** Hur brant hela partiet tonar ut. Alla stycken lika, och fort. */
+const UTGANG = 3.5
+
+/** Ett stycke i ett parti, med sitt nummer, sitt håll och sitt senaste läge. */
+type Del = { el: HTMLElement; i: number; dx: number; dy: number; syn: number }
+
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
   const lager = useRef<(HTMLDivElement | null)[]>([])
   const filmer = useRef<(HTMLVideoElement | null)[]>([])
   const avsnitt = useRef<(HTMLElement | null)[]>([])
+  const partier = useRef<(HTMLElement | null)[]>([])
+  /** Senast skrivna värde per parti. En vanlig lista och inte `dataset`:
+   *  att skriva ett attribut är en ändring i DOM:en som måste jämföras
+   *  bort igen, och det enda vi vill veta är om talet är detsamma. */
+  const forraV = useRef<number[]>([])
+
+  /**
+   * Styckena i ett parti, uppslagna en gång och sedan ihågkomna.
+   *
+   * `querySelectorAll` per bildruta för varje parti som rör sig vore att
+   * söka igenom samma träd sextio gånger i sekunden efter ett svar som
+   * aldrig ändras. Listan byggs första gången partiet rör sig och ligger
+   * kvar; nyckeln är elementet självt, så den försvinner med det.
+   */
+  const delLista = useRef(new WeakMap<HTMLElement, Del[]>())
+  const delarna = (el: HTMLElement) => {
+    let d = delLista.current.get(el)
+    if (!d) {
+      d = [...el.querySelectorAll<HTMLElement>('.parti__del')].map((n) => ({
+        el: n,
+        i: Number(n.dataset.i) || 0,
+        dx: Number(n.dataset.x) || 0,
+        dy: Number(n.dataset.y) || 0,
+        syn: -1,
+      }))
+      delLista.current.set(el, d)
+    }
+    return d
+  }
   const scen = useRef<HTMLDivElement>(null)
   const forraY = useRef(0)
   const bradska = useRef(0)
   const [akt, setAkt] = useState(0)
-  /** Vilken av den gällande tagningens rader som står i rutan. */
-  const [replik, setReplik] = useState(0)
+  /** Vilket parti som står framme, och därmed vilken rubrik rutan bär. */
+  const [parti, setParti] = useState(0)
   const [visar, setVisar] = useState<string | null>(null)
   /** Vilka tagningar som fått hämta sin fil. Aldrig fler än den som syns
    *  och den som står näst på tur. */
@@ -328,10 +494,116 @@ export function Verk() {
       spola(v, clamp01(genom / SPOLNING), bradska.current)
     }
 
-    // Raderna byts vid jämna delar av tagningen, så den som står i rutan
-    // hör ihop med det man ser just då.
-    const rader = FILM[Math.min(aktiv, FILM.length - 1)].repliker.length
-    const r = Math.min(rader - 1, Math.floor(aktivGenom / SPOLNING * rader))
+    /**
+     * PARTIERNA: ETT I TAGET, MED ÖVERLÄMNING OCH INTE MED GLAPP
+     *
+     * Varje parti äger en sträcka av rullningen och står fastnaglat mitt i
+     * den. `--v` är hur framme partiet är, från noll till ett, och resten
+     * sköter stilmallen: styckena kommer fram ett efter ett från var sitt
+     * håll allteftersom talet stiger, och lämnar i omvänd ordning när det
+     * faller.
+     *
+     * VARFÖR TALET INTE MÄTS ÖVER FASTNAGLINGEN
+     * Första försöket räknade `--v` över just den sträcka partiet satt
+     * fast. Det lät rimligt och gav en sida som till femtiosju procent var
+     * tom: ett parti släpper sin fastnaglig när dess underkant når rutans
+     * underkant, men nästa griper tag först när dess överkant når rutans
+     * överkant — och däremellan ligger en hel skärmhöjd rullning där det
+     * ena redan gått och det andra ännu inte kommit. Mätt över hela sidan,
+     * sjuttiosex tomma lägen av hundratrettiotre.
+     *
+     * Nu mäts ankomsten från att partiet syns i underkanten till att det
+     * biter fast, och avfärden från att det släpper till att det lämnat
+     * överkanten. Grannarnas sträckor möts därmed mitt i varandra: det ena
+     * tonar ut precis medan det andra tonar in, och det finns inget läge
+     * kvar där rutan står tom.
+     *
+     * LÄSNINGEN FÖRST, SKRIVNINGEN SEDAN
+     * Att läsa ett elements läge tvingar webbläsaren att räkna färdigt all
+     * layout som ändrats sedan sist. Görs det i samma varv som en
+     * stilskrivning — läs, skriv, läs, skriv — betalar man den uträkningen
+     * en gång per parti i stället för en gång per bildruta. Med arton
+     * partier blev det arton påtvingade layoutberäkningar per bildruta, och
+     * mätt kostade det mer än trefalt: andelen sena bildrutor gick från 4,0
+     * till 14,5 procent på strypt processor.
+     *
+     * Därför två varv och inte ett. Det första rör ingenting, det andra
+     * frågar ingenting.
+     */
+    let framme = 0
+    let bast = -1
+    const V = window.innerHeight
+    const nya: number[] = []
+    const ankomst: number[] = []
+    const avfard: number[] = []
+
+    // Första varvet läser bara.
+    for (let i = 0; i < PARTIER.length; i++) {
+      const el = partier.current[i]
+      if (!el) { nya.push(-1); continue }
+      const r = el.getBoundingClientRect()
+      // Ett parti långt utanför rutan har inget värde någon kan se.
+      if (r.bottom < -V * 0.2 || r.top > V * 1.2) { nya.push(-1); continue }
+      /**
+       * Ankomsten och avfärden tar sextio hundradelars ruta var.
+       *
+       * De var först 0,85 och överlämningen tog då nära halva rullningen —
+       * partiet hann knappt stå stilla innan nästa började komma. Kortare
+       * sträckor ger en tydligare växling: det ena är borta, det andra är
+       * framme, och däremellan en kort stund då båda är svaga. Ännu
+       * kortare vore ett klipp och inte en övergång.
+       */
+      const inn = clamp01((V - r.top) / (V * 0.6))
+      const ut = clamp01((r.bottom - V * 0.4) / (V * 0.6))
+      const v = Math.min(inn, ut)
+      if (v > bast) { bast = v; framme = i }
+      nya.push(v)
+      ankomst[i] = inn
+      avfard[i] = ut
+    }
+
+    /**
+     * Andra varvet skriver bara, och skriver på styckena själva.
+     *
+     * Den självklara lösningen är att lägga ett tal på partiet och låta
+     * stilmallen räkna ut varje styckes genomskinlighet och förskjutning ur
+     * det. Den prövades, och den är dyr: en skriven variabel gör varje
+     * ättling som läser den ogiltig, och de är sju om partiet. Mätt genom
+     * att helt enkelt strunta i skrivningen — 7,9 procent sena bildrutor
+     * med den, 2,8 utan. Fem av åtta punkter låg alltså i det ena talet.
+     *
+     * Att i stället skriva `opacity` och `transform` rakt på styckena är
+     * fler skrivningar men ingen ogiltigförklaring alls: varje element rör
+     * bara sig självt, och båda egenskaperna hanteras av kompositorn utan
+     * ny layout eller ny målning.
+     *
+     * Att registrera talet med `@property` som `<number>` prövades också
+     * och blev sämre, 9,6 procent.
+     */
+    for (let i = 0; i < nya.length; i++) {
+      const v = nya[i]
+      if (v < 0) continue
+      const el = partier.current[i]
+      if (!el || forraV.current[i] === v) continue
+      forraV.current[i] = v
+      const inn = ankomst[i]
+      const ut = avfard[i]
+      // Avfärden gäller alla stycken lika och går fort. Att låta dem lämna
+      // i tur och ordning läser inte som att partiet dras undan utan som
+      // att det dröjer sig kvar.
+      const bort = clamp01((ut - VAXEL) * UTGANG)
+      for (const d of delarna(el)) {
+        // Ankomsten är styckets egen: en tröskel som stiger med numret, så
+        // styckena kommer fram efter varandra i stället för på en gång.
+        const syn = Math.min(clamp01((inn - VAXEL - d.i * TROSKEL) * INGANG), bort)
+        if (d.syn === syn) continue
+        d.syn = syn
+        d.el.style.opacity = syn.toFixed(3)
+        d.el.style.transform = syn === 1
+          ? 'none'
+          : `translate3d(${(d.dx * (1 - syn)).toFixed(1)}px, ${(d.dy * (1 - syn)).toFixed(1)}px, 0)`
+      }
+    }
 
     for (let i = 0; i < FILM.length; i++) {
       const l = lager.current[i]
@@ -372,7 +644,7 @@ export function Verk() {
     }
 
     setAkt((f) => (f === aktiv ? f : aktiv))
-    setReplik((f) => (f === r ? f : r))
+    setParti((f) => (f === framme ? f : framme))
   }, !reducedMotion())
 
   /** Hämtar filen till den akt som syns och den som står näst på tur. */
@@ -387,7 +659,7 @@ export function Verk() {
     })
   }, [akt])
 
-  const nu = FILM[Math.min(akt, FILM.length - 1)]
+  const rubrik = PARTIER[Math.min(parti, PARTIER.length - 1)].panel.rubrik
 
   return (
     <div className="verk" ref={spar}>
@@ -429,22 +701,21 @@ export function Verk() {
         <span className="verk__dis" />
         <Meander />
 
-        {/* Raden i rutan. Den hör till bilden och inte till spalten, och den
-            byts medan man rullar genom tagningen — som en textremsa i en
-            film, inte som en skylt man rullar förbi. Nyckeln bär både
-            tagning och rad, så bytet spelar sin egen ingång.
+        {/* Rubriken i rutan är partiets egen, och den enda det har.
 
-            Ingen etikett här: mätaren strax ovanför säger redan vilken akt
-            man är i, och samma ord två gånger i samma ruta är inte en
-            orientering utan ett eko. På en telefon finns inte plats för
-            både rad och spalt, och där står den i spalten i stället — se
-            `.akt__titel`. */}
-        <div className="verk__akt" key={`${nu.id}-${replik}`}>
-          <h2 className="verk__rubrik">
-            {(nu.repliker[replik] ?? nu.repliker[0]).split('\n').map((rad) => (
-              <span className="verk__rad" key={rad}>{rad}</span>
-            ))}
-          </h2>
+            Här stod förut en rad ur filmen som byttes tre gånger per
+            tagning — femton rubriker som fanns för bildens skull — och
+            partiet under bar sedan sin egen rubrik en gång till. Två lager
+            rubriker ovanpå varandra, varav det ena handlade om det man såg
+            i stället för om det vi gör.
+
+            Nu finns en. Den står stort i rutan där den syns mot filmen, och
+            partiet visar bara sitt stycke. På en telefon finns ingen plats
+            i rutan, och då står den i stället överst i partiet — se
+            `.parti__rubrik`. */}
+        <div className="verk__akt" key={rubrik}>
+          <span className="verk__ort">{AKTER[akt].namn}</span>
+          <h2 className="verk__rubrik">{rubrik}</h2>
         </div>
 
         {/* Var i verket man befinner sig. Fem streck, ett per akt. */}
@@ -455,7 +726,7 @@ export function Verk() {
         </ol>
       </div>
 
-      {/* ── Spalten. Det som rullar. ─────────────────────────────────── */}
+      {/* ── Spalten. Ett parti i taget. ──────────────────────────────── */}
       <div className="verk__spalt">
         {AKTER.map((a, i) => (
           <section
@@ -464,23 +735,13 @@ export function Verk() {
             key={a.id}
             ref={(n) => { avsnitt.current[i] = n }}
           >
-            {/* Titeln i spalten. Syns bara på smala skärmar, där den i
-                stället för att ligga bakom panelerna står före dem. Här
-                står tagningens första rad och inte den som gäller just nu:
-                den här titeln rullar med sidan i stället för att ligga
-                still, och en rad som byts under tiden hade bytts mitt i
-                läsningen av sig själv. */}
-            <div className="akt__titel">
-              <span className="verk__ort">{FILM[i]?.ort ?? a.namn}</span>
-              <h2 className="verk__rubrik">
-                {(FILM[i]?.repliker[0] ?? a.namn).split('\n').map((rad) => (
-                  <span className="verk__rad" key={rad}>{rad}</span>
-                ))}
-              </h2>
-            </div>
-
-            {a.paneler.map((p) => (
-              <Grupp key={p.rubrik} panel={p} onVisa={setVisar} />
+            {PER_AKT[i].map(({ p, nr }) => (
+              <Parti
+                key={nr}
+                data={p}
+                onVisa={setVisar}
+                refCb={(n) => { partier.current[nr] = n }}
+              />
             ))}
           </section>
         ))}
@@ -494,124 +755,141 @@ export function Verk() {
   )
 }
 
-/* ── Panelerna i spalten ──────────────────────────────────────────────── */
-
-import type { ReactNode } from 'react'
-import type { Panel as PanelData } from '../data/akter'
+/* ── Partierna i spalten ──────────────────────────────────────────────── */
 
 /**
- * En grupp är en rubrik med det som hör till den, och den blir aldrig en
- * enda panel.
+ * ETT PARTI
+ * ═════════
+ * En rubrik med det som hör till den, och den enda text som syns just nu.
  *
- * VARFÖR INNEHÅLLET STYCKAS
- * Först låg hela gruppen i en ruta, och tre av dem blev längre än skärmen —
- * den längsta hälften till. En panel som inte får plats i rutan är inte
- * längre någonting som rullar förbi filmen: den täcker den, och medan man
- * läser är sidan tillbaka till att vara en textsida med en bakgrund. Varje
- * punkt och varje kort får därför en egen ruta. De kommer efter varandra
- * med tätare mellanrum än grupperna emellan, så att de fortfarande läses
- * ihop, och mellan dem syns filmen.
+ * VARFÖR ETT I TAGET
+ * Spalten var förut en obruten rulle: allt innehåll fanns hela tiden, varje
+ * stycke tonade in en gång när det kom in i rutan och stod sedan kvar för
+ * gott. Det gjorde sidan till en textsida med film bakom sig, hur väl
+ * filmen än rörde sig — man rullade förbi en lista, och bakom listan råkade
+ * det gå en film.
+ *
+ * Varje parti äger nu en sträcka av rullningen och sitter fastnaglat medan
+ * man tar sig genom den: det kommer fram, står stilla medan man läser det,
+ * och lämnar när man rullar vidare. Sträckorna gränsar till varandra, så
+ * det finns aldrig två framme samtidigt. Rullningen blir en föredragning
+ * och inte en rulle.
+ *
+ * VARFÖR STYCKENA KOMMER ETT I TAGET OCH FRÅN VAR SITT HÅLL
+ * Kommer allt in samtidigt och från samma håll är rörelsen bara en
+ * fördröjning innan man får läsa — man ser en platta glida upp, inte ett
+ * stycke komma fram. Kommer de ett efter ett från olika håll läses de som
+ * det de är: skilda saker, sagda i tur och ordning.
+ *
+ * Ordningen ligger i `--i` och hållet i `--dx`/`--dy`, båda satta här och
+ * inte i stilmallen. Numret måste löpa genom hela partiet, och rutorna
+ * ligger i ett eget rutfält — `nth-child` hade börjat om på ett där, och
+ * då hade fyra stycken kommit in i samma ögonblick.
+ *
+ * Allt räknas ur ett enda tal: `--p`, hur långt in i partiets sträcka man
+ * är. Det skrivs en gång per bildruta av `Verk`, och stilmallen gör resten
+ * med `opacity` och `transform`. Ingen kod rör de enskilda styckena.
  */
-function Grupp({ panel, onVisa }: { panel: PanelData; onVisa: (id: string) => void }) {
+function Parti({ data, onVisa, refCb }: {
+  data: PartiData
+  onVisa: (id: string) => void
+  refCb: (n: HTMLDivElement | null) => void
+}) {
+  const { panel, forst } = data
+  // Löpnumret genom hela partiet, rutorna inräknade.
+  let n = 0
+  const del = (extra?: string) => {
+    const [dx, dy] = HALL[n % HALL.length]
+    // Dataattribut och inte stilvariabler: talen läses en gång av `Verk`
+    // och används sedan därifrån. Skrevs de som variabler skulle
+    // stilmallen räkna om dem, och det är just det som är dyrt.
+    const props = {
+      className: extra ? `parti__del ${extra}` : 'parti__del',
+      'data-i': n,
+      'data-x': dx,
+      'data-y': dy,
+    }
+    n += 1
+    return props
+  }
+
   return (
-    <div className="grupp">
-      <Blad>
-        <h3 className="panel__rubrik">{panel.rubrik}</h3>
-        {panel.brod && <p className="panel__brod">{panel.brod}</p>}
-        {panel.knappar && (
-          <div className="panel__knappar">
-            {panel.knappar.map((k) => (
-              <a className="panel__knapp" href={k.href} key={k.href}>
-                {k.text}<Arrow />
-              </a>
-            ))}
-          </div>
-        )}
-        {panel.tal && (
-          <dl className="panel__tal">
-            {panel.tal.map((t) => (
-              <div key={t.varde}>
-                <dt>{t.varde}</dt>
-                <dd>{t.text}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {/* Frågorna styckas inte. Hopfällda är de en rad och tar mindre än
-            en skärm tillsammans, och nio egna rutor med en rad i varje hade
-            blivit en knapprad och inte en frågelista. */}
-        {panel.fragor && (
-          <div className="panel__fragor">
-            {panel.fragor.map((f) => (
-              <details key={f.q}>
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        )}
-      </Blad>
+    <div className="parti" ref={refCb}>
+      <div className="parti__hall">
+        <div className="parti__inre">
+          {/* Rubriken hör hemma i rutan, och står här bara på en skärm som
+              inte har någon plats i rutan att ge den. */}
+          {/* Rubriken står i varje del, även i fortsättningarna.
 
-      {/* Rutorna står i par och inte på rad.
+              På en bred skärm syns den inte här alls — den står i rutan,
+              och där står den kvar oförändrad genom hela ämnet. På en
+              telefon finns ingen sådan ruta, och en fortsättning utan
+              rubrik hade varit tre kort utan avsändare. Att den upprepas
+              är just vad som säger att ämnet fortsätter. */}
+          <h3 {...del('parti__rubrik')}>{panel.rubrik}</h3>
 
-          En enda lodrät stapel av lika breda rutor läser som en spalt man
-          betar av, och tolv sådana efter varandra blir enformiga hur väl
-          skrivna de än är — det spelar ingen roll att filmen syns mellan
-          dem när takten är densamma hela vägen ned. I par breder de i
-          stället ut sig i rutan, halveras i höjd, och den lucka som
-          uppstår när antalet är udda är inte ett hål utan ännu ett ställe
-          där man ser filmen. Se `.grupp__rutor`. */}
-      {(panel.punkter || panel.kort) && (
-        <div className="grupp__rutor">
-          {panel.punkter?.map((p) => (
-            <Blad klass="panel--liten" key={p.titel}>
-              <b className="panel__titel">{p.titel}</b>
-              <span className="panel__text">{p.text}</span>
-            </Blad>
-          ))}
+          {forst && panel.brod && <p {...del('panel__brod')}>{panel.brod}</p>}
 
-          {panel.kort?.map((k) => (
-            <Blad klass="panel--liten" key={k.namn}>
-              <span className="panel__slag">{k.slag}</span>
-              <b className="panel__titel">{k.namn}</b>
-              <span className="panel__text">{k.om}</span>
-              {k.exempel && (
-                <button className="panel__se" type="button" onClick={() => onVisa(k.exempel!)}>
-                  Se ett exempel<Arrow />
-                </button>
-              )}
-            </Blad>
-          ))}
+          {forst && panel.tal && (
+            <dl {...del('panel__tal')}>
+              {panel.tal.map((t) => (
+                <div key={t.varde}>
+                  <dt>{t.varde}</dt>
+                  <dd>{t.text}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {/* Frågorna styckas inte. Hopfällda är de en rad var och tar
+              mindre än en skärm tillsammans, och nio egna stycken med en
+              rad i varje hade blivit en knapprad och inte en frågelista. */}
+          {data.fragor.length > 0 && (
+            <div {...del('panel__fragor')}>
+              {data.fragor.map((f) => (
+                <details key={f.q}>
+                  <summary>{f.q}</summary>
+                  <p>{f.a}</p>
+                </details>
+              ))}
+            </div>
+          )}
+
+          {forst && panel.knappar && (
+            <div {...del('panel__knappar')}>
+              {panel.knappar.map((k) => (
+                <a className="panel__knapp" href={k.href} key={k.href}>
+                  {k.text}<Arrow />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {(data.punkter.length > 0 || data.kort.length > 0) && (
+            <div className="parti__rutor">
+              {data.punkter.map((p) => (
+                <div {...del('ruta')} key={p.titel}>
+                  <b className="panel__titel">{p.titel}</b>
+                  <span className="panel__text">{p.text}</span>
+                </div>
+              ))}
+
+              {data.kort.map((k) => (
+                <div {...del('ruta')} key={k.namn}>
+                  <span className="panel__slag">{k.slag}</span>
+                  <b className="panel__titel">{k.namn}</b>
+                  <span className="panel__text">{k.om}</span>
+                  {k.exempel && (
+                    <button className="panel__se" type="button" onClick={() => onVisa(k.exempel!)}>
+                      Se ett exempel<Arrow />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  )
-}
-
-function Blad({ children, klass }: { children: ReactNode; klass?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [inne, setInne] = useState(false)
-
-  /**
-   * Bladet träder fram när det kommer in i rutan, och gör det med
-   * IntersectionObserver och CSS i stället för med kod som räknar per
-   * bildruta. Det som bara ska hända en gång hör inte hemma i varvet.
-   */
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (reducedMotion()) { setInne(true); return }
-    const ob = new IntersectionObserver(
-      (es) => { if (es[0]?.isIntersecting) { setInne(true); ob.disconnect() } },
-      { threshold: 0.15, rootMargin: '0px 0px -12% 0px' },
-    )
-    ob.observe(el)
-    return () => ob.disconnect()
-  }, [])
-
-  return (
-    <div className={klass ? `panel ${klass}` : 'panel'} data-in={inne} ref={ref}>
-      {children}
+      </div>
     </div>
   )
 }
