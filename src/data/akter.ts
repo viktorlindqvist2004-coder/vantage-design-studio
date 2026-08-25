@@ -108,7 +108,7 @@ export const AKTER: Akt[] = [
       },
       {
         rubrik: 'Drift och förvaltning som tillval',
-        brod: 'För 189 kr i månaden ligger webbplatsen på vår egen server, med övervakning, uppdateringar, löpande underhåll och de mindre ändringar som dyker upp längs vägen. Ett tillval och inte ett villkor — koden är er oavsett.',
+        brod: 'För 319 kr i månaden ligger webbplatsen på vår egen server, med övervakning, uppdateringar, löpande underhåll och de mindre ändringar som dyker upp längs vägen. Ett tillval och inte ett villkor — koden är er oavsett.',
       },
     ],
   },

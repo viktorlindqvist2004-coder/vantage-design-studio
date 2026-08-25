@@ -230,7 +230,7 @@ export const FAQ = [
   },
   {
     q: 'Kan ni sköta driften åt oss?',
-    a: 'Ja. För 189 kr i månaden ligger sajten på vår egen server och vi håller den uppe och uppdaterad, med löpande underhåll och de små ändringar som dyker upp. Det är ett tillval och inte ett villkor: koden är er, och vill ni flytta sajten någon annanstans — eller sköta den själva — går det utan att något behöver byggas om.',
+    a: 'Ja. För 319 kr i månaden ligger sajten på vår egen server och vi håller den uppe och uppdaterad, med löpande underhåll och de små ändringar som dyker upp. Det är ett tillval och inte ett villkor: koden är er, och vill ni flytta sajten någon annanstans — eller sköta den själva — går det utan att något behöver byggas om.',
   },
 ]
 
