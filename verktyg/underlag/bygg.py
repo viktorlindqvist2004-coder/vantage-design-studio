@@ -305,10 +305,6 @@ td.kr {
   <h2>Vanliga frågor</h2>
   <div class="fragor">
     <div>
-      <h3>Vad behöver ni av oss?</h3>
-      <p>Framför allt en timme eller två i början, då ni berättar om verksamheten. Sedan texter och bilder. Saknas de hjälper vi till att ta fram dem. Ni behöver inte kunna något om webb.</p>
-    </div>
-    <div>
       <h3>Kan ni ta över en sajt som redan finns?</h3>
       <p>Ofta ja. Vi ser över det som finns och säger rakt ut om det är klokare att bygga vidare eller börja om. Även när svaret är att ni klarar er utan oss ett tag till.</p>
     </div>
