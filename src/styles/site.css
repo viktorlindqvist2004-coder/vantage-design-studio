@@ -1009,15 +1009,12 @@
      procent är orört, och det är där man ser rummet man färdas genom. */
   background:
     linear-gradient(90deg,
-      rgba(16, 20, 28, 0.86) 0%,
-      rgba(16, 20, 28, 0.48) 20%,
-      rgba(16, 20, 28, 0.06) 32%,
-      rgba(16, 20, 28, 0.10) 46%,
-      rgba(16, 20, 28, 0.44) 54%,
-      rgba(16, 20, 28, 0.68) 64%,
-      rgba(16, 20, 28, 0.78) 100%),
-    linear-gradient(0deg, rgba(16, 20, 28, 0.46) 0%, rgba(16, 20, 28, 0) 34%),
-    radial-gradient(130% 95% at 50% 40%, transparent 46%, rgba(16, 20, 28, 0.42) 100%);
+      rgba(16, 20, 28, 0.84) 0%,
+      rgba(16, 20, 28, 0.42) 22%,
+      rgba(16, 20, 28, 0.05) 40%,
+      transparent 60%),
+    linear-gradient(0deg, rgba(16, 20, 28, 0.42) 0%, rgba(16, 20, 28, 0) 32%),
+    radial-gradient(130% 95% at 50% 40%, transparent 48%, rgba(16, 20, 28, 0.38) 100%);
 }
 
 /* ── Akttiteln i rutan ────────────────────────────────────────────────── */
@@ -1267,6 +1264,37 @@
      Utan det här hade det tomma utrymmet ovanför och under texten fångat
      varje klick på filmen bakom. */
   pointer-events: none;
+  position: relative;
+}
+
+/* ── Ljuset bakom texten ──────────────────────────────────────────────
+   Texten såg ut att ligga ovanpå filmen i stället för att höra till den,
+   och skälet var att mörkret bakom den var en platta med en kant. Diset
+   låg över hela rutan med fast geometri: samma sänkning oavsett var texten
+   stod, och en gräns där sänkningen tog slut. En kant är det enda ögat
+   behöver för att läsa något som pålagt.
+
+   Det här är i stället ett ljus som hör till stycket. Det står där texten
+   står, det tonar ut åt alla håll utan att någonstans få en gräns, och det
+   kommer och går med texten — så när inget står i rutan är filmen orörd.
+   Det läser som att rummet är mörkare just där, inte som att någon lagt en
+   skiva över bilden.
+
+   En enda målning som bara växlar genomskinlighet, alltså ingenting som
+   kostar per bildruta. */
+.parti__ljus {
+  position: absolute;
+  inset: -12% -8%;
+  opacity: 0;
+  pointer-events: none;
+  /* Måtten följer var texten står, inte rutans mitt. På en bred skärm bor
+     spalten i högra fyrtio procenten, så ljuset är centrerat där och når
+     ändå långt förbi vänsterkanten av den — annars blir det kort som står
+     ytterst till vänster stående i solen. */
+  background:
+    radial-gradient(56% 50% at 76% 50%, rgba(14, 17, 24, 0.9) 0%,
+      rgba(14, 17, 24, 0.86) 30%, rgba(14, 17, 24, 0.66) 55%,
+      rgba(14, 17, 24, 0.32) 76%, rgba(14, 17, 24, 0.1) 90%, transparent 100%);
 }
 
 .parti__inre {
@@ -1288,18 +1316,106 @@
    eller ny målning. Inget `will-change`: styckena är närmare hundra, och
    hundra utlovade kompositlager är dyrare än de rörelser de skulle bära. */
 .parti__del {
-  /* Utgångsläget, och ingenting mer.
-
-     `opacity` och `transform` skrivs av `Verk` rakt på elementet, en gång
-     per bildruta så länge partiet rör sig. Räkningen låg först här i
-     stilmallen, drivet av ett tal på partiet — det var kortare kod och
-     tre gånger dyrare, för en skriven variabel gör varje ättling som läser
-     den ogiltig. Se `Verk.tsx` för mätningen.
-
-     Noll här och inte ett: det som ännu inte kommit fram ska inte skymta
-     förbi i den bildruta som hinner målas innan varvet skrivit första
-     gången. */
+  /* Utgångsläget. Noll och inte ett: det som ännu inte kommit fram ska inte
+     skymta förbi i den bildruta som hinner målas först. */
   opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RULLNINGEN DRIVER TEXTEN, OCH INTE JAVASCRIPT
+   ═══════════════════════════════════════════════════════════════════════
+   Det här är svaret på varför sidan hackade på telefon fast varje mätning
+   här sa att den inte gjorde det.
+
+   Rörelsen räknades av en `requestAnimationFrame`-slinga: läs var partiet
+   är, skriv genomskinlighet och förskjutning på varje stycke, sextio
+   gånger i sekunden. På en dator hinner den slingan alltid. På en iPhone
+   gör den det inte — under ett fingersvep prioriterar Safari
+   rullningstråden och låter bildrutevarvet vänta. Sidan rullar mjukt
+   eftersom rullning sköts av kompositorn, men allt som JavaScript ritar
+   kommer i ryck. Det syns just som "sidan glider inte".
+
+   En animation med `animation-timeline` räknas inte av vår kod alls. Den
+   är knuten till hur långt partiet kommit genom rutan, och webbläsaren
+   driver den på samma tråd som rullningen själv. Den kan därför inte
+   hamna efter, hur upptagen huvudtråden än är.
+
+   Trösklarna som fick styckena att komma ett i taget finns kvar, men som
+   förskjutna intervall i stället för som tal i en slinga: stycke `--i`
+   börjar sin resa en aning senare än det före. Riktningen ligger kvar i
+   `--dx`/`--dy`, satta en gång när sidan ritas.
+
+   `Verk.tsx` känner av stödet och låter i så fall bli att röra styckena.
+   Saknas stödet gör slingan jobbet som förut. */
+/* Villkoret är inte bara "kan webbläsaren det här" utan "behöver den
+   det här". Märket på rotelementet sätts av `Verk.tsx` och står på css
+   bara på pekskärm. Se noten där för varför de två motorerna vill ha var
+   sin lösning. */
+@supports (animation-timeline: view()) {
+  /* Tidslinjen skapas bara där den används. En namngiven tidslinje som
+     ingen animation läser kostar ändå bokföring vid varje rullning, och på
+     dator är det slingan som räknar — se `cssDriven` i Verk.tsx. */
+  [data-driv='css'] .parti {
+    view-timeline-name: --parti;
+    view-timeline-axis: block;
+  }
+
+  /* Bara partier i närheten får sin animation.
+
+     Det här var inte med från början, och mätningen sa ifrån: arton
+     partier med sju stycken var ger hundratjugosex rullningsanimationer,
+     och webbläsaren tickar varenda en av dem varje bildruta oavsett om
+     partiet är inom synhåll eller tolv skärmar bort. Det blev dyrare än
+     den slinga det ersatte — 32 procent sena bildrutor mot 23 på strypt
+     processor.
+
+     Slingan var selektiv utan att någon tänkt på det som en egenskap; den
+     rörde bara det som syntes. Märket nedan ger stilmallen samma
+     selektivitet, satt av en observatör när partiet närmar sig och taget
+     när det passerat. Ingenting räknas per bildruta för att sätta det. */
+  [data-driv='css'] .parti[data-nara='ja'] .parti__del {
+    animation: parti-del linear both;
+    animation-timeline: --parti;
+    /* Talen är räknade mot när partiet står fastnaglat, inte gissade.
+
+       `cover` löper från att partiet syns i underkanten till att det
+       lämnat överkanten, alltså över partiets höjd plus en rutas. Med ett
+       parti på 125 rutdelar biter fastnaglingen vid 100/225 av den
+       sträckan och släpper vid 125/225 — mellan 44 och 56 procent.
+
+       Ankomsten ska därför vara avklarad före 44 och avfärden börja efter
+       56, även för det stycke som kommer sist. Med intervallen nedan står
+       allt uppe vid 37 procent och det första börjar tona bort vid 59. */
+    animation-range-start: cover calc(16% + var(--i) * 1.2%);
+    animation-range-end: cover calc(72% + var(--i) * 0.6%);
+  }
+
+  @keyframes parti-del {
+    0% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
+    /* Inte ett. Se `.parti__del` — några procent genomskinlighet är det som
+       låter filmens struktur skymta i bokstaven. Talet står också i
+       `Verk.tsx` för den väg som räknar själv. */
+    24% { opacity: 0.94; transform: none; }
+    76% { opacity: 0.94; transform: none; }
+    100% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
+  }
+
+
+  /* Ljuset bakom texten följer samma tidslinje, så det finns bara när
+     texten finns. */
+  [data-driv='css'] .parti[data-nara='ja'] .parti__ljus {
+    animation: parti-ljus linear both;
+    animation-timeline: --parti;
+    animation-range-start: cover 14%;
+    animation-range-end: cover 74%;
+  }
+
+  @keyframes parti-ljus {
+    0% { opacity: 0; }
+    26% { opacity: 1; }
+    74% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 }
 
 /* Rubriken står i rutan på en bred skärm — se `.verk__akt`. Här skulle den
@@ -1313,12 +1429,24 @@
    läser som utfallande kort och inte som ett stycke som sägs.
 
    Utan lådor finns ingenting att glida — det är orden själva som kommer
-   fram. Läsbarheten kommer från dimman över rutan, som ändå ligger där och
-   ändå målas, plus en tät skugga per stycke. Radien är kort med flit: en
-   vid suddning kring varje bokstav var det dyraste sidan hade när det
+   fram.
+
+   Färgen är inte ren vit och tätheten inte hel. Ett rent vitt, helt tätt
+   ord ligger alltid ovanpå en bild: det finns ingen ljuskälla i en målad
+   scen som ger den färgen, och ingenting i bilden når igenom det. Några
+   procent genomskinlighet låter filmens egen struktur skymta i bokstaven,
+   och en varmare ton sätter den i samma ljus som rummet. Var för sig knappt
+   märkbart, ihop hela skillnaden.
+
+   Skuggan är varm av samma skäl: en neutralt grå skugga under varm sten
+   läser som ett lager mellan orden och bilden. Radien är kort med flit —
+   en vid suddning kring varje bokstav var det dyraste sidan hade när det
    mättes. */
 .parti__del {
-  text-shadow: 0 1px 10px rgba(16, 20, 28, 0.95);
+  color: #f1e7d6;
+  text-shadow:
+    0 1px 3px rgba(24, 15, 8, 0.9),
+    0 2px 14px rgba(28, 18, 10, 0.6);
 }
 
 .panel__brod {
@@ -1360,7 +1488,7 @@
   /* Ljusare än den var. Sextioåtta procent marmor räckte mot en mörk
      botten; mot solbelyst sten gör den det inte, och rutorna har ingen
      botten längre. */
-  color: color-mix(in srgb, var(--marmor) 80%, var(--djup));
+  color: color-mix(in srgb, var(--marmor) 89%, var(--djup));
 }
 
 .panel__slag {
@@ -1519,6 +1647,16 @@
      ryms i rutan, inte hur många ord det är. */
   .parti { height: 118vh; height: 118svh; }
 
+  /* Spalten tar hela bredden här, så ljuset ska stå mitt i rutan och inte
+     i högra tredjedelen. */
+  .parti__ljus {
+    inset: -10% -14%;
+    background:
+      radial-gradient(66% 46% at 48% 50%, rgba(14, 17, 24, 0.88) 0%,
+        rgba(14, 17, 24, 0.82) 34%, rgba(14, 17, 24, 0.58) 60%,
+        rgba(14, 17, 24, 0.26) 80%, transparent 100%);
+  }
+
   /* Rubriken flyttar in i partiet. I rutan finns ingen plats bredvid
      texten att ge den, och lagd ovanpå hade den legat i vägen för det
      stycke den hör till. */
@@ -1611,12 +1749,26 @@
     padding: clamp(2.6rem, 7vh, 4.5rem) 0;
   }
 
-  /* Styckena står framme. Varvet är avstängt och skriver alltså ingenting
-     på dem, så utan det här hade sidan varit tom. */
+  /* Styckena står framme.
+
+     `animation: none` är inte en försiktighetsåtgärd utan nödvändigt. En
+     animation vinner över en vanlig deklaration, så utan den raden skulle
+     rullningsanimationen fortsätta driva genomskinligheten här och sidan
+     stå tom för den som bett om lugn — trots att raden under säger ett.
+     Samma sak för ljuset bakom texten. */
+  .parti__del,
+  .parti__ljus {
+    animation: none;
+  }
+
   .parti__del {
     opacity: 1;
     transform: none;
   }
+
+  /* Ljuset hör till en text som kommer och går. Står allt still hela tiden
+     ska det ligga kvar, annars läser man mot bar film. */
+  .parti__ljus { opacity: 1; }
 
   /* Rubriken flyttar in i partiet, precis som på en telefon: titeln i
      rutan hör till en ruta som är fastnaglad, och det är den inte här. */

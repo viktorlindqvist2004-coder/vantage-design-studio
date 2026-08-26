@@ -397,8 +397,53 @@ const TROSKEL = 0.028
 /** Hur brant hela partiet tonar ut. Alla stycken lika, och fort. */
 const UTGANG = 3.5
 
+import type { CSSProperties } from 'react'
+
 /** Ett stycke i ett parti, med sitt nummer, sitt håll och sitt senaste läge. */
 type Del = { el: HTMLElement; i: number; dx: number; dy: number; syn: number }
+
+/**
+ * VEM SOM SKA DRIVA RÖRELSEN, OCH VARFÖR SVARET INTE ÄR DETSAMMA ÖVERALLT
+ * ══════════════════════════════════════════════════════════════════════
+ * Två sätt att få styckena att komma och gå: en slinga som räknar per
+ * bildruta, eller `animation-timeline` som låter webbläsaren göra det.
+ * Det finns inget bäst — de två motorerna har motsatta flaskhalsar.
+ *
+ * I Chromium är slingan snabbare, och mätt flera gånger: 21 procent sena
+ * bildrutor mot 28 på strypt processor. Skälet är att en
+ * rullningsanimation tickas av webbläsaren varje bildruta med sin egen
+ * bokföring, medan slingan bara rör de partier som faktiskt syns. Att ge
+ * stilmallen samma selektivitet med `data-nara` tog igen en del men inte
+ * allt.
+ *
+ * På en iPhone spelar den mätningen ingen roll, för där körs slingan inte.
+ * Under ett fingersvep prioriterar Safari rullningstråden och låter
+ * bildrutevarvet vänta tills svepet lagt sig. Sidan rullar mjukt eftersom
+ * rullning sköts av kompositorn, men allt som JavaScript ritar står still
+ * och hoppar sedan ikapp. Det är precis vad "sidan glider inte" beskriver,
+ * och ingen optimering av slingan hjälper mot att den inte körs.
+ *
+ * Därför: slingan på dator, stilmallen på pekskärm. Var och en får det som
+ * passar den, och den uppmätta försämringen hamnar inte där den går att
+ * mäta.
+ *
+ * ÄRLIGHET OM VAD SOM ÄR PRÖVAT: allt ovan om Chromium är mätt här.
+ * Påståendet om Safari är hämtat ur hur motorn är känd att bete sig, inte
+ * ur en mätning — den här maskinen har varken Safari eller WebKit.
+ */
+const cssDriven = () =>
+  typeof CSS !== 'undefined'
+  && !!CSS.supports?.('animation-timeline', 'view()')
+  && pekskarm()
+
+/**
+ * Hur tät texten är när den står framme.
+ *
+ * Talet står också i `@keyframes parti-del`. Ändras det ena måste det andra
+ * följa med, annars byter texten täthet i det ögonblick en webbläsare utan
+ * stöd tar över räkningen.
+ */
+const TATHET = 0.94
 
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
@@ -419,15 +464,26 @@ export function Verk() {
    * aldrig ändras. Listan byggs första gången partiet rör sig och ligger
    * kvar; nyckeln är elementet självt, så den försvinner med det.
    */
+  /** Ljuset bakom texten, uppslaget en gång per parti. */
+  const ljusLista = useRef(new WeakMap<HTMLElement, HTMLElement | null>())
+  const ljuset = (el: HTMLElement) => {
+    let l = ljusLista.current.get(el)
+    if (l === undefined) {
+      l = el.querySelector<HTMLElement>('.parti__ljus')
+      ljusLista.current.set(el, l)
+    }
+    return l
+  }
+
   const delLista = useRef(new WeakMap<HTMLElement, Del[]>())
   const delarna = (el: HTMLElement) => {
     let d = delLista.current.get(el)
     if (!d) {
       d = [...el.querySelectorAll<HTMLElement>('.parti__del')].map((n) => ({
         el: n,
-        i: Number(n.dataset.i) || 0,
-        dx: Number(n.dataset.x) || 0,
-        dy: Number(n.dataset.y) || 0,
+        i: Number(n.style.getPropertyValue('--i')) || 0,
+        dx: parseFloat(n.style.getPropertyValue('--dx')) || 0,
+        dy: parseFloat(n.style.getPropertyValue('--dy')) || 0,
         syn: -1,
       }))
       delLista.current.set(el, d)
@@ -440,6 +496,8 @@ export function Verk() {
   /** Avgörs en gång. Ett medievillkor som frågas sextio gånger i sekunden
    *  är sextio frågor för mycket om svaret är detsamma hela besöket. */
   const pek = useRef(false)
+  /** Om webbläsaren driver rullningsanimationerna själv. Avgörs en gång. */
+  const cssTid = useRef(false)
   /** När den senaste bakåtsökningen gjordes, så de kan hållas sällsynta. */
   const sistaSok = useRef({ t: 0 })
   const [akt, setAkt] = useState(0)
@@ -493,7 +551,55 @@ export function Verk() {
    * rullning är den gest webbläsaren väntar på, och den kommer ändå: det
    * enda man kan göra med den här sidan är att rulla.
    */
-  useEffect(() => { pek.current = pekskarm() }, [])
+  useEffect(() => {
+    pek.current = pekskarm()
+    cssTid.current = cssDriven()
+    // Märket styr vilka regler i stilmallen som gäller. Sätts en gång.
+    document.documentElement.dataset.driv = cssTid.current ? 'css' : 'js'
+  }, [])
+
+  /**
+   * Två observatörer, båda i stället för arbete per bildruta.
+   *
+   * Den första märker ut vilka partier som är i närheten. Stilmallen ger
+   * bara dem sina rullningsanimationer — se noten vid `data-nara` i
+   * site.css för varför det är hela skillnaden mellan billigare och dyrare
+   * än slingan den ersatte. Marginalen är en rutas höjd åt vardera hållet,
+   * alltså gott om tid att komma på plats innan partiet syns.
+   *
+   * Den andra säger vilket parti som står framme, och därmed vilken rubrik
+   * rutan bär. Bandet är rutans mittersta femtedel: partierna är längre än
+   * så och gränsar till varandra, så exakt ett i taget skär det.
+   */
+  useEffect(() => {
+    if (reducedMotion()) return
+    const el = partier.current.filter(Boolean) as HTMLElement[]
+
+    const nara = new IntersectionObserver(
+      (poster) => {
+        for (const p of poster) {
+          const m = p.isIntersecting ? 'ja' : 'nej'
+          const t = p.target as HTMLElement
+          if (t.dataset.nara !== m) t.dataset.nara = m
+        }
+      },
+      { rootMargin: '100% 0px 100% 0px' },
+    )
+
+    const framme = new IntersectionObserver(
+      (poster) => {
+        for (const p of poster) {
+          if (!p.isIntersecting) continue
+          const i = partier.current.indexOf(p.target as HTMLElement)
+          if (i >= 0) setParti((f) => (f === i ? f : i))
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px' },
+    )
+
+    for (const n of el) { nara.observe(n); framme.observe(n) }
+    return () => { nara.disconnect(); framme.disconnect() }
+  }, [])
 
   useEffect(() => {
     const av = () => filmer.current.forEach(grunda)
@@ -622,15 +728,29 @@ export function Verk() {
      * Därför två varv och inte ett. Det första rör ingenting, det andra
      * frågar ingenting.
      */
-    let framme = 0
+    /**
+     * Driver stilmallen rörelsen rör vi ingenting här.
+     *
+     * Det som följer — arton lägesavläsningar och ett par hundra
+     * skrivningar per bildruta — är exakt det arbete som inte hinner göras
+     * på en telefon under ett fingersvep. Med `animation-timeline` sköter
+     * webbläsaren samma rörelse på rullningens egen tråd, och då ska den
+     * här koden hålla sig undan i stället för att göra om jobbet sämre.
+     *
+     * Vilket parti som står framme följs av en observatör i stället, se
+     * `useEffect` nedan. Det är ett besked som kommer när det händer, inte
+     * en fråga som ställs sextio gånger i sekunden.
+     */
+    let framme = -1
     let bast = -1
     const V = window.innerHeight
+    if (cssTid.current) framme = -1
     const nya: number[] = []
     const ankomst: number[] = []
     const avfard: number[] = []
 
     // Första varvet läser bara.
-    for (let i = 0; i < PARTIER.length; i++) {
+    for (let i = 0; !cssTid.current && i < PARTIER.length; i++) {
       const el = partier.current[i]
       if (!el) { nya.push(-1); continue }
       const r = el.getBoundingClientRect()
@@ -672,7 +792,7 @@ export function Verk() {
      * Att registrera talet med `@property` som `<number>` prövades också
      * och blev sämre, 9,6 procent.
      */
-    for (let i = 0; i < nya.length; i++) {
+    for (let i = 0; !cssTid.current && i < nya.length; i++) {
       const v = nya[i]
       if (v < 0) continue
       const el = partier.current[i]
@@ -684,13 +804,23 @@ export function Verk() {
       // i tur och ordning läser inte som att partiet dras undan utan som
       // att det dröjer sig kvar.
       const bort = clamp01((ut - VAXEL) * UTGANG)
+
+      /* Ljuset följer det stycke som är uppe längst, alltså det första.
+         Skulle det tona med det sista blev rutan mörk en stund efter att
+         orden gått, och tomt mörker läser som att något gått sönder. */
+      const ljus = ljuset(el)
+      if (ljus) {
+        const p = Math.min(clamp01((inn - VAXEL) * INGANG), bort).toFixed(3)
+        if (ljus.style.opacity !== p) ljus.style.opacity = p
+      }
+
       for (const d of delarna(el)) {
         // Ankomsten är styckets egen: en tröskel som stiger med numret, så
         // styckena kommer fram efter varandra i stället för på en gång.
         const syn = Math.min(clamp01((inn - VAXEL - d.i * TROSKEL) * INGANG), bort)
         if (d.syn === syn) continue
         d.syn = syn
-        d.el.style.opacity = syn.toFixed(3)
+        d.el.style.opacity = (syn * TATHET).toFixed(3)
         d.el.style.transform = syn === 1
           ? 'none'
           : `translate3d(${(d.dx * (1 - syn)).toFixed(1)}px, ${(d.dy * (1 - syn)).toFixed(1)}px, 0)`
@@ -736,7 +866,7 @@ export function Verk() {
     }
 
     setAkt((f) => (f === aktiv ? f : aktiv))
-    setParti((f) => (f === framme ? f : framme))
+    if (framme >= 0) setParti((f) => (f === framme ? f : framme))
   }, !reducedMotion())
 
   /**
@@ -913,14 +1043,19 @@ function Parti({ data, onVisa, refCb }: {
   let n = 0
   const del = (extra?: string) => {
     const [dx, dy] = HALL[n % HALL.length]
-    // Dataattribut och inte stilvariabler: talen läses en gång av `Verk`
-    // och används sedan därifrån. Skrevs de som variabler skulle
-    // stilmallen räkna om dem, och det är just det som är dyrt.
+    /**
+     * Talen skrivs som stilvariabler, en gång när sidan ritas.
+     *
+     * Det var de inte förut, och skälet var riktigt: en variabel som skrivs
+     * om varje bildruta gör varje ättling som läser den ogiltig, och det
+     * mättes till tre gånger dyrare än att skriva rakt på elementet. Men de
+     * här skrivs aldrig om. De sätts en gång och står still hela besöket,
+     * och då kostar de ingenting — samtidigt som stilmallen kan läsa dem
+     * och driva hela rörelsen själv.
+     */
     const props = {
       className: extra ? `parti__del ${extra}` : 'parti__del',
-      'data-i': n,
-      'data-x': dx,
-      'data-y': dy,
+      style: { '--i': n, '--dx': `${dx}px`, '--dy': `${dy}px` } as CSSProperties,
     }
     n += 1
     return props
@@ -929,6 +1064,8 @@ function Parti({ data, onVisa, refCb }: {
   return (
     <div className="parti" ref={refCb}>
       <div className="parti__hall">
+        {/* Ljuset som gör att texten hör till bilden. Se `.parti__ljus`. */}
+        <div className="parti__ljus" aria-hidden="true" />
         <div className="parti__inre">
           {/* Rubriken hör hemma i rutan, och står här bara på en skärm som
               inte har någon plats i rutan att ge den. */}
