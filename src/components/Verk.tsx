@@ -439,11 +439,15 @@ const cssDriven = () =>
 /**
  * Hur tät texten är när den står framme.
  *
- * Talet står också i `@keyframes parti-del`. Ändras det ena måste det andra
- * följa med, annars byter texten täthet i det ögonblick en webbläsare utan
- * stöd tar över räkningen.
+ * Ett, och inte längre strax under. Genomskinligheten var tänkt att knyta
+ * orden till bilden genom att låta filmen skymta i dem, och den gjorde
+ * dem svårlästa mot en rörlig bakgrund i stället. Det som knyter texten
+ * till filmen är ljuset bakom den; se `.parti__del` i site.css.
+ *
+ * Talet står också i `@keyframes parti-del`. Ändras det ena måste det
+ * andra följa med.
  */
-const TATHET = 0.94
+const TATHET = 1
 
 export function Verk() {
   const spar = useRef<HTMLDivElement>(null)
@@ -901,7 +905,21 @@ export function Verk() {
           <div
             className="verk__lager"
             data-rorelse={t.rorelse}
-            style={{ zIndex: i }}
+            /* `will-change` bara på de tagningar som har en källa.
+
+               Det stod i stilmallen och gällde alla fem, vilket betyder
+               fem helskärmslager i grafikminnet genom hela besöket. På en
+               iPhone med 1170 gånger 2532 bildpunkter är varje sådant
+               lager elva megabyte, alltså femtiofem för fyra som mest
+               syns två i taget. När minnet tar slut börjar kompositorn
+               kasta ut och rita om lager medan man rullar, och det syns
+               som ryck.
+
+               Talet sätts när akten byter och inte per bildruta. Att växla
+               det varje ruta prövades en gång och var mätbart dyrare än
+               allt det skulle spara — ett lager som byggs om medan man
+               tittar på det kostar mer än ett som bara ligger. */
+            style={{ zIndex: i, willChange: laddad[i] ? 'transform' : 'auto' }}
             key={t.id}
             ref={(n) => { lager.current[i] = n }}
           >

@@ -35,10 +35,30 @@ import { reducedMotion, setForst } from './motion'
  * fortfarande sanningen. Ett bibliotek som i stället skjuter en behållare
  * i sidled hade gjort alla tre osanna på en gång.
  */
+/**
+ * Pekskärmar får inte den här alls.
+ *
+ * `syncTouch: false` gjorde redan att biblioteket lät fingret vara i fred,
+ * men det innebar inte att det slutade arbeta: det låg kvar i sidans
+ * bildrutevarv och läste rullningsläget sextio gånger i sekunden för att
+ * komma fram till att det inte hade något att göra. På en telefon under
+ * ett svep är varje sådant varv arbete som konkurrerar med rullningen
+ * själv, och den mjukhet det skulle ge finns ändå inte där — den är till
+ * för hjul och styrplattor.
+ *
+ * Ankarlänkarna nedan behöver det inte heller. Utan biblioteket sköter
+ * webbläsaren dem själv, och på en telefon är det den rullning man vill
+ * ha.
+ */
+const pekskarm = () =>
+  typeof window !== 'undefined'
+  && window.matchMedia('(hover: none), (pointer: coarse)').matches
+
 export function useSmooth() {
   useEffect(() => {
     // Den som bett om minskad rörelse ska ha sidans egen rullning, orörd.
     if (reducedMotion()) return
+    if (pekskarm()) return
 
     const lenis = new Lenis({
       /**
@@ -52,14 +72,9 @@ export function useSmooth() {
       lerp: 0.085,
       wheelMultiplier: 1,
       smoothWheel: true,
-      /**
-       * Pekskärmar får behålla sin egen rullning.
-       *
-       * Telefonen har redan en utjämning i systemet, och den är byggd för
-       * fingret — den vet vad ett svep är och när det ska släppa. Lägger
-       * man en till ovanpå slåss de om samma rörelse och resultatet är
-       * segare än ingendera. Det mjuka här är till för hjulet och plattan.
-       */
+      /* Kvar som spärr. Hit kommer ingen pekskärm längre, men skulle
+         villkoret ovan någon gång bli fel ska biblioteket ändå inte lägga
+         en egen utjämning ovanpå systemets. */
       syncTouch: false,
       touchMultiplier: 1,
       autoRaf: false,

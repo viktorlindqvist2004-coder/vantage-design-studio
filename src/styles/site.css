@@ -948,14 +948,12 @@
      svepte in med ridåer; figuren är borta sedan länge, men löftet om den
      bad fortfarande webbläsaren förbereda något som aldrig kom.
 
-     `transform` står kvar, och står kvar statiskt. Att i stället sätta det
-     från koden bara på de lager som syns är den uppenbara besparingen — och
-     den är dyrare än den är värd. Prövat och mätt: varje gång löftet ges
-     eller tas tillbaka byggs lagret om, och vid en aktgräns sker det mitt i
-     rullningen. Andelen sena bildrutor gick från 8,4 till 12,4 procent på
-     strypt processor. Fem stillastående lager kostar mindre än ett lager
-     som byggs om medan man tittar på det. */
-  will-change: transform;
+     `transform` sätts numera från koden, men inte per bildruta — se
+     `Verk.tsx`. Att växla löftet varje ruta prövades och var mätbart
+     dyrare: 8,4 mot 12,4 procent sena bildrutor, för ett lager byggs om
+     varje gång löftet ges eller tas tillbaka. Att sätta det när akten
+     byter är något helt annat: det händer fem gånger under ett helt besök,
+     och det som vinns är fyrtiofyra megabyte grafikminne på en telefon. */
 }
 
 /* Första tagningen är inte något som sveper in — den är marken man redan
@@ -1292,9 +1290,9 @@
      ändå långt förbi vänsterkanten av den — annars blir det kort som står
      ytterst till vänster stående i solen. */
   background:
-    radial-gradient(56% 50% at 76% 50%, rgba(14, 17, 24, 0.9) 0%,
-      rgba(14, 17, 24, 0.86) 30%, rgba(14, 17, 24, 0.66) 55%,
-      rgba(14, 17, 24, 0.32) 76%, rgba(14, 17, 24, 0.1) 90%, transparent 100%);
+    radial-gradient(58% 54% at 76% 50%, rgba(12, 15, 21, 0.94) 0%,
+      rgba(12, 15, 21, 0.9) 34%, rgba(12, 15, 21, 0.7) 58%,
+      rgba(12, 15, 21, 0.34) 78%, rgba(12, 15, 21, 0.1) 91%, transparent 100%);
 }
 
 .parti__inre {
@@ -1392,11 +1390,8 @@
 
   @keyframes parti-del {
     0% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
-    /* Inte ett. Se `.parti__del` — några procent genomskinlighet är det som
-       låter filmens struktur skymta i bokstaven. Talet står också i
-       `Verk.tsx` för den väg som räknar själv. */
-    24% { opacity: 0.94; transform: none; }
-    76% { opacity: 0.94; transform: none; }
+    24% { opacity: 1; transform: none; }
+    76% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
   }
 
@@ -1431,27 +1426,30 @@
    Utan lådor finns ingenting att glida — det är orden själva som kommer
    fram.
 
-   Färgen är inte ren vit och tätheten inte hel. Ett rent vitt, helt tätt
-   ord ligger alltid ovanpå en bild: det finns ingen ljuskälla i en målad
-   scen som ger den färgen, och ingenting i bilden når igenom det. Några
-   procent genomskinlighet låter filmens egen struktur skymta i bokstaven,
-   och en varmare ton sätter den i samma ljus som rummet. Var för sig knappt
-   märkbart, ihop hela skillnaden.
+   Färgen var en tid dämpad och texten några procent genomskinlig, med
+   tanken att filmens struktur skulle skymta i bokstaven och sätta den i
+   rummets ljus. Det gjorde den också — och det gjorde den samtidigt svår
+   att läsa mot en rörlig bild. Orden ska höra till filmen, inte försvinna
+   in i den, och de två sakerna är inte samma.
+
+   Texten är därför ljus och tät igen. Det som knyter den till bilden är i
+   stället ljuset bakom den, som hör till stycket och rör sig med det —
+   och det gör jobbet utan att kosta ett enda uns läsbarhet.
 
    Skuggan är varm av samma skäl: en neutralt grå skugga under varm sten
    läser som ett lager mellan orden och bilden. Radien är kort med flit —
    en vid suddning kring varje bokstav var det dyraste sidan hade när det
    mättes. */
 .parti__del {
-  color: #f1e7d6;
+  color: #fbf6ed;
   text-shadow:
-    0 1px 3px rgba(24, 15, 8, 0.9),
-    0 2px 14px rgba(28, 18, 10, 0.6);
+    0 1px 3px rgba(20, 12, 6, 0.95),
+    0 2px 16px rgba(24, 15, 8, 0.75);
 }
 
 .panel__brod {
-  font-size: var(--t-small);
-  line-height: 1.65;
+  font-size: clamp(1.02rem, 1.25vw, 1.22rem);
+  line-height: 1.58;
   color: color-mix(in srgb, var(--marmor) 82%, var(--djup));
   margin: 0;
 }
@@ -1479,16 +1477,16 @@
   border-left: 1px solid color-mix(in srgb, var(--brons) 48%, transparent);
 }
 
-.panel__titel { font-weight: 600; font-size: var(--t-small); }
+.panel__titel { font-weight: 600; font-size: clamp(1.05rem, 1.25vw, 1.24rem); }
 .ruta .panel__slag + .panel__titel { font-size: var(--t-md); }
 
 .panel__text {
-  font-size: var(--t-small);
-  line-height: 1.6;
+  font-size: clamp(0.98rem, 1.1vw, 1.12rem);
+  line-height: 1.55;
   /* Ljusare än den var. Sextioåtta procent marmor räckte mot en mörk
      botten; mot solbelyst sten gör den det inte, och rutorna har ingen
      botten längre. */
-  color: color-mix(in srgb, var(--marmor) 89%, var(--djup));
+  color: color-mix(in srgb, var(--marmor) 97%, var(--djup));
 }
 
 .panel__slag {
@@ -1596,20 +1594,6 @@
 
 .panel__knapp:hover { background: var(--terrakotta); color: var(--marmor); }
 
-/* En låg ruta har inte råd med samma luft.
-
-   Partiet står fastnaglat, så allt som inte ryms i rutan går inte att
-   rulla fram — luften mellan styckena är då inte luft utan text man
-   förlorar. På en hög skärm får den vara kvar. */
-@media (max-height: 700px) {
-  .parti__inre { gap: 0.75rem; }
-  .parti__rutor { gap: 0.7rem 1.1rem; }
-  .panel__brod { line-height: 1.5; }
-  .panel__text { line-height: 1.45; }
-  .panel__se { padding-top: 0.3rem; }
-  .parti__hall { padding-bottom: 1.2rem; }
-}
-
 /* ── Mindre skärmar ───────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
@@ -1652,22 +1636,41 @@
   .parti__ljus {
     inset: -10% -14%;
     background:
-      radial-gradient(66% 46% at 48% 50%, rgba(14, 17, 24, 0.88) 0%,
-        rgba(14, 17, 24, 0.82) 34%, rgba(14, 17, 24, 0.58) 60%,
-        rgba(14, 17, 24, 0.26) 80%, transparent 100%);
+      radial-gradient(72% 52% at 48% 50%, rgba(12, 15, 21, 0.93) 0%,
+        rgba(12, 15, 21, 0.88) 38%, rgba(12, 15, 21, 0.64) 64%,
+        rgba(12, 15, 21, 0.28) 82%, transparent 100%);
   }
 
   /* Rubriken flyttar in i partiet. I rutan finns ingen plats bredvid
      texten att ge den, och lagd ovanpå hade den legat i vägen för det
      stycke den hör till. */
+  /* Rubriken är stor på en telefon, inte liten.
+
+     Den var satt i sidans vanliga rubrikgrad, vilket på en skärm som är
+     390 punkter bred blir tjugosex punkter — en rubrik i en textspalt. Men
+     här är den inte en rubrik i en spalt, den är titeln i en bild, och den
+     ska ta samma plats som titeln gör på en bred skärm. Tio procent av
+     rutans bredd ger trettionio punkter, och det är den grad som gör att
+     man läser den som en del av filmen. */
   .parti__rubrik {
     display: block;
-    font-size: var(--t-lg);
-    font-weight: 600;
-    line-height: 1.12;
-    letter-spacing: 0.01em;
-    margin: 0 0 0.3rem;
+    font-size: clamp(2.2rem, 10vw, 3.4rem);
+    font-weight: 620;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.5rem;
   }
+
+  /* Resten följer med upp. En stor rubrik över liten brödtext läser som en
+     rubrik med fotnoter. */
+  .panel__brod { font-size: clamp(1.12rem, 4.6vw, 1.4rem); line-height: 1.5; }
+  .panel__titel { font-size: clamp(1.2rem, 5vw, 1.55rem); }
+  .panel__text { font-size: clamp(1.04rem, 4.3vw, 1.3rem); line-height: 1.48; }
+  .panel__slag { font-size: 0.78rem; letter-spacing: 0.16em; }
+  .panel__fragor summary { font-size: clamp(1.06rem, 4.4vw, 1.3rem); }
+  .panel__fragor p { font-size: clamp(1rem, 4.2vw, 1.24rem); }
+  .panel__knapp { font-size: 1rem; padding: 0.9rem 1.5rem; }
+  .panel__se { font-size: 0.82rem; }
 
   /* Knapparna och frågorna behåller sina kanter. De är sådant man trycker
      på, och det ska synas att de går att trycka på — en yta utan kant är
@@ -1721,6 +1724,35 @@
   .akt:first-child { padding-top: 86vh; }
 
   .verk__spalt { justify-items: stretch; }
+}
+
+/* En låg ruta har inte råd med samma luft eller samma grad.
+
+   Partiet står fastnaglat, så allt som inte ryms i rutan går inte att
+   rulla fram — luften mellan styckena är då inte luft utan text man
+   förlorar. På en hög skärm får den vara kvar.
+
+   Blocket står efter telefonblocket med flit. Båda sätter samma
+   egenskaper på samma specificitet, och då vinner det som står sist. Låg
+   det före hände ingenting alls, vilket det gjorde tills det mättes. */
+@media (max-height: 700px) {
+  .parti__inre { gap: 0.6rem; }
+  .parti__rutor { gap: 0.6rem 1.1rem; }
+  .panel__brod { line-height: 1.45; }
+  .panel__text { line-height: 1.42; }
+  .panel__se { padding-top: 0.3rem; }
+  .parti__hall { padding-bottom: 1rem; }
+
+  /* Graden får också ge med sig. En rubrik på tio procent av bredden är
+     rätt på en hög skärm och för mycket på en låg — det som inte ryms går
+     inte att rulla fram, eftersom partiet står fastnaglat medan man läser
+     det. Mätt på 375 x 667: två partier spillde över med 43 och 8
+     bildpunkter innan det här. */
+  .parti__rubrik { font-size: clamp(1.85rem, 7.6vw, 2.5rem); margin-bottom: 0.35rem; }
+  .panel__brod { font-size: clamp(1rem, 4vw, 1.2rem); }
+  .panel__titel { font-size: clamp(1.08rem, 4.4vw, 1.3rem); }
+  .panel__text { font-size: clamp(0.96rem, 3.9vw, 1.14rem); }
+  .panel__knapp { font-size: 0.94rem; padding: 0.75rem 1.25rem; }
 }
 
 /* Den som bett om lugn får rutan hel, filmen stilla och spalten som en
