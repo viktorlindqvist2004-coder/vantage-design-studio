@@ -359,14 +359,18 @@ const PER_AKT = AKTER.map((_, i) =>
  *
  * Listan går runt. Sex håll räcker för att ingen granne ska dela riktning
  * med sin granne, och för att man inte ska hinna lära sig ordningen.
+ *
+ * Avstånden är drygt dubbelt så långa som de först var. Fyrtiofem
+ * bildpunkter är en nyans; hundra är en rörelse. Med en text som nu står
+ * still en hel skärmhöjd finns det också tid för en längre resa in.
  */
 const HALL: [number, number][] = [
-  [-45, 0],
-  [48, 0],
-  [0, 42],
-  [-38, 19],
-  [42, 16],
-  [0, -35],
+  [-115, 0],
+  [120, 0],
+  [0, 105],
+  [-95, 48],
+  [105, 40],
+  [0, -88],
 ]
 
 /**
@@ -387,12 +391,26 @@ const HALL: [number, number][] = [
  */
 const VAXEL = 0.5
 
-/** Hur brant ett stycke tonar in när ankomsten passerat dess tröskel. */
-const INGANG = 6
+/** Hur brant ett stycke tonar in när ankomsten passerat dess tröskel.
+ *
+ *  Ett stycke tar alltså 1/4,5 av ankomsten på sig, och ankomsten är en
+ *  hel ruta — drygt tvåhundra bildpunkters rullning för ett stycke att
+ *  komma fram. Talet var 6 när ankomsten var sextio hundradelar, vilket
+ *  gav nittio. */
+const INGANG = 4.5
 
 /** Avståndet mellan styckenas trösklar. Det är det som gör att de kommer
- *  ett i taget och inte allihop på en gång. */
-const TROSKEL = 0.028
+ *  ett i taget och inte allihop på en gång.
+ *
+ *  Nittio bildpunkter mellan två stycken, mot tidigare femton. Femton är
+ *  under vad man hinner uppfatta som en ordning: styckena kom i praktiken
+ *  samtidigt, och det var inte vad talet fanns för.
+ *
+ *  Taket sätts av att allt ska rymmas i ankomstens andra halva. Ett parti
+ *  har som mest fyra stycken, alltså tre steg: 3 × 0,09 + 1/4,5 = 0,49,
+ *  och gränsen är 0,5. Fler stycken per parti kräver ett mindre tal här
+ *  eller en brantare ingång — se `dela` och `MAX_RUTOR`. */
+const TROSKEL = 0.09
 
 /** Hur brant hela partiet tonar ut. Alla stycken lika, och fort. */
 const UTGANG = 3.5
@@ -505,8 +523,6 @@ export function Verk() {
   /** När den senaste bakåtsökningen gjordes, så de kan hållas sällsynta. */
   const sistaSok = useRef({ t: 0 })
   const [akt, setAkt] = useState(0)
-  /** Vilket parti som står framme, och därmed vilken rubrik rutan bär. */
-  const [parti, setParti] = useState(0)
   const [visar, setVisar] = useState<string | null>(null)
   /** Vilka tagningar som fått hämta sin fil. Aldrig fler än den som syns
    *  och den som står näst på tur. */
@@ -563,17 +579,14 @@ export function Verk() {
   }, [])
 
   /**
-   * Två observatörer, båda i stället för arbete per bildruta.
+   * En observatör i stället för arbete per bildruta.
    *
-   * Den första märker ut vilka partier som är i närheten. Stilmallen ger
+   * Den märker ut vilka partier som är i närheten. Stilmallen ger
    * bara dem sina rullningsanimationer — se noten vid `data-nara` i
    * site.css för varför det är hela skillnaden mellan billigare och dyrare
    * än slingan den ersatte. Marginalen är en rutas höjd åt vardera hållet,
    * alltså gott om tid att komma på plats innan partiet syns.
    *
-   * Den andra säger vilket parti som står framme, och därmed vilken rubrik
-   * rutan bär. Bandet är rutans mittersta femtedel: partierna är längre än
-   * så och gränsar till varandra, så exakt ett i taget skär det.
    */
   useEffect(() => {
     if (reducedMotion()) return
@@ -590,19 +603,8 @@ export function Verk() {
       { rootMargin: '100% 0px 100% 0px' },
     )
 
-    const framme = new IntersectionObserver(
-      (poster) => {
-        for (const p of poster) {
-          if (!p.isIntersecting) continue
-          const i = partier.current.indexOf(p.target as HTMLElement)
-          if (i >= 0) setParti((f) => (f === i ? f : i))
-        }
-      },
-      { rootMargin: '-40% 0px -40% 0px' },
-    )
-
-    for (const n of el) { nara.observe(n); framme.observe(n) }
-    return () => { nara.disconnect(); framme.disconnect() }
+    for (const n of el) nara.observe(n)
+    return () => nara.disconnect()
   }, [])
 
   useEffect(() => {
@@ -745,10 +747,7 @@ export function Verk() {
      * `useEffect` nedan. Det är ett besked som kommer när det händer, inte
      * en fråga som ställs sextio gånger i sekunden.
      */
-    let framme = -1
-    let bast = -1
     const V = window.innerHeight
-    if (cssTid.current) framme = -1
     const nya: number[] = []
     const ankomst: number[] = []
     const avfard: number[] = []
@@ -761,19 +760,28 @@ export function Verk() {
       // Ett parti långt utanför rutan har inget värde någon kan se.
       if (r.bottom < -V * 0.2 || r.top > V * 1.2) { nya.push(-1); continue }
       /**
-       * Ankomsten och avfärden tar sextio hundradelars ruta var.
+       * Ankomsten och avfärden mäts över en hel ruta var.
        *
-       * De var först 0,85 och överlämningen tog då nära halva rullningen —
-       * partiet hann knappt stå stilla innan nästa började komma. Kortare
-       * sträckor ger en tydligare växling: det ena är borta, det andra är
-       * framme, och däremellan en kort stund då båda är svaga. Ännu
-       * kortare vore ett klipp och inte en övergång.
-       */
-      const inn = clamp01((V - r.top) / (V * 0.6))
-      const ut = clamp01((r.bottom - V * 0.4) / (V * 0.6))
-      const v = Math.min(inn, ut)
-      if (v > bast) { bast = v; framme = i }
-      nya.push(v)
+       * Det här talet är hela skillnaden mellan en text som glider fram
+       * och en som slås på. Sträckan var sextio hundradelar, och av den
+       * ligger bara hälften efter växeln — trettio hundradelars ruta, som
+       * med den branthet ingången hade betydde att ett stycke gick från
+       * osynligt till fullt på nittio bildpunkters rullning. Nittio
+       * bildpunkter är ett enda hjulklick. Man såg därför aldrig något
+       * komma; man såg det ha kommit.
+       *
+       * Det syntes också som en skillnad mellan maskinerna: på telefon
+       * driver stilmallen samma rörelse över drygt en halv ruta, och de
+       * två höll alltså inte på att göra samma sak.
+       *
+       * Med en hel ruta ligger femhundra bildpunkter efter växeln, och det
+       * räcker för att både tona ett stycke i lugn takt och lägga
+       * styckena efter varandra. Partierna kan ändå inte mötas: nästa
+       * partis första stycke börjar först trehundrasextio bildpunkter
+       * efter att det förras sista har gått. */
+      const inn = clamp01((V - r.top) / V)
+      const ut = clamp01((r.bottom - V * 0.4) / V)
+      nya.push(Math.min(inn, ut))
       ankomst[i] = inn
       avfard[i] = ut
     }
@@ -870,7 +878,6 @@ export function Verk() {
     }
 
     setAkt((f) => (f === aktiv ? f : aktiv))
-    if (framme >= 0) setParti((f) => (f === framme ? f : framme))
   }, !reducedMotion())
 
   /**
@@ -894,8 +901,6 @@ export function Verk() {
       return n.every((x, i) => x === f[i]) ? f : n
     })
   }, [akt])
-
-  const rubrik = PARTIER[Math.min(parti, PARTIER.length - 1)].panel.rubrik
 
   return (
     <div className="verk" ref={spar}>
@@ -962,22 +967,14 @@ export function Verk() {
         <span className="verk__dis" />
         <Meander />
 
-        {/* Rubriken i rutan är partiets egen, och den enda det har.
+        {/* Här stod rubriken förut, fastnaglad i rutans nedre vänstra hörn
+            medan partiet under bar samma ord en gång till på en telefon.
+            Två platser för samma sak, och ingen av dem mitt i bilden.
 
-            Här stod förut en rad ur filmen som byttes tre gånger per
-            tagning — femton rubriker som fanns för bildens skull — och
-            partiet under bar sedan sin egen rubrik en gång till. Två lager
-            rubriker ovanpå varandra, varav det ena handlade om det man såg
-            i stället för om det vi gör.
-
-            Nu finns en. Den står stort i rutan där den syns mot filmen, och
-            partiet visar bara sitt stycke. På en telefon finns ingen plats
-            i rutan, och då står den i stället överst i partiet — se
-            `.parti__rubrik`. */}
-        <div className="verk__akt" key={rubrik}>
-          <span className="verk__ort">{AKTER[akt].namn}</span>
-          <h2 className="verk__rubrik">{rubrik}</h2>
-        </div>
+            Nu bär partiet sin rubrik själv på varje skärmstorlek, stort och
+            centrerat — se `.parti__rubrik`. Det gör också att rubrik och
+            stycke kommer och går tillsammans i stället för att den ena
+            byter medan den andra står kvar. */}
 
         {/* Var i verket man befinner sig. Fem streck, ett per akt. */}
         <ol className="verk__mat">

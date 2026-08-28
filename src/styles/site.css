@@ -919,6 +919,21 @@
   position: relative;
   background: var(--djup);
   color: var(--marmor);
+  /* Styckena reser hundra bildpunkter i sidled när de kommer och går, och
+     ljuset bakom dem ligger med negativ inspänning för att kunna tona ut
+     bortom kanten. På en dator syns det inte — det finns marginal. På en
+     telefon som är 390 bred blev sidans bredd 490, och en sida som går att
+     dra i sidled hakar i varje lodrätt svep: fingret tar med sig lite av
+     x-leden, kompositorn studsar tillbaka, och rullningen tappar sitt
+     glid. Det var mätbart och det var verkligt.
+
+     `clip` och inte `hidden`. Ett dolt spill gör elementet till en egen
+     rullningsbehållare, och då skulle rutan därinne fastna mot den i
+     stället för mot fönstret — filmen hade slutat stå still. `clip` klipper
+     utan att skapa någon behållare, så `position: sticky` inuti räknar
+     fortfarande mot rutan. Bara x-leden: y måste förbli synlig, annars
+     klipps det fastnaglade bort på höjden. */
+  overflow-x: clip;
 }
 
 /* Rutan. Fastnaglad hela verket igenom. */
@@ -1006,70 +1021,15 @@
      bilden själv i det ljus den ska ha däremellan. Bandet mellan 34 och 50
      procent är orört, och det är där man ser rummet man färdas genom. */
   background:
+    /* Jämnt åt båda hållen. Lutningen fanns för rubriken i vänstra hörnet,
+       och den står inte där längre. */
     linear-gradient(90deg,
-      rgba(16, 20, 28, 0.84) 0%,
-      rgba(16, 20, 28, 0.42) 22%,
-      rgba(16, 20, 28, 0.05) 40%,
-      transparent 60%),
+      rgba(16, 20, 28, 0.5) 0%,
+      rgba(16, 20, 28, 0.12) 26%,
+      rgba(16, 20, 28, 0.12) 74%,
+      rgba(16, 20, 28, 0.5) 100%),
     linear-gradient(0deg, rgba(16, 20, 28, 0.42) 0%, rgba(16, 20, 28, 0) 32%),
     radial-gradient(130% 95% at 50% 40%, transparent 48%, rgba(16, 20, 28, 0.38) 100%);
-}
-
-/* ── Akttiteln i rutan ────────────────────────────────────────────────── */
-
-.verk__akt {
-  position: absolute;
-  left: var(--gutter);
-  bottom: clamp(3.5rem, 11vh, 8rem);
-  z-index: 92;
-  /* Bredden följer typsnittsgraden, inte rotens fyra pixlar.
-
-     Rubriken sätts i `clamp(2rem, 4.2vw, 3.9rem)` och växer alltså med
-     fönstret — men rutan stod länge i 26rem, som är samma 416 bildpunkter
-     på varje skärm. Följden var att titeln bröts prydligt på en liten skärm
-     och sönder på en stor: vid 1440 var graden 60 punkter och rutan rymde
-     femton tecken, så var replikrad blev tre bildrader och den sista bar
-     ett ensamt ord. Nu tar rutan 42vw, samma väg som graden, och en
-     replikrad är två bildrader vid varje bredd.
-
-     Taket vid 34rem finns för att raden inte ska bli längre än den går att
-     hitta tillbaka i, och 42vw för att titeln aldrig ska nå in under
-     spalten till höger — se `.akt`, som lämnar plats för just det här. */
-  max-width: min(34rem, 42vw);
-  animation: aktin 900ms var(--out) both;
-}
-
-@keyframes aktin {
-  from { opacity: 0; transform: translate3d(0, 1.4rem, 0); }
-  to { opacity: 1; transform: none; }
-}
-
-.verk__ort {
-  display: block;
-  font-family: var(--mono);
-  font-size: var(--t-label);
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: var(--brons);
-  margin-bottom: 0.9rem;
-}
-
-.verk__rubrik {
-  font-size: clamp(2rem, 4.2vw, 3.9rem);
-  font-weight: 600;
-  line-height: 1.02;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  margin: 0;
-  /* Ristat i sten: en mörk kant nedåt och en ljus uppåt. Mycket svagt —
-     syns det tydligt är det en effekt, syns det knappt är det material.
-     Under dem en vid, svag skugga. Den syns inte som skugga; den håller
-     bara raden läsbar när tagningen råkar vara ljus just där den står, och
-     nu när rullningen spolar filmen råkar den vara allt möjligt. */
-  text-shadow:
-    0 1px 0 rgba(16, 20, 28, 0.55),
-    0 -1px 0 rgba(239, 233, 222, 0.14),
-    0 2px 26px rgba(16, 20, 28, 0.78);
 }
 
 /* ── Aktmätaren ───────────────────────────────────────────────────────── */
@@ -1202,7 +1162,7 @@
   margin-top: -100svh;
   pointer-events: none;
   display: grid;
-  justify-items: end;
+  justify-items: center;
   padding: 0 var(--gutter);
 }
 
@@ -1211,13 +1171,17 @@
    Den bär sitt id, som listens länkar pekar på, och den mäts av `Verk` för
    att veta vilken tagning som gäller. Höjden får den av partierna i sig;
    den har ingen egen. */
+/* Akten står mitt i rutan och inte vid en kant.
+
+   Texten låg förut i högra fyrtio procenten med rubriken i motsatt hörn,
+   en filmaffischuppställning. Den höll så länge rubriken var en egen sak i
+   rutan. Nu bär partiet sin rubrik själv, och två block i var sin kant med
+   film emellan blir två spalter — inte en bild med ord i.
+
+   Mitt i rutan står orden där ögat redan är. */
 .akt {
-  /* Smalare än den var. Bredden är inte satt efter hur mycket text som
-     finns utan efter hur mycket film som ska synas bredvid den: fyrtiotvå
-     procent åt spalten, fyrtiotvå åt rubriken i andra kanten, och bandet
-     däremellan åt bilden. */
-  width: min(34rem, 42vw);
-  justify-self: end;
+  width: min(46rem, 72vw);
+  justify-self: center;
 }
 
 /* Filmen ska stå ensam en stund innan första texten kommer fram. */
@@ -1235,11 +1199,19 @@
 .parti {
   /* Sträckan per parti, och därmed sidans längd: sexton partier gånger
      det här talet. Skillnaden mot rutans egen höjd är hur långt man rullar
-     medan partiet står stilla framför en — trettiofem hundradelars skärm,
-     vilket är den lugna stunden mitt i. Resten av sträckan går åt till att
-     partiet kommer och far, och de sträckorna delas med grannarna. */
-  height: 125vh;
-  height: 125svh;
+     medan partiet står stilla framför en.
+
+     Talet var 125, alltså tjugofem hundradelars skärm stillastående — och
+     det var för kort. Med en ankomst och en avfärd som båda tar tid blev
+     nästan hela partiets liv en övergång, och texten hann aldrig stå still
+     tillräckligt länge för att läsas i lugn och ro. Den smälte bort i sin
+     egen effekt.
+
+     Nu är det 185, alltså en hel skärmhöjd stillastående mellan att texten
+     kommit fram och att den börjar gå. Det kostar sidlängd, och det är
+     avsikten: man ska hinna längre innan nästa text kommer. */
+  height: 185vh;
+  height: 185svh;
 }
 
 .parti__hall {
@@ -1262,7 +1234,13 @@
      Utan det här hade det tomma utrymmet ovanför och under texten fångat
      varje klick på filmen bakom. */
   pointer-events: none;
-  position: relative;
+  /* Ingen `position: relative` här. Den stod en tid, tillagd för att ljuset
+     skulle ha något att ligga i, och skrev tyst över `position: sticky`
+     några rader ovanför — samma egenskap, senare deklaration. Partiet
+     slutade därmed stå still och rullade bara förbi medan det tonade, och
+     det var det som såg ut som att texten smälte bort i sin egen effekt.
+     Ett fastnaglat element är redan en referensram för det som ligger
+     absolut inuti det; raden behövdes aldrig. */
 }
 
 /* ── Ljuset bakom texten ──────────────────────────────────────────────
@@ -1282,23 +1260,56 @@
    kostar per bildruta. */
 .parti__ljus {
   position: absolute;
-  inset: -12% -8%;
+  top: -12%;
+  bottom: -12%;
+  /* Ljuset hör till rummet och inte till spalten, och måste därför mätas
+     mot rutan och inte mot texten.
+
+     Det låg förut inspänt i partiet, som är textspaltens bredd — 736
+     bildpunkter mitt i en skärm på 1440. Följden var en lodrät kant vid
+     293 och en vid 1147: mätt över bilden ett hopp på nio respektive
+     femton luminanssteg, alltså fullt synligt. Det är precis den kant som
+     får texten att läsa som pålagd i stället för som en del av filmen —
+     en platta med en gräns, vilket var vad hela ljuset fanns för att inte
+     vara.
+
+     Nu är lådan bredare än rutan. Kanterna hamnar utanför bild och kan
+     därmed inte synas, och det enda ögat möter är tonandet. Bredden
+     klipps av `overflow-x` på `.verk` och kan alltså inte ge sidan
+     vågrätt spill. */
+  left: 50%;
+  width: 116vw;
+  margin-left: -58vw;
   opacity: 0;
   pointer-events: none;
-  /* Måtten följer var texten står, inte rutans mitt. På en bred skärm bor
-     spalten i högra fyrtio procenten, så ljuset är centrerat där och når
-     ändå långt förbi vänsterkanten av den — annars blir det kort som står
-     ytterst till vänster stående i solen. */
+  /* Ljuset står där texten står, och texten står mitt i rutan.
+
+     Det satt en tid i högra fyrtio procenten, från när spalten bodde där.
+     När texten flyttade in i mitten följde ljuset inte med, och resultatet
+     var att orden hamnade i det ljusaste av bilden medan mörkret låg
+     bredvid dem. Det var därför texten smälte bort. */
   background:
-    radial-gradient(58% 54% at 76% 50%, rgba(12, 15, 21, 0.94) 0%,
-      rgba(12, 15, 21, 0.9) 34%, rgba(12, 15, 21, 0.7) 58%,
-      rgba(12, 15, 21, 0.34) 78%, rgba(12, 15, 21, 0.1) 91%, transparent 100%);
+    radial-gradient(36% 52% at 50% 50%, rgba(12, 15, 21, 0.95) 0%,
+      rgba(12, 15, 21, 0.92) 34%, rgba(12, 15, 21, 0.74) 58%,
+      rgba(12, 15, 21, 0.36) 79%, rgba(12, 15, 21, 0.1) 91%, transparent 100%);
 }
 
 .parti__inre {
+  /* Ovanpå ljuset, uttryckligen.
+
+     Ljuset är absolut placerat i samma stapel, och ett absolut placerat
+     element målas över innehåll som ligger i flödet om ingen säger annat.
+     Det gjorde att mörkret lades över orden i stället för bakom dem, och
+     texten såg ut att smälta bort i sin egen effekt — vilket den också
+     gjorde, bokstavligen. `z-index: -1` fanns när ljuset var ett
+     pseudoelement och följde inte med när det blev ett riktigt. */
+  position: relative;
+  z-index: 1;
   display: grid;
+  justify-items: center;
   gap: clamp(1.1rem, 2.6vh, 1.9rem);
   pointer-events: auto;
+  width: 100%;
 }
 
 /* ── Styckena, ett i taget och från var sitt håll ─────────────────────
@@ -1381,17 +1392,32 @@
        parti på 125 rutdelar biter fastnaglingen vid 100/225 av den
        sträckan och släpper vid 125/225 — mellan 44 och 56 procent.
 
-       Ankomsten ska därför vara avklarad före 44 och avfärden börja efter
-       56, även för det stycke som kommer sist. Med intervallen nedan står
-       allt uppe vid 37 procent och det första börjar tona bort vid 59. */
-    animation-range-start: cover calc(16% + var(--i) * 1.2%);
-    animation-range-end: cover calc(72% + var(--i) * 0.6%);
+       Med ett parti på 178 rutdelar biter fastnaglingen vid 100/278 av
+       sträckan och släpper vid 178/278 — mellan 36 och 64 procent.
+
+       Talen nedan är satta så att de två motorerna gör samma rörelse.
+       Slingan på dator tonar in ett stycke över drygt tvåhundra
+       bildpunkter och lägger nittio bildpunkter mellan två stycken; se
+       `INGANG` och `TROSKEL` i Verk.tsx. Räknat på samma ruta blir det
+       elva procent av `cover` för själva tonandet och tre och en halv
+       mellan styckena — och eftersom tonandet är de första
+       tjugotre hundradelarna av intervallet nedan måste intervallet
+       självt vara omkring fyrtionio procent långt.
+
+       Förskjutningen var 0,9 procent, alltså mindre än en tiondel av
+       tonandet. Två stycken kom då i praktiken samtidigt, och det tal som
+       fanns just för att de skulle komma efter varandra gjorde ingenting.
+
+       Allt står uppe vid 39 procent, alltså innan fastnaglingen släpper,
+       och det första börjar gå vid 57. */
+    animation-range-start: cover calc(19% + var(--i) * 3.4%);
+    animation-range-end: cover calc(68% + var(--i) * 1.2%);
   }
 
   @keyframes parti-del {
     0% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
-    24% { opacity: 1; transform: none; }
-    76% { opacity: 1; transform: none; }
+    23% { opacity: 1; transform: none; }
+    77% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0); }
   }
 
@@ -1401,8 +1427,8 @@
   [data-driv='css'] .parti[data-nara='ja'] .parti__ljus {
     animation: parti-ljus linear both;
     animation-timeline: --parti;
-    animation-range-start: cover 14%;
-    animation-range-end: cover 74%;
+    animation-range-start: cover 17%;
+    animation-range-end: cover 72%;
   }
 
   @keyframes parti-ljus {
@@ -1413,9 +1439,21 @@
   }
 }
 
-/* Rubriken står i rutan på en bred skärm — se `.verk__akt`. Här skulle den
-   bara vara samma ord en gång till, en tum längre ned. */
-.parti__rubrik { display: none; }
+/* Rubriken, och den är sidans största typografi.
+
+   Den stod förut fastnaglad i rutans hörn på bred skärm och doldes här.
+   Nu bär partiet den själv på varje skärmstorlek: stor, centrerad, och
+   framme och borta samtidigt med stycket den hör till. */
+.parti__rubrik {
+  display: block;
+  font-size: clamp(2.4rem, 5.2vw, 4.2rem);
+  font-weight: 620;
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem;
+  text-align: center;
+  text-wrap: balance;
+}
 
 /* ── Texten ligger på filmen, inte på ark ovanpå den ──────────────────
    Styckena hade förut ram, egen botten och frostat glas. Det höll så länge
@@ -1448,8 +1486,10 @@
 }
 
 .panel__brod {
-  font-size: clamp(1.02rem, 1.25vw, 1.22rem);
-  line-height: 1.58;
+  font-size: clamp(1.14rem, 1.6vw, 1.5rem);
+  line-height: 1.5;
+  text-align: center;
+  max-width: 34ch;
   color: color-mix(in srgb, var(--marmor) 82%, var(--djup));
   margin: 0;
 }
@@ -1460,21 +1500,30 @@
    på en rad. */
 .parti__rutor {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: clamp(0.9rem, 2.2vh, 1.5rem) clamp(1.1rem, 2.2vw, 1.8rem);
   align-items: start;
 }
 
-/* Rutorna hänger på indrag under sin rubrik, med en bronslinje i kanten i
-   stället för en botten. Linjen säger att de hör ihop och att de är
-   underordnade — vilket var allt lådan gjorde, till en bråkdel av vad den
-   kostade. */
+/* Rutorna står under sin rubrik med en bronslinje över sig i stället för
+   en botten. Linjen säger att de hör ihop och att de är underordnade —
+   vilket var allt lådan gjorde, till en bråkdel av vad den kostade.
+
+   Linjen låg förut i vänsterkanten, och rutan hängde på indrag efter den.
+   Det fungerade när texten var en spalt vid rutans sida. Nu står allt
+   annat mitt i bilden — rubriken, brödtexten, ljuset bakom dem — och två
+   vänsterställda rutor under en centrerad rubrik läser som att de tillhör
+   någon annan uppställning. Linjen flyttar därför upp och blir en list
+   över varje ruta, och innehållet mittas under den. */
 .ruta {
   display: grid;
   gap: 0.4rem;
   align-content: start;
-  padding-left: clamp(0.8rem, 1.4vw, 1.15rem);
-  border-left: 1px solid color-mix(in srgb, var(--brons) 48%, transparent);
+  justify-items: center;
+  text-align: center;
+  padding-top: clamp(0.75rem, 1.4vh, 1.05rem);
+  border-top: 1px solid color-mix(in srgb, var(--brons) 48%, transparent);
 }
 
 .panel__titel { font-weight: 600; font-size: clamp(1.05rem, 1.25vw, 1.24rem); }
@@ -1498,7 +1547,7 @@
 }
 
 .panel__se {
-  justify-self: start;
+  justify-self: center;
   margin-top: 0.6rem;
   display: inline-flex;
   align-items: center;
@@ -1525,6 +1574,8 @@
   margin: 1.4rem 0 0;
   display: grid;
   gap: 1.2rem;
+  justify-items: center;
+  text-align: center;
 }
 
 .panel__tal dt {
@@ -1542,7 +1593,17 @@
   color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
 }
 
-.panel__fragor { margin-top: 1.2rem; display: grid; }
+/* Frågorna mittas som block men inte som rader: en fråga och dess svar
+   läses som text, och centrerad brödtext med olika långa rader är
+   besvärlig att läsa. Blocket får därför en egen bredd och står mitt i
+   rutan, medan raderna i det står vänsterställda som text ska. */
+.panel__fragor {
+  margin-top: 1.2rem;
+  display: grid;
+  width: min(44rem, 100%);
+  justify-self: center;
+  text-align: left;
+}
 
 .panel__fragor details {
   border-top: 1px solid color-mix(in srgb, var(--marmor) 12%, transparent);
@@ -1600,8 +1661,7 @@
   /* På en telefon täcker spalten hela bredden, och då finns ingen plats
      kvar i rutan bredvid texten. Rubriken flyttar in i partiet — se
      `.parti__rubrik` nedan — och mätaren utgår helt. */
-  .verk__mat,
-  .verk__akt { display: none; }
+  .verk__mat { display: none; }
 
   /* Dimman läggs om från snett till rakt.
      Den lutar 78 grader, vilket på en bred ruta lägger det mörka i vänstra
@@ -1629,41 +1689,39 @@
      tar därför fler rader, men skärmen är också högre än den är bred — det
      som avgör hur länge ett parti behöver stå framme är hur mycket som
      ryms i rutan, inte hur många ord det är. */
-  .parti { height: 118vh; height: 118svh; }
+  .parti { height: 178vh; height: 178svh; }
 
   /* Spalten tar hela bredden här, så ljuset ska stå mitt i rutan och inte
-     i högra tredjedelen. */
+     i högra tredjedelen.
+
+     Och det ska vara betydligt svagare än på bred skärm, av ett skäl som
+     inte är smak: på en dator är texten en spalt mitt i rutan, och ett
+     ljus som täcker den tar en tredjedel av bilden. På en telefon går
+     texten kant i kant, alltså måste ljuset göra det med — och med samma
+     styrka som på datorn blev hela skärmen svart. Filmen fanns kvar bakom
+     men syntes inte, och en sida vars hela idé är att den *är* filmen har
+     då ingen idé kvar.
+
+     Sänkningen ligger nu på sju tiondelar i stället för nästan hela.
+     Bokstäverna bär redan en egen skugga och klarar sig på det; det ljuset
+     ska göra är att lägga rummet i halvdunkel, inte att släcka det. Ellipsen
+     är samtidigt vidare, så att tonandet blir längre och kanten aldrig går
+     att se. */
   .parti__ljus {
-    inset: -10% -14%;
+    top: -10%;
+    bottom: -10%;
     background:
-      radial-gradient(72% 52% at 48% 50%, rgba(12, 15, 21, 0.93) 0%,
-        rgba(12, 15, 21, 0.88) 38%, rgba(12, 15, 21, 0.64) 64%,
-        rgba(12, 15, 21, 0.28) 82%, transparent 100%);
+      radial-gradient(48% 56% at 50% 50%, rgba(12, 15, 21, 0.72) 0%,
+        rgba(12, 15, 21, 0.68) 38%, rgba(12, 15, 21, 0.5) 62%,
+        rgba(12, 15, 21, 0.22) 82%, transparent 100%);
   }
 
   /* Rubriken flyttar in i partiet. I rutan finns ingen plats bredvid
      texten att ge den, och lagd ovanpå hade den legat i vägen för det
      stycke den hör till. */
-  /* Rubriken är stor på en telefon, inte liten.
-
-     Den var satt i sidans vanliga rubrikgrad, vilket på en skärm som är
-     390 punkter bred blir tjugosex punkter — en rubrik i en textspalt. Men
-     här är den inte en rubrik i en spalt, den är titeln i en bild, och den
-     ska ta samma plats som titeln gör på en bred skärm. Tio procent av
-     rutans bredd ger trettionio punkter, och det är den grad som gör att
-     man läser den som en del av filmen. */
-  .parti__rubrik {
-    display: block;
-    font-size: clamp(2.2rem, 10vw, 3.4rem);
-    font-weight: 620;
-    line-height: 1.06;
-    letter-spacing: -0.015em;
-    margin: 0 0 0.5rem;
-  }
-
-  /* Resten följer med upp. En stor rubrik över liten brödtext läser som en
-     rubrik med fotnoter. */
-  .panel__brod { font-size: clamp(1.12rem, 4.6vw, 1.4rem); line-height: 1.5; }
+  /* Bara graderna som behöver gå upp på en smal skärm. Rubriken sköts av
+     den globala regeln, som räknar i procent av rutans bredd. */
+  .panel__brod { font-size: clamp(1.14rem, 4.6vw, 1.4rem); line-height: 1.45; }
   .panel__titel { font-size: clamp(1.2rem, 5vw, 1.55rem); }
   .panel__text { font-size: clamp(1.04rem, 4.3vw, 1.3rem); line-height: 1.48; }
   .panel__slag { font-size: 0.78rem; letter-spacing: 0.16em; }
@@ -1748,7 +1806,7 @@
      inte att rulla fram, eftersom partiet står fastnaglat medan man läser
      det. Mätt på 375 x 667: två partier spillde över med 43 och 8
      bildpunkter innan det här. */
-  .parti__rubrik { font-size: clamp(1.85rem, 7.6vw, 2.5rem); margin-bottom: 0.35rem; }
+  .parti__rubrik { font-size: clamp(1.9rem, 6.6vw, 2.6rem); margin-bottom: 0.3rem; }
   .panel__brod { font-size: clamp(1rem, 4vw, 1.2rem); }
   .panel__titel { font-size: clamp(1.08rem, 4.4vw, 1.3rem); }
   .panel__text { font-size: clamp(0.96rem, 3.9vw, 1.14rem); }
@@ -1802,17 +1860,6 @@
      ska det ligga kvar, annars läser man mot bar film. */
   .parti__ljus { opacity: 1; }
 
-  /* Rubriken flyttar in i partiet, precis som på en telefon: titeln i
-     rutan hör till en ruta som är fastnaglad, och det är den inte här. */
-  .parti__rubrik {
-    display: block;
-    font-size: var(--t-lg);
-    font-weight: 600;
-    line-height: 1.12;
-    margin: 0 0 0.3rem;
-  }
-
-  .verk__akt,
   .verk__mat { display: none; }
 
   .verk__lager { visibility: visible !important; }

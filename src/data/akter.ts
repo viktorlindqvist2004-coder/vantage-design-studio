@@ -12,6 +12,15 @@ import { FAQ, OFFERINGS, PROCESS, STATS, STUDIO, WHY } from './content'
  * det går till, hur det byggs, och vad som händer sedan — men det finns
  * inte längre några partier att bläddra mellan. Det är en enda rullning.
  *
+ * KORT PÅ FILMEN, LÅNGT I UNDERLAGET
+ * Texterna här är inledningar till det som står under dem, och de läses
+ * stående mitt i en rörlig bild — inte i en spalt man kan vila ögat i.
+ * Fyra meningar där uppe blev därför fyra meningar man rullade förbi. Var
+ * och en är nu en eller två, och ingenting av sakinnehållet är struket:
+ * det som föll bort var omtagningar av det punkterna eller korten strax
+ * nedanför redan säger. Vill man ha den utförliga versionen finns den i
+ * kundunderlaget, som är gjort för att läsas i lugn och ro.
+ *
  * INGA RÄKNEORD I RUBRIKERNA
  * "Fyra saker avgör" och "fem steg" fick läsaren att börja räkna i stället
  * för att läsa, och siffran var i båda fallen det minst intressanta i
@@ -50,11 +59,11 @@ export const AKTER: Akt[] = [
     paneler: [
       {
         rubrik: 'De flesta bestämmer sig på några sekunder',
-        brod: 'Vårt arbete går ut på att de sekunderna räcker. Vi ritar och utvecklar webbplatser och system åt små och medelstora verksamheter — varje projekt från tomt blad, utan mall i botten och utan plattform att hyra.',
+        brod: 'Vi ritar och utvecklar webbplatser och system åt små och medelstora verksamheter. Varje projekt från tomt blad — ingen mall i botten, ingen plattform att hyra.',
       },
       {
         rubrik: 'Det här avgör om en webbplats gör nytta',
-        brod: 'Inget av punkterna handlar om smak, och samtliga går att ta ställning till innan en rad kod skrivs.',
+        brod: 'Inget av det handlar om smak, och allt går att ta ställning till innan en rad kod skrivs.',
         punkter: WHY.map((w) => ({ titel: w.title, text: w.body })),
       },
     ],
@@ -65,7 +74,7 @@ export const AKTER: Akt[] = [
     paneler: [
       {
         rubrik: 'Webbplatser för alla slags verksamheter',
-        brod: 'Uppdragen skiljer sig i omfattning, inte i utförande — samma arbetssätt gäller för en enskild kampanjsida som för en e-handel med tusentals artiklar. Behöver ni något som inte står här utvecklar vi det också.',
+        brod: 'Uppdragen skiljer sig i omfattning, inte i utförande. Står inte ert här bygger vi det ändå.',
         kort: OFFERINGS.map((o) => ({
           namn: o.name,
           slag: o.kind,
@@ -75,7 +84,7 @@ export const AKTER: Akt[] = [
       },
       {
         rubrik: 'Systemen bakom webbplatsen',
-        brod: 'Bokning med tider, bekräftelser och avbokning. Inloggade portaler, register och de interna verktyg som annars sköts i ett kalkylark. Oftast hänger de ihop med webbplatsen, men det är inget krav — vi utvecklar systemet lika gärna när sajten redan finns.',
+        brod: 'Bokning med tider, bekräftelser och avbokning. Inloggade portaler, register och de verktyg som annars sköts i ett kalkylark — med eller utan ny webbplats.',
       },
     ],
   },
@@ -85,12 +94,12 @@ export const AKTER: Akt[] = [
     paneler: [
       {
         rubrik: 'Från första samtalet till lansering',
-        brod: 'Varje steg lämnar ifrån sig något ni kan hålla i handen och ha åsikter om. Ett steg utan leverans är svårt att veta när det är färdigt.',
+        brod: 'Varje steg lämnar ifrån sig något ni kan hålla i handen och ha åsikter om.',
         punkter: PROCESS.map((p) => ({ titel: p.title, text: `${p.body} Ni får: ${p.gives} Tid: ${p.takes.toLowerCase()}.` })),
       },
       {
         rubrik: 'Betalningen följer resultatet',
-        brod: 'Femton procent i depositionsavgift när arbetet inleds, resterande belopp först när webbplatsen är levererad och godkänd. Ingen delfakturering däremellan. Vi bär alltså kostnaden för nästan hela uppdraget själva, och det är avsikten: ni ska inte betala för något ni ännu inte sett fungera.',
+        brod: 'Femton procent när arbetet inleds, resten först när webbplatsen är levererad och godkänd. Ingen delfakturering däremellan — ni betalar inte för något ni ännu inte sett fungera.',
       },
     ],
   },
@@ -100,15 +109,15 @@ export const AKTER: Akt[] = [
     paneler: [
       {
         rubrik: 'Utvecklat komponent för komponent',
-        brod: 'Handskriven kod, prövad i riktiga webbläsare på riktiga enheter. Tillgänglighet och laddtid är krav från första komponenten, inte något som åtgärdas sist när det är dyrt. Under hela byggtiden har ni en löpande adress där ni kan följa arbetet.',
+        brod: 'Handskriven kod, prövad i riktiga webbläsare på riktiga enheter. Tillgänglighet och laddtid är krav från första komponenten, och ni följer arbetet på en löpande adress.',
       },
       {
         rubrik: 'Ni äger det färdiga arbetet',
-        brod: 'Källkoden och samtliga konton överlämnas till er vid lansering. Inga licenser att förnya, inga nycklar kvar hos oss. Väljer ni en annan leverantör längre fram sker bytet utan att något behöver byggas om.',
+        brod: 'Källkod och samtliga konton överlämnas vid lansering. Inga licenser att förnya, inga nycklar kvar hos oss — byter ni leverantör behöver ingenting byggas om.',
       },
       {
         rubrik: 'Drift och förvaltning som tillval',
-        brod: 'För 319 kr i månaden ligger webbplatsen på vår egen server, med övervakning, uppdateringar, löpande underhåll och de mindre ändringar som dyker upp längs vägen. Ett tillval och inte ett villkor — koden är er oavsett.',
+        brod: 'För 319 kr i månaden ligger sidan på vår server, med övervakning, uppdateringar och de mindre ändringar som dyker upp. Ett tillval, inte ett villkor — koden är er oavsett.',
       },
     ],
   },
