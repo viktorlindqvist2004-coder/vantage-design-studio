@@ -244,77 +244,71 @@ function stall(v: HTMLVideoElement, p: number) {
 const FULL_FART = 26
 
 /**
- * FILMEN GÅR I GLAPPEN, OCH STÅR STILLA MEDAN MAN LÄSER
- * ═════════════════════════════════════════════════════
- * Det här är svaret på "texten och videon känns som två helt olika saker".
+ * EN TAGNING ÄR EN RESA, OCH TEXTEN VÄNTAR VID FRAMKOMSTEN
+ * ════════════════════════════════════════════════════════
+ * Filmen spolades först som en rak lutning mot rullningen. Texten kom och
+ * gick efter partiets egen geometri, och de två visste inte om varandra:
+ * en rubrik kunde slå upp mitt i en kamerarörelse och försvinna medan
+ * kameran fortfarande svepte.
  *
- * Filmen spolades förut rakt mot rullningen: en lutning från klippets
- * första ruta till dess sista, jämnt fördelad över akten. Texten kom och
- * gick efter sin egen geometri. De två hade därmed ingenting med varandra
- * att göra — en rubrik kunde slå upp mitt i en kamerarörelse, försvinna
- * medan kameran fortfarande svepte, och nästa komma medan bilden var på
- * väg någon helt annanstans. Två saker i samma ruta som inte vet om
- * varandra läser som två saker, hur väl man än lägger ljus bakom orden.
+ * Nästa försök delade klippet i lika många steg som akten har partier och
+ * lade en vila vid varje. Filmen stod stilla medan man läste — det var
+ * rätt — men varje resa blev en liten bit av en tagning, och rytmen blev
+ * densamma som förut, bara hackad i småbitar: en pytteliten färd, en text,
+ * en pytteliten färd, en text.
  *
- * Nu är filmens tid en trappa i stället för en lutning. Kameran färdas
- * fram till en plats, stannar där, och det är då texten kommer. Man läser
- * på en stillastående bild. När texten går sig i väg lossnar kameran och
- * färdas vidare till nästa plats, där nästa text väntar.
+ * Nu är en tagning en enda resa. Kameran går från klippets första bildruta
+ * till dess sista i ett svep, långsammare än den någonsin gjort — närmare
+ * två skärmhöjders rullning för en hel tagning — och den gör det med
+ * ingenting i rutan. Man färdas. Vid framkomsten står bilden stilla, och
+ * det är då akten säger vad den har att säga: alla dess partier läses på
+ * den bildruta resan slutade på. Sedan sveper nästa tagning in och nästa
+ * resa börjar.
  *
- * VILOPUNKTERNA LIGGER DÄR TAGNINGEN TAR SLUT
- * Har en akt n partier delas klippet i n lika delar, och vila k ligger vid
- * (k+1)/n. Sista partiet i akten vilar alltså på klippets allra sista
- * bildruta: tagningen är färdig, den står kvar medan man läser, och först
- * därefter sveper nästa tagning in. Det är också vad man ser i en film —
- * åkningen tar slut, bilden ligger, och sedan klipps det.
+ * Det är också vad akterna heter till för. En akt är en tagning och ett
+ * ämne, och nu är det en plats också.
  *
- * VARFÖR RAMPEN ÄR MJUK OCH INTE RAK
+ * VARFÖR KURVAN ÄR UTJÄMNAD
  * En rak ramp som möter en vila stannar tvärt, och ett tvärt stopp i en
  * kamerarörelse läser som ett hack även när varenda bildruta hunnit fram.
- * `mjuk` nedan är en utjämning som gör att kameran bromsar in i vilan och
- * lossnar ur den. Det kostar ingenting — det är samma sökning, bara ett
- * annat tal — och det är skillnaden mellan en åkning som avslutas och en
- * som avbryts.
+ * `mjuk` nedan gör att kameran lossnar ur stillheten och bromsar in i den
+ * igen. Det kostar ingenting — samma sökning, ett annat tal.
  */
 
 /**
- * Hur stor del av ett partis sträcka som filmen står stilla.
+ * Hur många skärmhöjders rullning en hel tagning tar.
  *
- * Texten är fullt uppe mellan 0,33 och 0,61 av sträckan och har lämnat
- * vid 0,78 — samma tal på båda motorerna, se `INGANG` här och intervallen
- * i site.css. Vilan sträcker sig alltså tryggt förbi hela läsningen och
- * lossnar först medan orden är på väg bort.
+ * Förut tog ett klipp `n × 0,43` skärmhöjder, där n var aktens antal
+ * partier: mellan 0,86 och 1,72 beroende på akt. Talet nedan är
+ * långsammare än var och en av dem, och det är samma tal för alla fem —
+ * en tagning ska ta lika lång tid att färdas igenom oavsett hur mycket
+ * text som väntar på andra sidan.
  */
-const FILM_VILA = 0.68
+const RESA = 1.75
 
 /**
- * Hur långt före texten filmen ska vara framme, i samma enhet.
+ * Hur långt före texten kameran ska vara framme, i skärmhöjder.
  *
  * Ett andetags stillhet innan första ordet kommer. Utan det landar texten
  * i samma bildruta som kameran slutar röra sig, och då är det fortfarande
  * en text som kommer mitt i en rörelse — bara en kortare.
  */
-const FILM_FORE = 0.09
+const FORE = 0.18
 
 /** Utjämning: noll och ett med vågrät tangent i båda ändar. */
 const mjuk = (t: number) => t * t * (3 - 2 * t)
 
 /**
- * Filmens läge i sitt klipp, som en trappa.
+ * Tagningens läge, av hur långt det är kvar till aktens första text.
  *
- * `u` är hur många partier in i akten rullningen står, räknat så att u = k
- * är den punkt där parti k:s första ord börjar komma fram. `n` är hur
- * många partier akten har.
+ * `topp` är överkanten på aktens första parti. Texten börjar komma fram
+ * när den passerar rutans mittlinje, alltså är avståndet dit — mätt i
+ * skärmhöjder — hela det mått resan behöver. Kameran är framme `FORE`
+ * innan dess och står sedan stilla akten ut.
  */
-function trappa(u: number, n: number): number {
-  const steg = 1 / n
-  const k = Math.floor(u)
-  const f = u - k
-  // Klippets läge vid den vila som hör till parti k, och vid nästa.
-  const har = clamp01((k + 1) * steg)
-  if (f < FILM_VILA) return har
-  const nasta = clamp01((k + 2) * steg)
-  return har + (nasta - har) * mjuk(clamp01((f - FILM_VILA) / (1 - FILM_VILA - FILM_FORE)))
+function resan(topp: number, V: number): number {
+  const kvar = (topp - V * 0.5) / V
+  return mjuk(clamp01(1 - (kvar - FORE) / RESA))
 }
 
 /**
@@ -794,14 +788,14 @@ export function Verk() {
         p = i < aktiv ? 1 : 0
       } else {
         /**
-         * Trappsteget mäts ur aktens första parti och inte ur akten själv.
+         * Resan mäts ur aktens första parti och inte ur akten själv.
          *
          * Akten är ett avsnitt med egen fyllnad — första akten bär en hel
          * skärms luft överst för att filmen ska få stå ensam en stund — och
          * dess läge säger därför ingenting om var texten står. Partiets gör
-         * det exakt: `u = 0` är den bildpunkt där partiets första ord börjar
-         * komma fram, och det inträffar när partiets överkant passerar
-         * rutans mittlinje. Resten följer av att partierna är lika höga.
+         * det exakt: första ordet börjar komma fram i den bildpunkt då
+         * partiets överkant passerar rutans mittlinje, och avståndet dit är
+         * precis det mått resan ska fördelas över.
          *
          * En avläsning per bildruta, och den ligger i läsvarvet före alla
          * skrivningar — se noten om påtvingad layout längre ned. Att i
@@ -811,9 +805,7 @@ export function Verk() {
          */
         const forsta = partier.current[PER_AKT[i][0]?.nr ?? 0]
         const r = forsta?.getBoundingClientRect()
-        p = r && r.height > 1
-          ? clamp01(trappa((mitt - r.top) / r.height, PER_AKT[i].length))
-          : clamp01(aktivGenom)
+        p = r ? resan(r.top, mitt * 2) : clamp01(aktivGenom)
       }
       if (pek.current) {
         if (i === aktiv) jaga(v, p, nu, sistaSok.current)

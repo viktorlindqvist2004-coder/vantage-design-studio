@@ -1312,23 +1312,26 @@
 .akt {
   width: min(46rem, 72vw);
   justify-self: center;
+  /* Resan. Varje akt inleds med en sträcka rullning där ingenting står i
+     rutan och kameran färdas genom hela sin tagning — se `RESA` i
+     Verk.tsx. Måttet är inte pynt utan just den sträckan: filmen är
+     framme `FORE` innan första partiet nått rutans mittlinje, och för att
+     den ska starta på klippets första bildruta måste avståndet dit vara
+     minst RESA + FORE + 0,5 skärmhöjder. 185 räcker med marginal när
+     föregående akts sista text just lämnat. */
+  padding-top: 185vh;
 }
 
-/* Luften före första texten, och det är inte längre bara luft.
+/* Första akten har ingen föregående akt att räkna avståndet från, och
+   börjar därför vid sidans nollpunkt. Då måste hela måttet stå här:
+   RESA + FORE + 0,5 = 2,43 skärmhöjder, avrundat uppåt.
 
-   Talet är räknat och inte valt. Filmens läge är en trappa som mäts ur
-   första partiets överkant (se `trappa` i Verk.tsx), och trappans första
-   ramp börjar 0,32 partihöjder innan partiet nått rutans mittlinje. Ska
-   öppningsbilden vara klippets allra första bildruta — och det ska den,
-   det är den man ser bakom titeln — måste partiet stå minst
-   0,5 + 0,32 × 1,85 ≈ 1,09 skärmhöjder ned vid sidans nollpunkt.
-
-   Följden är att kameran gör hela sin första åkning under precis den
-   halva skärm där titeln tonar bort. Man börjar stilla i portiken med
-   namnet över sig, rullar, och kommer fram i templet lagom till att
-   titeln är borta och första texten är på väg. De två rörelserna är
-   samma rörelse. */
-.akt:first-child { padding-top: 112vh; }
+   Följden är att kamerans första åkning löper genom hela öppningen —
+   titeln står på klippets allra första bildruta, tonar bort över den
+   första halva skärmen, och kameran färdas vidare in i templet under
+   resten. Man börjar utanför portiken med namnet över sig och står inne i
+   den när första texten kommer. */
+.akt:first-child { padding-top: 245vh; }
 
 /* ── Ett parti ────────────────────────────────────────────────────────
    Partiet äger en sträcka av rullningen och sitter fastnaglat medan man
@@ -1350,11 +1353,19 @@
      tillräckligt länge för att läsas i lugn och ro. Den smälte bort i sin
      egen effekt.
 
-     Nu är det 185, alltså en hel skärmhöjd stillastående mellan att texten
-     kommit fram och att den börjar gå. Det kostar sidlängd, och det är
-     avsikten: man ska hinna längre innan nästa text kommer. */
-  height: 185vh;
-  height: 185svh;
+     Det stod sedan på 185, och då bar sträckan två saker: läsningen och
+     kamerans färd, för filmen gick fram i glappen mellan partierna. Den
+     färden ligger nu samlad i aktens egen resa i stället, och glappen
+     härinne är bara glapp — stillastående bild utan text i rutan. Ett
+     långt sådant är dött, och 185 gav ett långt sådant.
+
+     170 är vad som blir kvar när färden flyttat ut. Stilleståendet räknas
+     som partihöjden minus 1,178 skärmhöjder — ankomsten och avfärden tar
+     resten — alltså en halv skärm med orden fullt uppe, mot 0,67 förut och
+     0,25 innan dess. Kortare än det förra, längre än det som var för kort,
+     och utan de döda sträckorna. */
+  height: 170vh;
+  height: 170svh;
 }
 
 .parti__hall {
@@ -1535,26 +1546,26 @@
        parti på 125 rutdelar biter fastnaglingen vid 100/225 av den
        sträckan och släpper vid 125/225 — mellan 44 och 56 procent.
 
-       Med ett parti på 178 rutdelar biter fastnaglingen vid 100/278 av
-       sträckan och släpper vid 178/278 — mellan 36 och 64 procent.
+       Med ett parti på 170 rutdelar löper `cover` över 270 av dem, och
+       fastnaglingen biter vid 100/270 och släpper vid 170/270 — mellan 37
+       och 63 procent.
 
-       Talen nedan är satta så att de två motorerna gör samma rörelse.
-       Slingan på dator tonar in ett stycke över drygt tvåhundra
-       bildpunkter och lägger nittio bildpunkter mellan två stycken; se
-       `INGANG` och `TROSKEL` i Verk.tsx. Räknat på samma ruta blir det
-       elva procent av `cover` för själva tonandet och tre och en halv
-       mellan styckena — och eftersom tonandet är de första
-       tjugotre hundradelarna av intervallet nedan måste intervallet
-       självt vara omkring fyrtionio procent långt.
+       Talen är räknade mot slingan på dator, punkt för punkt, så att de
+       två motorerna gör samma rörelse. Räknat i partiets egen sträcka —
+       noll är den bildpunkt där första ordet börjar komma — ligger
+       slingans hållpunkter på 0 (första ordet), 0,29 (allt uppe), 0,60
+       (avfärden börjar) och 0,77 (allt borta). Omräknat till `cover` blir
+       det 18,5, 36,7, 56,1 och 66,7 procent, och det är de fyra talen
+       nedan är satta för.
 
-       Förskjutningen var 0,9 procent, alltså mindre än en tiondel av
-       tonandet. Två stycken kom då i praktiken samtidigt, och det tal som
-       fanns just för att de skulle komma efter varandra gjorde ingenting.
-
-       Allt står uppe vid 39 procent, alltså innan fastnaglingen släpper,
-       och det första börjar gå vid 57. */
-    animation-range-start: cover calc(19% + var(--i) * 3.4%);
-    animation-range-end: cover calc(68% + var(--i) * 1.2%);
+       Slutet är gemensamt och inte förskjutet. Slingan låter alla stycken
+       gå på en gång — ett parti som dras undan ska läsas som ett parti och
+       inte som fyra kort som far i väg efter varandra — och ett fast
+       slutvärde ger samma sak här. Att i stället förskjuta även slutet
+       hade vänt ordningen: styckena skulle lämna sist-in-först-ut, vilket
+       är rätt rörelse baklänges men fel rörelse för det här. */
+    animation-range-start: cover calc(18.5% + var(--i) * 3.7%);
+    animation-range-end: cover 67.3%;
   }
 
   @keyframes parti-del {
@@ -1570,8 +1581,8 @@
   [data-driv='css'] .parti[data-nara='ja'] .parti__ljus {
     animation: parti-ljus linear both;
     animation-timeline: --parti;
-    animation-range-start: cover 17%;
-    animation-range-end: cover 72%;
+    animation-range-start: cover 16%;
+    animation-range-end: cover 69%;
   }
 
   @keyframes parti-ljus {
@@ -1826,14 +1837,21 @@
     justify-self: stretch;
   }
 
-  /* Samma räkning som ovan, med partihöjden 1,78: 0,5 + 0,32 × 1,78 ≈ 1,07. */
-  .akt:first-child { padding-top: 110vh; }
+  /* Samma mått som på bred skärm. Resan mäts i skärmhöjder och inte i
+     partihöjder, så talet är detsamma oavsett skärm — det var det inte när
+     jag skrev det första gången, och följden var att filmen på telefon
+     redan stod 85 procent inne i sin tagning innan man rört rullhjulet. */
+  .akt:first-child { padding-top: 245vh; }
 
   /* Partiet får en kortare sträcka. Texten står i ett smalare mått här och
      tar därför fler rader, men skärmen är också högre än den är bred — det
      som avgör hur länge ett parti behöver stå framme är hur mycket som
      ryms i rutan, inte hur många ord det är. */
-  .parti { height: 178vh; height: 178svh; }
+  /* Samma höjd som på bred skärm. Skillnaden fanns för att texten tar fler
+     rader i ett smalare mått, men det som avgör stilleståendet är höjden
+     minus rutans egen — och rutan är hög och smal här, inte låg och bred.
+     Talen i `animation-range` nedan är räknade mot just 170. */
+  .parti { height: 170vh; height: 170svh; }
 
   /* Spalten tar hela bredden här, så ljuset ska stå mitt i rutan och inte
      i högra tredjedelen.
@@ -1921,9 +1939,9 @@
   /* Toningen behöver mer höjd än listen för att hinna ta slut mjukt. */
   .nav::before { bottom: -1.6rem; }
 
-  /* Låg skärm. Samma villkor, men skärmhöjden är liten och 110 av den blir
-     kort i bildpunkter — luften får därför inte kortas här heller. */
-  .akt:first-child { padding-top: 110vh; }
+  /* Låg skärm, samma mått. Resan är räknad i skärmhöjder, alltså krymper
+     den av sig själv med rutan. */
+  .akt:first-child { padding-top: 245vh; }
 
   .verk__spalt { justify-items: stretch; }
 }
