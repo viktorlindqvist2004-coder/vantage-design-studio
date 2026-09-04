@@ -1681,8 +1681,6 @@
 }
 
 .panel__titel { font-weight: 600; font-size: clamp(1.05rem, 1.25vw, 1.24rem); }
-.ruta .panel__slag + .panel__titel { font-size: var(--t-md); }
-
 .panel__text {
   font-size: clamp(0.98rem, 1.1vw, 1.12rem);
   line-height: 1.55;
@@ -1692,44 +1690,68 @@
   color: color-mix(in srgb, var(--marmor) 97%, var(--djup));
 }
 
-.panel__slag {
-  font-family: var(--mono);
-  font-size: var(--t-label);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--brons);
+/* ── Taggarna: sidtyperna på rad ──────────────────────────────────────
+   Sex namn i ett svep, var och en en knapp som öppnar sitt exempel.
+
+   De var kort med bransch över namnet, en beskrivning under och en knapp
+   längst ned. Ett sådant kort tar fyra gånger höjden av en tagg och säger
+   inte fyra gånger så mycket: att det finns en sidtyp som heter E-handel
+   behöver ingen beskrivning, och den som undrar hur den ser ut klickar och
+   får se den. Med tolv kort behövdes sex skärmar för en enda akt.
+
+   Raden bryts av sig själv och mittas rad för rad, för en uppräkning ska
+   se ut som en uppräkning och inte som en spalt. */
+.panel__taggar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.4vh, 0.8rem) clamp(0.5rem, 1vw, 0.75rem);
+  margin-top: 0.35rem;
 }
 
-.panel__se {
-  justify-self: center;
-  margin-top: 0.6rem;
+.panel__tagg {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1rem;
+  gap: 0.45rem;
+  padding: 0.6rem 1.05rem;
   font: inherit;
-  font-size: var(--t-label);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: clamp(0.95rem, 1.05vw, 1.08rem);
+  line-height: 1.2;
   color: var(--marmor);
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--marmor) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--marmor) 30%, transparent);
   border-radius: 999px;
   cursor: pointer;
-  transition: border-color 320ms var(--out), color 320ms var(--out);
+  /* Samma varma skugga som texten omkring. En tagg är en ram med ord i,
+     och ramen ligger direkt på filmen precis som orden gör. */
+  text-shadow: 0 1px 3px rgba(20, 12, 6, 0.95);
+  transition: border-color 320ms var(--out), color 320ms var(--out),
+    background-color 320ms var(--out);
 }
 
-.panel__se:hover {
+.panel__tagg:hover {
   border-color: var(--terrakotta);
-  color: var(--terrakotta);
+  background: color-mix(in srgb, var(--terrakotta) 14%, transparent);
 }
 
+.panel__tagg .btn__arrow {
+  opacity: 0.55;
+}
+
+/* Talen står på rad och inte i spalt.
+
+   Fyra tal under varandra tog en halv skärm, och akten de bor i ska rymma
+   rubrik, ingress, talen och två knappar på en enda. På rad tar de en
+   fjärdedel av det, och fyra korta påståenden bredvid varandra läses
+   dessutom som en uppställning — vilket är vad de är. */
 .panel__tal {
-  margin: 1.4rem 0 0;
+  margin: 1rem 0 0;
   display: grid;
-  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: clamp(0.9rem, 2.4vh, 1.5rem) clamp(1rem, 2vw, 1.8rem);
   justify-items: center;
   text-align: center;
+  width: 100%;
 }
 
 .panel__tal dt {
@@ -1744,54 +1766,22 @@
   margin: 0.4rem 0 0;
   font-size: var(--t-small);
   line-height: 1.6;
-  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
+  /* Sextioåtta procent marmor räckte mot en mörk botten. Den här akten
+     står på den färdiga staden i eftermiddagssol, och där var bildtexten
+     under talet i praktiken borta. Samma rättelse som `.panel__text` fick
+     av samma skäl. */
+  color: color-mix(in srgb, var(--marmor) 94%, var(--djup));
 }
 
-/* Frågorna mittas som block men inte som rader: en fråga och dess svar
-   läses som text, och centrerad brödtext med olika långa rader är
-   besvärlig att läsa. Blocket får därför en egen bredd och står mitt i
-   rutan, medan raderna i det står vänsterställda som text ska. */
-.panel__fragor {
-  margin-top: 1.2rem;
-  display: grid;
-  width: min(44rem, 100%);
-  justify-self: center;
-  text-align: left;
-}
-
-.panel__fragor details {
-  border-top: 1px solid color-mix(in srgb, var(--marmor) 12%, transparent);
-  padding: 0.9rem 0;
-}
-
-.panel__fragor summary {
-  cursor: pointer;
-  font-size: var(--t-small);
-  font-weight: 600;
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.panel__fragor summary::-webkit-details-marker { display: none; }
-.panel__fragor summary::after { content: '+'; color: var(--brons); }
-.panel__fragor details[open] summary::after { content: '–'; }
-
-.panel__fragor p {
-  margin: 0.7rem 0 0;
-  font-size: var(--t-small);
-  line-height: 1.6;
-  color: color-mix(in srgb, var(--marmor) 68%, var(--djup));
-}
-
-/* Adresserna radbryter hellre än krymper: två knappar bredvid varandra i en
-   spalt som är trettio rem bred hade tvingat fram avstavade e-postadresser,
-   och en adress man inte kan läsa i ett svep är ingen adress. */
 .panel__knappar {
   margin-top: 1.4rem;
   display: flex;
   flex-wrap: wrap;
+  /* Mittade som allt annat i partiet. De stod vänsterställda från den tid
+     spalten låg vid rutans kant, och när två knappar bryter till var sin
+     rad blir vänsterställningen det enda i skärmen som inte står mitt i
+     den. */
+  justify-content: center;
   gap: 0.7rem;
 }
 
@@ -1886,22 +1876,27 @@
   .panel__brod { font-size: clamp(1.14rem, 4.6vw, 1.4rem); line-height: 1.45; }
   .panel__titel { font-size: clamp(1.2rem, 5vw, 1.55rem); }
   .panel__text { font-size: clamp(1.04rem, 4.3vw, 1.3rem); line-height: 1.48; }
-  .panel__slag { font-size: 0.78rem; letter-spacing: 0.16em; }
-  .panel__fragor summary { font-size: clamp(1.06rem, 4.4vw, 1.3rem); }
-  .panel__fragor p { font-size: clamp(1rem, 4.2vw, 1.24rem); }
   .panel__knapp { font-size: 1rem; padding: 0.9rem 1.5rem; }
-  .panel__se { font-size: 0.82rem; }
 
-  /* Knapparna och frågorna behåller sina kanter. De är sådant man trycker
-     på, och det ska synas att de går att trycka på — en yta utan kant är
-     text, inte en knapp. */
+  /* Knapparna behåller sina kanter. De är sådant man trycker på, och det
+     ska synas att de går att trycka på — en yta utan kant är text, inte en
+     knapp.
+
+     Färgen måste följa med bottnen. Regeln vände botten från marmor till
+     mörkt men lät `color` stå kvar på `--djup`, alltså nästan svart text på
+     nästan svart platta: två knappar som såg ut som två tomma klumpar, och
+     den ena av dem var adressen man skulle skriva till. */
   .panel__knapp {
+    color: var(--marmor);
     background: color-mix(in srgb, #0b0f16 82%, transparent);
-    text-shadow: none;
+    border: 1px solid color-mix(in srgb, var(--marmor) 34%, transparent);
+    text-shadow: 0 1px 3px rgba(20, 12, 6, 0.95);
   }
-  .panel__se { text-shadow: none; }
-  .panel__fragor details {
-    border-top-color: color-mix(in srgb, var(--marmor) 26%, transparent);
+
+  .panel__knapp:hover {
+    color: var(--marmor);
+    background: color-mix(in srgb, var(--terrakotta) 82%, transparent);
+    border-color: var(--terrakotta);
   }
 
   /* Meandern dämpas till textur.
@@ -1958,9 +1953,17 @@
 @media (max-height: 700px) {
   .parti__inre { gap: 0.6rem; }
   .parti__rutor { gap: 0.6rem 1.1rem; }
+
+  /* Talen tar mest plats av allt i den sista akten, och det är också den
+     akt som har minst marginal kvar på en låg skärm — 33 bildpunkter mätt
+     på 375 × 667. Ett tal är dessutom fyra tecken; det behöver inte vara
+     lika stort som en rubrik för att läsas som ett tal. */
+  .panel__tal { margin-top: 0.6rem; gap: 0.7rem 1rem; }
+  .panel__tal dt { font-size: clamp(1.7rem, 7vw, 2.2rem); }
+  .panel__tal dd { margin-top: 0.2rem; line-height: 1.45; }
+  .panel__knappar { margin-top: 0.9rem; }
   .panel__brod { line-height: 1.45; }
   .panel__text { line-height: 1.42; }
-  .panel__se { padding-top: 0.3rem; }
   .parti__hall { padding-bottom: 1rem; }
 
   /* Graden får också ge med sig. En rubrik på tio procent av bredden är

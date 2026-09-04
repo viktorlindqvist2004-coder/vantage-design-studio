@@ -23,7 +23,7 @@ const LINKS = [
   { href: '#hantverket', text: 'Vad vi bygger' },
   { href: '#riktningen', text: 'Arbetsgången' },
   { href: '#bygget', text: 'Bygget' },
-  { href: '#sedan', text: 'Frågor' },
+  { href: '#sedan', text: 'Efter lansering' },
 ]
 
 export function Nav() {

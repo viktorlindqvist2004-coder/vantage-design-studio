@@ -314,84 +314,29 @@ function resan(topp: number, V: number): number {
 /**
  * PARTIERNA
  * ═════════
- * Akterna är fem och bär tolv stycken innehåll mellan sig. Filmen byter
- * tagning per akt; texten byter parti oftare än så. Koden behöver därför
- * båda: akten för att veta vilken tagning som gäller, partiet för att veta
- * vilken rubrik som står i rutan och vilket stycke som ska synas.
+ * Ett per akt, och det är hela sanningen numera. Akten är en tagning, en
+ * plats och en textskärm.
  *
  * ETT PARTI MÅSTE RYMMAS I RUTAN
  * Partiet står fastnaglat medan man läser det, och det som inte får plats
  * i rutan går därför inte att rulla fram — det ligger utanför kanten och
- * stannar där. Ett stycke med sex kort blev på en telefon avhugget både
- * upptill och nedtill, och de två korten i mitten var de enda som gick att
- * läsa.
+ * stannar där.
  *
- * Långa stycken delas därför upp i flera partier med samma rubrik. I rutan
- * står rubriken kvar oförändrad medan man går igenom dem, så det läses som
- * ett ämne som fortsätter och inte som ett nytt; bara det första bär
- * ingressen. Delningen räknas fram ur innehållet och inte ur handen, så
- * ett kort som läggs till i `content.ts` hamnar rätt av sig självt.
+ * Det löstes förut med att för långa stycken styckades automatiskt i flera
+ * partier med samma rubrik. Automatiken fungerade, och det var just den
+ * som gjorde sidan fel: man kom fram till en plats i filmen, bilden ställde
+ * sig stilla, och sedan bläddrade man vidare i text på samma stillastående
+ * bild. Sex kort blev sex skärmar på ett ställe.
+ *
+ * Passformen ligger nu i innehållet i stället — se noten i `akter.ts`. Det
+ * som inte ryms på en skärm står inte på sidan. `dela`, `MAX_RUTOR` och
+ * `MAX_FRAGOR` är därmed borta; med dem gick också det sista stället där
+ * koden kunde rädda ett stycke som var för långt.
  */
 
-/**
- * Så många rutor ett parti bär.
- *
- * Talet är mätt och inte valt. Tre rutor plus rubrik och ingress blev 161
- * bildpunkter för högt på en telefon med 668 bildpunkters höjd — en iPhone
- * SE — och två bildpunkter för högt på en med 844. Två ryms med marginal på
- * båda. Eftersom partiet står fastnaglat medan man läser det finns ingen
- * rullning att hämta fram det som inte får plats: det som inte ryms går
- * inte att läsa alls.
- */
-const MAX_RUTOR = 2
+type PartiData = { panel: PanelData; akt: number }
 
-/** Frågorna är hopfällda och tar en rad var, alltså ryms det fler. */
-const MAX_FRAGOR = 5
-
-/**
- * Delar en lista i jämnstora delar om den är för lång.
- *
- * Jämnstora och inte "fyll på tills det är fullt": sex kort med tak tre
- * blir tre och tre, medan fyra blir två och två i stället för tre och ett.
- * Ett ensamt kort sist läser som något som blivit över.
- */
-function dela<T>(lista: T[], max: number): T[][] {
-  if (lista.length <= max) return [lista]
-  const antal = Math.ceil(lista.length / max)
-  const storlek = Math.ceil(lista.length / antal)
-  const ut: T[][] = []
-  for (let i = 0; i < lista.length; i += storlek) ut.push(lista.slice(i, i + storlek))
-  return ut
-}
-
-type PartiData = {
-  panel: PanelData
-  akt: number
-  /** Bara det första bär ingress, tal, frågor och knappar. */
-  forst: boolean
-  punkter: NonNullable<PanelData['punkter']>
-  kort: NonNullable<PanelData['kort']>
-  fragor: NonNullable<PanelData['fragor']>
-}
-
-const PARTIER: PartiData[] = AKTER.flatMap((a, akt) =>
-  a.paneler.flatMap((panel): PartiData[] => {
-    const tom = { punkter: [], kort: [], fragor: [] }
-    if (panel.punkter) {
-      return dela(panel.punkter, MAX_RUTOR)
-        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, punkter: d }))
-    }
-    if (panel.kort) {
-      return dela(panel.kort, MAX_RUTOR)
-        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, kort: d }))
-    }
-    if (panel.fragor) {
-      return dela(panel.fragor, MAX_FRAGOR)
-        .map((d, i) => ({ panel, akt, forst: i === 0, ...tom, fragor: d }))
-    }
-    return [{ panel, akt, forst: true, ...tom }]
-  }),
-)
+const PARTIER: PartiData[] = AKTER.map((a, akt) => ({ panel: a.panel, akt }))
 
 /** Partiernas löpnummer, grupperade per akt, så spalten kan ritas akt för akt. */
 const PER_AKT = AKTER.map((_, i) =>
@@ -1181,7 +1126,7 @@ function Parti({ data, onVisa, refCb }: {
   onVisa: (id: string) => void
   refCb: (n: HTMLDivElement | null) => void
 }) {
-  const { panel, forst } = data
+  const { panel } = data
   // Löpnumret genom hela partiet, rutorna inräknade.
   let n = 0
   const del = (extra?: string) => {
@@ -1212,18 +1157,11 @@ function Parti({ data, onVisa, refCb }: {
         <div className="parti__inre">
           {/* Rubriken hör hemma i rutan, och står här bara på en skärm som
               inte har någon plats i rutan att ge den. */}
-          {/* Rubriken står i varje del, även i fortsättningarna.
-
-              På en bred skärm syns den inte här alls — den står i rutan,
-              och där står den kvar oförändrad genom hela ämnet. På en
-              telefon finns ingen sådan ruta, och en fortsättning utan
-              rubrik hade varit tre kort utan avsändare. Att den upprepas
-              är just vad som säger att ämnet fortsätter. */}
           <h3 {...del('parti__rubrik')}>{panel.rubrik}</h3>
 
-          {forst && panel.brod && <p {...del('panel__brod')}>{panel.brod}</p>}
+          {panel.brod && <p {...del('panel__brod')}>{panel.brod}</p>}
 
-          {forst && panel.tal && (
+          {panel.tal && (
             <dl {...del('panel__tal')}>
               {panel.tal.map((t) => (
                 <div key={t.varde}>
@@ -1234,21 +1172,28 @@ function Parti({ data, onVisa, refCb }: {
             </dl>
           )}
 
-          {/* Frågorna styckas inte. Hopfällda är de en rad var och tar
-              mindre än en skärm tillsammans, och nio egna stycken med en
-              rad i varje hade blivit en knapprad och inte en frågelista. */}
-          {data.fragor.length > 0 && (
-            <div {...del('panel__fragor')}>
-              {data.fragor.map((f) => (
-                <details key={f.q}>
-                  <summary>{f.q}</summary>
-                  <p>{f.a}</p>
-                </details>
+          {/* Taggarna. Ett namn är hela innehållet, och taggen är samtidigt
+              knappen som öppnar exemplet — ett kort med beskrivning och en
+              knapp under tog fyra gånger höjden och sade inte fyra gånger
+              så mycket. Alla i ett stycke: sex namn på rad läses som en
+              uppräkning, och en uppräkning som kommer ett ord i taget är
+              en uppräkning man väntar på. */}
+          {panel.taggar && (
+            <div {...del('panel__taggar')}>
+              {panel.taggar.map((t) => (
+                <button
+                  className="panel__tagg"
+                  type="button"
+                  key={t.namn}
+                  onClick={() => onVisa(t.exempel)}
+                >
+                  {t.namn}<Arrow />
+                </button>
               ))}
             </div>
           )}
 
-          {forst && panel.knappar && (
+          {panel.knappar && (
             <div {...del('panel__knappar')}>
               {panel.knappar.map((k) => (
                 <a className="panel__knapp" href={k.href} key={k.href}>
@@ -1258,25 +1203,12 @@ function Parti({ data, onVisa, refCb }: {
             </div>
           )}
 
-          {(data.punkter.length > 0 || data.kort.length > 0) && (
+          {panel.punkter && (
             <div className="parti__rutor">
-              {data.punkter.map((p) => (
+              {panel.punkter.map((p) => (
                 <div {...del('ruta')} key={p.titel}>
                   <b className="panel__titel">{p.titel}</b>
                   <span className="panel__text">{p.text}</span>
-                </div>
-              ))}
-
-              {data.kort.map((k) => (
-                <div {...del('ruta')} key={k.namn}>
-                  <span className="panel__slag">{k.slag}</span>
-                  <b className="panel__titel">{k.namn}</b>
-                  <span className="panel__text">{k.om}</span>
-                  {k.exempel && (
-                    <button className="panel__se" type="button" onClick={() => onVisa(k.exempel!)}>
-                      Se ett exempel<Arrow />
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
