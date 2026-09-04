@@ -6,6 +6,7 @@ import { clamp01 } from '../lib/math'
 import { reducedMotion, useTick } from '../lib/motion'
 import { Showroom } from './Showroom'
 import { Arrow } from './Chrome'
+import { LogoMark } from './Logo'
 import type { Panel as PanelData } from '../data/akter'
 
 /**
@@ -243,26 +244,78 @@ function stall(v: HTMLVideoElement, p: number) {
 const FULL_FART = 26
 
 /**
- * Hur stor del av aktens rullning som klippet använder.
+ * FILMEN GÅR I GLAPPEN, OCH STÅR STILLA MEDAN MAN LÄSER
+ * ═════════════════════════════════════════════════════
+ * Det här är svaret på "texten och videon känns som två helt olika saker".
  *
- * Talet är i praktiken filmens växel: ju mindre andel av akten klippet
- * behöver, desto längre hinner det per rullat hjulsteg. Under en period
- * stod det på 0,96 — nästan hela akten — och filmen gick då i det
- * närmaste lika långsamt som spalten, vilket lät bilden släpa efter det
- * man höll på att göra med handen.
+ * Filmen spolades förut rakt mot rullningen: en lutning från klippets
+ * första ruta till dess sista, jämnt fördelad över akten. Texten kom och
+ * gick efter sin egen geometri. De två hade därmed ingenting med varandra
+ * att göra — en rubrik kunde slå upp mitt i en kamerarörelse, försvinna
+ * medan kameran fortfarande svepte, och nästa komma medan bilden var på
+ * väg någon helt annanstans. Två saker i samma ruta som inte vet om
+ * varandra läser som två saker, hur väl man än lägger ljus bakom orden.
  *
- * Nu tar klippet slut en bit innan akten gör det. Färden blir en dryg
- * sjättedel snabbare, vilket är precis så mycket att bilden känns driven
- * av rullningen och inte släpad av den — men inte så mycket att man far
- * förbi tagningen innan man hunnit läsa raden som hör till den.
+ * Nu är filmens tid en trappa i stället för en lutning. Kameran färdas
+ * fram till en plats, stannar där, och det är då texten kommer. Man läser
+ * på en stillastående bild. När texten går sig i väg lossnar kameran och
+ * färdas vidare till nästa plats, där nästa text väntar.
  *
- * Att klippet är framme före akten betyder inte att bilden stannar.
- * Kameran går hela vägen till aktens slut oavsett (se `--gang`), så den
- * sista biten är fortfarande en rörelse genom rummet — bara utan att
- * bildrutorna byts. Det var stannandet som en gång fick sidan att läsa som
- * en film i bakgrunden, och det stannandet finns inte här.
+ * VILOPUNKTERNA LIGGER DÄR TAGNINGEN TAR SLUT
+ * Har en akt n partier delas klippet i n lika delar, och vila k ligger vid
+ * (k+1)/n. Sista partiet i akten vilar alltså på klippets allra sista
+ * bildruta: tagningen är färdig, den står kvar medan man läser, och först
+ * därefter sveper nästa tagning in. Det är också vad man ser i en film —
+ * åkningen tar slut, bilden ligger, och sedan klipps det.
+ *
+ * VARFÖR RAMPEN ÄR MJUK OCH INTE RAK
+ * En rak ramp som möter en vila stannar tvärt, och ett tvärt stopp i en
+ * kamerarörelse läser som ett hack även när varenda bildruta hunnit fram.
+ * `mjuk` nedan är en utjämning som gör att kameran bromsar in i vilan och
+ * lossnar ur den. Det kostar ingenting — det är samma sökning, bara ett
+ * annat tal — och det är skillnaden mellan en åkning som avslutas och en
+ * som avbryts.
  */
-const SPOLNING = 0.82
+
+/**
+ * Hur stor del av ett partis sträcka som filmen står stilla.
+ *
+ * Texten är fullt uppe mellan 0,33 och 0,61 av sträckan och har lämnat
+ * vid 0,78 — samma tal på båda motorerna, se `INGANG` här och intervallen
+ * i site.css. Vilan sträcker sig alltså tryggt förbi hela läsningen och
+ * lossnar först medan orden är på väg bort.
+ */
+const FILM_VILA = 0.68
+
+/**
+ * Hur långt före texten filmen ska vara framme, i samma enhet.
+ *
+ * Ett andetags stillhet innan första ordet kommer. Utan det landar texten
+ * i samma bildruta som kameran slutar röra sig, och då är det fortfarande
+ * en text som kommer mitt i en rörelse — bara en kortare.
+ */
+const FILM_FORE = 0.09
+
+/** Utjämning: noll och ett med vågrät tangent i båda ändar. */
+const mjuk = (t: number) => t * t * (3 - 2 * t)
+
+/**
+ * Filmens läge i sitt klipp, som en trappa.
+ *
+ * `u` är hur många partier in i akten rullningen står, räknat så att u = k
+ * är den punkt där parti k:s första ord börjar komma fram. `n` är hur
+ * många partier akten har.
+ */
+function trappa(u: number, n: number): number {
+  const steg = 1 / n
+  const k = Math.floor(u)
+  const f = u - k
+  // Klippets läge vid den vila som hör till parti k, och vid nästa.
+  const har = clamp01((k + 1) * steg)
+  if (f < FILM_VILA) return har
+  const nasta = clamp01((k + 2) * steg)
+  return har + (nasta - har) * mjuk(clamp01((f - FILM_VILA) / (1 - FILM_VILA - FILM_FORE)))
+}
 
 /**
  * PARTIERNA
@@ -513,6 +566,9 @@ export function Verk() {
     return d
   }
   const scen = useRef<HTMLDivElement>(null)
+  /** Öppningstiteln, och det tal den senast skrevs med. Se noten i varvet. */
+  const titel = useRef<HTMLDivElement>(null)
+  const titelKvar = useRef(-1)
   const forraY = useRef(0)
   const bradska = useRef(0)
   /** Avgörs en gång. Ett medievillkor som frågas sextio gånger i sekunden
@@ -639,6 +695,50 @@ export function Verk() {
     bradska.current += (clamp01(steg / FULL_FART) - bradska.current) * 0.2
 
     /**
+     * ÖPPNINGEN TONAR BORT
+     * ════════════════════
+     * Titeln lämnar över den första halva skärmen. Den är kvar hela vägen
+     * ned till att man börjar rulla, går över i filmen medan man gör det,
+     * och är borta innan första texten ens är på väg.
+     *
+     * Två skäl till att just den här rörelsen räknas här och inte av
+     * stilmallen, till skillnad från styckenas.
+     *
+     * Det är ett element och två skrivningar, mot ett par hundra för
+     * styckena. Det som gjorde slingan omöjlig på telefon var mängden, och
+     * den finns inte här.
+     *
+     * Och den behöver fungera överallt. Rullningsdrivna animationer finns
+     * i Safari först från 26; styckena har en slinga att falla tillbaka på
+     * om stödet saknas, men det första en besökare ser ska inte hänga på
+     * vilken version telefonen råkar ha. En titel som ligger kvar mitt över
+     * filmen för att webbläsaren inte kunde tona bort den är värre än allt
+     * annat den här sidan kan göra fel.
+     *
+     * Spärren nedan gör att varvet slutar röra elementet så fort det är
+     * borta: talet skrivs bara när det ändrats, och när titeln väl står på
+     * noll skrivs det aldrig mer. Resten av besöket kostar öppningen alltså
+     * ingenting alls.
+     */
+    {
+      const t = titel.current
+      if (t) {
+        const kvar = clamp01(1 - y / (mitt * 0.9))
+        if (Math.abs(kvar - titelKvar.current) > 0.002) {
+          titelKvar.current = kvar
+          t.style.opacity = kvar.toFixed(3)
+          /* Titeln lyfts och krymper en aning på väg bort. Rakt bortonad
+             läser den som ett lager som släcks; en som samtidigt drar sig
+             in i bilden läser som att man passerat den. */
+          t.style.transform = kvar === 1
+            ? 'none'
+            : `translate3d(0, ${(-(1 - kvar) * 7).toFixed(2)}vh, 0) scale(${(1 - (1 - kvar) * 0.06).toFixed(4)})`
+          t.style.visibility = kvar > 0 ? 'visible' : 'hidden'
+        }
+      }
+    }
+
+    /**
      * Varje akts läge läses ur dess eget avsnitt i spalten: hur långt
      * rutans mittlinje har vandrat genom avsnittet, från strax innan det
      * börjar till strax innan det slutar.
@@ -677,7 +777,8 @@ export function Verk() {
     }
 
     /**
-     * Filmen spolas av rullningen.
+     * Filmen spolas av rullningen, i steg och inte i en lutning. Se
+     * `trappa` för varför.
      *
      * Bara den gällande tagningen, och bara den som står näst på tur medan
      * den sveper in — en tagning som ingen ser ska inte kosta en sökning.
@@ -688,8 +789,32 @@ export function Verk() {
       const v = filmer.current[i]
       if (!v || !v.duration) continue
       if (i > aktiv + 1 || i < aktiv - 1) continue
-      const genom = i === aktiv ? aktivGenom : (i < aktiv ? 1 : 0)
-      const p = clamp01(genom / SPOLNING)
+      let p: number
+      if (i !== aktiv) {
+        p = i < aktiv ? 1 : 0
+      } else {
+        /**
+         * Trappsteget mäts ur aktens första parti och inte ur akten själv.
+         *
+         * Akten är ett avsnitt med egen fyllnad — första akten bär en hel
+         * skärms luft överst för att filmen ska få stå ensam en stund — och
+         * dess läge säger därför ingenting om var texten står. Partiets gör
+         * det exakt: `u = 0` är den bildpunkt där partiets första ord börjar
+         * komma fram, och det inträffar när partiets överkant passerar
+         * rutans mittlinje. Resten följer av att partierna är lika höga.
+         *
+         * En avläsning per bildruta, och den ligger i läsvarvet före alla
+         * skrivningar — se noten om påtvingad layout längre ned. Att i
+         * stället räkna fram partiets läge ur akten hade sparat den
+         * avläsningen och kostat att talet blev fel så fort en fyllnad
+         * ändrades i stilmallen.
+         */
+        const forsta = partier.current[PER_AKT[i][0]?.nr ?? 0]
+        const r = forsta?.getBoundingClientRect()
+        p = r && r.height > 1
+          ? clamp01(trappa((mitt - r.top) / r.height, PER_AKT[i].length))
+          : clamp01(aktivGenom)
+      }
       if (pek.current) {
         if (i === aktiv) jaga(v, p, nu, sistaSok.current)
         else stall(v, p)
@@ -966,6 +1091,17 @@ export function Verk() {
 
         <span className="verk__dis" />
         <Meander />
+
+        {/* Öppningen. Ligger i rutan och inte ovanför den, så att den hör
+            till filmen från första bildpunkten. Se `.verk__titel`. */}
+        <div className="verk__titel" ref={titel}>
+          <span className="verk__glod" aria-hidden="true" />
+          <LogoMark className="verk__marke" />
+          <h1 className="verk__namn">
+            <span className="verk__namn-rad">Vantage</span>
+            <span className="verk__namn-sub">Design Studio</span>
+          </h1>
+        </div>
 
         {/* Här stod rubriken förut, fastnaglad i rutans nedre vänstra hörn
             medan partiet under bar samma ord en gång till på en telefon.

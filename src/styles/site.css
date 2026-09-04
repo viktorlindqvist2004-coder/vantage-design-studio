@@ -1032,6 +1032,136 @@
     radial-gradient(130% 95% at 50% 40%, transparent 48%, rgba(16, 20, 28, 0.38) 100%);
 }
 
+/* ── Öppningen ────────────────────────────────────────────────────────
+   Det första man ser: märket, namnet, och ett ljus bakom dem.
+
+   Titeln ligger inne i rutan och inte i ett eget avsnitt ovanför den. Det
+   är hela poängen — en titel i ett eget avsnitt är en förstasida man
+   rullar bort för att komma till filmen, och då är filmen något som
+   kommer sedan. Här är den redan i gång bakom orden från första
+   bildpunkten, och det som händer när man rullar är inte att man lämnar
+   en sida utan att man kliver in i rummet.
+
+   BAKGRUNDSBELYST, OCH INTE PÅLYST
+   Ljuset ligger bakom bokstäverna och inte på dem. Det är en varm glöd
+   som tonar ut åt alla håll utan kant — samma resonemang som `.parti__ljus`,
+   men ljust i stället för mörkt: där texten står på en tagning som kan
+   vara vad som helst behövs mörker för att kunna läsa, men här står den
+   mot en portik i motljus, och då är det ljuset som bär den. Bokstäverna
+   får en svag glorja av samma färg, tillräckligt för att kanten mot sten
+   ska glöda och inte skäras. */
+
+.verk__titel {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: clamp(1.1rem, 3vh, 2rem);
+  padding: var(--nav-h) var(--gutter) 0;
+  pointer-events: none;
+  text-align: center;
+  /* Varvet skriver `opacity` och `transform` här. Löftet ges en gång, för
+     rörelsen sker en enda gång per besök och över en halv skärms rullning
+     — och ett lager som byggs om i just den stunden är det första
+     besökaren ser av sidan. */
+  will-change: transform, opacity;
+}
+
+/* Glöden, i två lager och utan en enda kant.
+
+   Det undre är mörkt och vitt. Det låter motsägelsefullt i ett ljus, men
+   det är just vad bakgrundsbelysning är: en ljus kärna behöver något
+   mörkare omkring sig för att läsa som ljus. Utan det undre lagret
+   fungerade titeln på telefon — där kröper bilden in i portikens mörka
+   dörröppning — och inte alls på bred skärm, där samma bildruta visar hela
+   fasaden i sol. Vitt på solbelyst sten är inte belyst, det är bara vitt.
+
+   Det övre är den varma kärnan. Den ligger tätare än mörkret, så ordningen
+   utifrån och in blir: orörd film, en aning skymning, glöd, bokstav.
+
+   Båda tonar ut till genomskinligt långt innanför sin egen låda, och lådan
+   är dessutom bredare än rutan. Det finns alltså ingen gräns att se
+   någonstans — samma resonemang som `.parti__ljus`. */
+.verk__glod {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 170vw;
+  height: 150vh;
+  margin: -75vh 0 0 -85vw;
+  pointer-events: none;
+  background:
+    radial-gradient(30% 26% at 50% 50%,
+      rgba(244, 218, 176, 0.36) 0%,
+      rgba(228, 188, 134, 0.22) 36%,
+      rgba(204, 144, 82, 0.1) 62%,
+      rgba(164, 100, 48, 0.03) 82%,
+      transparent 100%),
+    radial-gradient(46% 40% at 50% 50%,
+      rgba(14, 17, 24, 0.52) 0%,
+      rgba(14, 17, 24, 0.46) 34%,
+      rgba(14, 17, 24, 0.3) 58%,
+      rgba(14, 17, 24, 0.12) 78%,
+      transparent 100%);
+}
+
+.verk__marke {
+  position: relative;
+  width: clamp(2.6rem, 5.4vw, 4rem);
+  height: auto;
+  color: var(--marmor);
+  filter: drop-shadow(0 0 26px rgba(238, 206, 158, 0.5));
+}
+
+.verk__namn {
+  position: relative;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  /* Luften räknas mot underhänget och inte mot raden. Namnet sätts med
+     radavstånd under ett, så g:ets svans hänger ned i luften under raden
+     och åt upp den lilla som fanns: på bred skärm låg spärrningen tvärs
+     över svansen. */
+  gap: clamp(0.95rem, 2.6vh, 1.7rem);
+}
+
+.verk__namn-rad {
+  display: block;
+  font-size: clamp(3.4rem, 11vw, 9rem);
+  font-weight: 640;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  color: #fdfaf4;
+  /* Glorjan är varm och vid, skuggan kall och kort. Den första knyter
+     bokstaven till ljuset bakom, den andra ser till att den håller sig
+     läsbar också där tagningen är som ljusast. */
+  text-shadow:
+    0 0 44px rgba(244, 210, 158, 0.55),
+    0 0 14px rgba(255, 238, 214, 0.3),
+    0 2px 20px rgba(18, 12, 6, 0.55);
+}
+
+.verk__namn-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(0.72rem, 1.5vw, 1rem);
+  letter-spacing: 0.46em;
+  /* Spärrningen lägger ett tomrum efter sista tecknet som annars drar hela
+     raden ur mitten. */
+  text-indent: 0.46em;
+  text-transform: uppercase;
+  /* Ljus och inte brons. Brons mot solbelyst sten är samma färg som stenen,
+     och raden fanns i praktiken inte på bred skärm. Den varma tonen ligger
+     kvar i glorjan i stället, där den inte kostar läsbarhet. */
+  color: color-mix(in srgb, var(--marmor) 92%, var(--brons));
+  text-shadow:
+    0 0 22px rgba(244, 210, 158, 0.5),
+    0 1px 3px rgba(18, 12, 6, 0.9),
+    0 2px 14px rgba(18, 12, 6, 0.75);
+}
+
 /* ── Aktmätaren ───────────────────────────────────────────────────────── */
 
 .verk__mat {
@@ -1184,8 +1314,21 @@
   justify-self: center;
 }
 
-/* Filmen ska stå ensam en stund innan första texten kommer fram. */
-.akt:first-child { padding-top: 84vh; }
+/* Luften före första texten, och det är inte längre bara luft.
+
+   Talet är räknat och inte valt. Filmens läge är en trappa som mäts ur
+   första partiets överkant (se `trappa` i Verk.tsx), och trappans första
+   ramp börjar 0,32 partihöjder innan partiet nått rutans mittlinje. Ska
+   öppningsbilden vara klippets allra första bildruta — och det ska den,
+   det är den man ser bakom titeln — måste partiet stå minst
+   0,5 + 0,32 × 1,85 ≈ 1,09 skärmhöjder ned vid sidans nollpunkt.
+
+   Följden är att kameran gör hela sin första åkning under precis den
+   halva skärm där titeln tonar bort. Man börjar stilla i portiken med
+   namnet över sig, rullar, och kommer fram i templet lagom till att
+   titeln är borta och första texten är på väg. De två rörelserna är
+   samma rörelse. */
+.akt:first-child { padding-top: 112vh; }
 
 /* ── Ett parti ────────────────────────────────────────────────────────
    Partiet äger en sträcka av rullningen och sitter fastnaglat medan man
@@ -1683,7 +1826,8 @@
     justify-self: stretch;
   }
 
-  .akt:first-child { padding-top: 72vh; }
+  /* Samma räkning som ovan, med partihöjden 1,78: 0,5 + 0,32 × 1,78 ≈ 1,07. */
+  .akt:first-child { padding-top: 110vh; }
 
   /* Partiet får en kortare sträcka. Texten står i ett smalare mått här och
      tar därför fler rader, men skärmen är också högre än den är bred — det
@@ -1777,9 +1921,9 @@
   /* Toningen behöver mer höjd än listen för att hinna ta slut mjukt. */
   .nav::before { bottom: -1.6rem; }
 
-  /* Första akten börjar under en hel bildruta film: man ska se den öppnande
-     tagningen ensam innan något står i den. */
-  .akt:first-child { padding-top: 86vh; }
+  /* Låg skärm. Samma villkor, men skärmhöjden är liten och 110 av den blir
+     kort i bildpunkter — luften får därför inte kortas här heller. */
+  .akt:first-child { padding-top: 110vh; }
 
   .verk__spalt { justify-items: stretch; }
 }
@@ -1818,6 +1962,12 @@
    ingenting då — och varje lager hade varit osynligt. */
 @media (prefers-reduced-motion: reduce) {
   .verk__scen { position: relative; height: 62vh; }
+
+  /* Öppningen tonar inte bort här, för varvet som tonar den är avstängt.
+     Den blir i stället vad den är utan rörelse: en titel över filmens
+     första bildruta, i ett block med egen höjd. Löftet om ett lager tas
+     tillbaka — det fanns bara för tonandet. */
+  .verk__titel { will-change: auto; }
 
   /* Spalten står vid filmens sida så länge filmen ligger bakom den. Ligger
      den i stället ovanför som ett stillbild­block är en smal spalt längst ut
