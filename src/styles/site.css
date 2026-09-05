@@ -936,6 +936,30 @@
   overflow-x: clip;
 }
 
+/* ── Fästpunkterna ────────────────────────────────────────────────────
+   Sidans sex lägen: ett i verkets överkant för öppningen, och ett i varje
+   parti där texten står fullt uppe. `steg.ts` mäter dem och för sidan
+   mellan dem, en dragning i taget.
+
+   Utan höjd och ur flödet, båda två. En snäppunkt behöver bara ett läge —
+   den ska inte kunna knuffa någonting, och ett element med höjd i flödet
+   hade lagt till sin egen sträcka till varje akt. */
+.verk__lapp,
+.parti__lapp {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.verk__lapp { top: 0; }
+
+/* 21,4 hundradels ruta ned i partiet. Räkningen står i `Verk.tsx` där
+   lappen ritas: det är rullningsläget där texten är helt framme och
+   kameran har stått stilla en stund. */
+.parti__lapp { top: 21.4vh; }
+
 /* Rutan. Fastnaglad hela verket igenom. */
 .verk__scen {
   position: sticky;
@@ -1366,6 +1390,10 @@
      och utan de döda sträckorna. */
   height: 170vh;
   height: 170svh;
+  /* Referensram för `.parti__lapp`. Rör inte hållet därinne: det är
+     hållet som är fastnaglat, och `position` på föräldern gör bara att det
+     absolut placerade barnet har något att mäta sig mot. */
+  position: relative;
 }
 
 .parti__hall {

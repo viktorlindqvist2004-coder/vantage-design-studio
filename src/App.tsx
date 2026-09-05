@@ -1,6 +1,6 @@
 import { Cursor, Grain, Nav, Rail } from './components/Chrome'
 import { Verk } from './components/Verk'
-import { useSmooth } from './lib/smooth'
+import { useSteg } from './lib/steg'
 
 /**
  * SIDAN
@@ -16,7 +16,7 @@ import { useSmooth } from './lib/smooth'
  */
 
 export default function App() {
-  useSmooth()
+  useSteg()
 
   return (
     <>

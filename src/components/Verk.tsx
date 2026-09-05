@@ -966,6 +966,14 @@ export function Verk() {
 
   return (
     <div className="verk" ref={spar}>
+      {/* Öppningens fästpunkt.
+
+          Utan den snäpper rullningen bort från noll så fort man rör vid
+          den — med tvingande snäppning måste utgångsläget självt vara en
+          punkt, annars är det ingen punkt och sidan drar i väg till första
+          texten innan man hunnit se titeln. */}
+      <span className="verk__lapp" aria-hidden="true" />
+
       {/* ── Rutan. Ligger still hela vägen. ─────────────────────────── */}
       <div className="verk__scen" ref={scen} aria-hidden="true">
         {FILM.map((t, i) => (
@@ -1062,7 +1070,6 @@ export function Verk() {
         {AKTER.map((a, i) => (
           <section
             className="akt"
-            id={a.id}
             key={a.id}
             ref={(n) => { avsnitt.current[i] = n }}
           >
@@ -1070,6 +1077,15 @@ export function Verk() {
               <Parti
                 key={nr}
                 data={p}
+                /* Märket sitter på fästpunkten och inte på avsnittet.
+
+                   Avsnittet börjar där resan börjar, alltså nästan två
+                   skärmar innan texten finns. En länk i listen som lämnade
+                   en där hade lämnat en mitt i en kamerarörelse, och med
+                   snäppningen igång dessutom på en punkt som inte finns —
+                   webbläsaren hade genast dragit vidare till närmaste
+                   riktiga. Nu pekar länken på det man faktiskt ville se. */
+                id={a.id}
                 onVisa={setVisar}
                 refCb={(n) => { partier.current[nr] = n }}
               />
@@ -1121,8 +1137,9 @@ export function Verk() {
  * är. Det skrivs en gång per bildruta av `Verk`, och stilmallen gör resten
  * med `opacity` och `transform`. Ingen kod rör de enskilda styckena.
  */
-function Parti({ data, onVisa, refCb }: {
+function Parti({ data, id, onVisa, refCb }: {
   data: PartiData
+  id: string
   onVisa: (id: string) => void
   refCb: (n: HTMLDivElement | null) => void
 }) {
@@ -1151,6 +1168,15 @@ function Parti({ data, onVisa, refCb }: {
 
   return (
     <div className="parti" ref={refCb}>
+      {/* Fästpunkten: här står texten fullt uppe och filmen stilla.
+
+          Läget är räknat och inte valt. Texten är helt framme mellan 0,29
+          och 0,60 av partiets sträcka — se `INGANG` i den här filen och
+          intervallen i site.css — och punkten ligger på 0,42, alltså med
+          marginal åt båda håll. Omräknat till rullningsläge är det
+          partiets överkant plus 21,4 hundradels ruta, och det är höjden
+          `.parti__lapp` står på. */}
+      <span className="parti__lapp" id={id} aria-hidden="true" />
       <div className="parti__hall">
         {/* Ljuset som gör att texten hör till bilden. Se `.parti__ljus`. */}
         <div className="parti__ljus" aria-hidden="true" />

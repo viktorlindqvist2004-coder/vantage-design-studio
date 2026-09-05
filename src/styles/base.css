@@ -19,6 +19,18 @@ html {
   background: var(--paper);
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
+
+  /* Ingen `scroll-snap-type` här, och det var första försöket.
+
+     Mätt: med fästpunkter 3195 bildpunkter isär flyttade ett hjulsnurr på
+     120 bildpunkter sidan noll bildpunkter. Webbläsaren drar tillbaka till
+     närmaste punkt så länge dragningen inte bär mer än halvvägs, och först
+     vid 1600 hoppade den över. Överlämningen görs i stället av `steg.ts`,
+     som flyttar hela sträckan på en dragning oavsett hur kort den var.
+
+     Ingen `scroll-behavior: smooth` heller, av samma skäl: framförningen
+     där skriver rullningsläget varje bildruta, och webbläsarens egen
+     glidning ovanpå den är två som skriver samma tal åt olika håll. */
   scroll-behavior: auto;
 }
 
@@ -122,5 +134,6 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+    scroll-snap-type: none !important;
   }
 }
