@@ -34,8 +34,21 @@ import { reducedMotion, setForst } from './motion'
  * sida som rullar som vanligt.
  */
 
-/** Hur lång en överlämning är. En hel tagning ska hinna spelas upp. */
-const TID = 1500
+/**
+ * Hur lång en överlämning är.
+ *
+ * Talet stod på 1500, och då hann man inte se vad som hände. Det var inte
+ * främst för att 1500 är kort utan för att kurvan var fel — se `kurva`
+ * nedan. Med den kurvan fick resan 20 hundradelar av tiden, alltså 300
+ * millisekunder för en sex sekunder lång tagning: tjugo gångers fart, och
+ * det är inte en kamerarörelse utan en suddning.
+ *
+ * Nu får resan 60 hundradelar, alltså 2,3 sekunder för de sex — knappt tre
+ * gångers fart. Det är en rask åkning man kan följa. Resten av tiden går åt
+ * till att förra texten lämnar och nästa kommer, och det är fades som inte
+ * behöver lika lång tid.
+ */
+const TID = 3800
 
 /**
  * Hur länge en dragning räknas som pågående efter sista händelsen.
@@ -50,9 +63,69 @@ const VILA = 220
 /** Hur långt fingret måste färdas för att räknas som ett svep. */
 const SVEP_MIN = 28
 
-/** Mjuk i båda ändar: kameran lossnar och bromsar in. */
-const mjuk = (t: number) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+/**
+ * FARTEN MÄTS I STRÄCKA, INTE I TID
+ * ═════════════════════════════════
+ * Överlämningen är 3,55 rutor lång och består av tre olika saker:
+ *
+ *   0 – 25,7 %   förra textens avfärd
+ *   25,7 – 74,7 %  resan, alltså hela tagningen från första bildruta till sista
+ *   74,7 – 100 %   nästa texts ankomst
+ *
+ * Talen följer av `RESA` och `FORE` i Verk.tsx och av partiets höjd; ändras
+ * någon av dem måste de här räknas om.
+ *
+ * En vanlig utjämning — långsam i ändarna, snabb i mitten — lägger sin fart
+ * precis där resan ligger. Mätt: den kubiska in-ut-kurvan gav resan tjugo
+ * hundradelar av tiden. Det är fel håll. Det som ska gå fort är de två
+ * toningarna; det som ska gå långsamt är åkningen genom rummet.
+ *
+ * Därför är farten här en funktion av hur långt man kommit och inte av hur
+ * lång tid det gått: dubbelt så snabb i ändarna som i mitten, med en mjuk
+ * start och en landning som sätter sig. Kurvan integreras en gång till en
+ * uppslagstabell, och varje bildruta slår upp sin sträcka i den.
+ */
+
+/** Hur mycket snabbare ändarna går än mitten. */
+const ANDE = 2.6
+
+const glatt = (x: number) => {
+  const u = Math.min(1, Math.max(0, x))
+  return u * u * (3 - 2 * u)
+}
+
+/** `TABELL[i]` är den andel av tiden som gått när sträckan `i / N` är nådd. */
+const TABELL = (() => {
+  const N = 256
+  const fart = (d: number) => {
+    // Ett i mitten där resan går, `ANDE` i de två ändarna.
+    const inne = glatt((d - 0.17) / 0.11) * glatt((0.83 - d) / 0.11)
+    const grund = ANDE + (1 - ANDE) * inne
+    /* Mjuk start och landning. Golvet finns för att farten aldrig får bli
+       noll — tiden att tillryggalägga en sträcka i noll fart är oändlig, och
+       summan nedan hade skenat. */
+    return grund * Math.max(0.16, Math.min(glatt(d / 0.04), glatt((1 - d) / 0.09)))
+  }
+  const t = [0]
+  for (let i = 1; i <= N; i++) t.push(t[i - 1] + 1 / fart((i - 0.5) / N))
+  const tot = t[N]
+  return t.map((x) => x / tot)
+})()
+
+/** Sträckan vid tiden `t`, uppslagen och interpolerad ur tabellen. */
+const kurva = (t: number) => {
+  const n = TABELL.length - 1
+  let lo = 0
+  let hi = n
+  while (hi - lo > 1) {
+    const m = (lo + hi) >> 1
+    if (TABELL[m] <= t) lo = m
+    else hi = m
+  }
+  const span = TABELL[hi] - TABELL[lo]
+  const k = span > 0 ? (t - TABELL[lo]) / span : 0
+  return (lo + k) / n
+}
 
 export function useSteg() {
   useEffect(() => {
@@ -93,11 +166,12 @@ export function useSteg() {
        * `VILA` avvisar styrplattans utrullning, som är trettio händelser
        * och en dragning. Andra villkoret avvisar en ny dragning som kommer
        * medan kameran nyss lossnat — men bara då. Kommer den när resan är
-       * mer än gången tas den emot och målet flyttas ett steg till, för den
+       * halvgången tas den emot och målet flyttas ett steg till, för den
        * som rullar på i jämn takt ska komma framåt och inte mötas av en
-       * sida som ignorerar varannan dragning.
+       * sida som ignorerar varannan dragning. Halva av 3800 är 1,9
+       * sekunder, alltså ungefär så ofta man hinner dra igen.
        */
-      if (nu - sist < VILA || (gar && kommit < 0.6)) { sist = nu; return }
+      if (nu - sist < VILA || (gar && kommit < 0.5)) { sist = nu; return }
       const i = (gar ? malI : narmast()) + steg
       if (i < 0 || i >= lagen.length) { sist = nu; return }
       fran = window.scrollY
@@ -109,7 +183,7 @@ export function useSteg() {
     const slappVarv = setForst((nu) => {
       if (malI < 0) return
       const t = Math.min(1, (nu - start) / TID)
-      window.scrollTo(0, Math.round(fran + (lagen[malI] - fran) * mjuk(t)))
+      window.scrollTo(0, Math.round(fran + (lagen[malI] - fran) * kurva(t)))
       if (t >= 1) malI = -1
     })
 
