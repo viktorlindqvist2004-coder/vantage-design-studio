@@ -43,8 +43,8 @@ import { reducedMotion, setForst } from './motion'
  * millisekunder för en sex sekunder lång tagning: tjugo gångers fart, och
  * det är inte en kamerarörelse utan en suddning.
  *
- * Nu får resan 60 hundradelar, alltså 2,3 sekunder för de sex — knappt tre
- * gångers fart. Det är en rask åkning man kan följa. Resten av tiden går åt
+ * Nu får resan 60 hundradelar. Mätt i webbläsaren blir det 2,08 sekunder
+ * för de sex, alltså 2,9 gångers fart. Det är en rask åkning man kan följa. Resten av tiden går åt
  * till att förra texten lämnar och nästa kommer, och det är fades som inte
  * behöver lika lång tid.
  */
@@ -81,8 +81,8 @@ const SVEP_MIN = 28
  * toningarna; det som ska gå långsamt är åkningen genom rummet.
  *
  * Därför är farten här en funktion av hur långt man kommit och inte av hur
- * lång tid det gått: dubbelt så snabb i ändarna som i mitten, med en mjuk
- * start och en landning som sätter sig. Kurvan integreras en gång till en
+ * lång tid det gått: 2,6 gånger så snabb i ändarna som i mitten — se
+ * `ANDE` — med en mjuk start och en landning som sätter sig. Kurvan integreras en gång till en
  * uppslagstabell, och varje bildruta slår upp sin sträcka i den.
  */
 
