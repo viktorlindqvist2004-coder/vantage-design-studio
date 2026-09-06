@@ -43,12 +43,11 @@ import { reducedMotion, setForst } from './motion'
  * millisekunder för en sex sekunder lång tagning: tjugo gångers fart, och
  * det är inte en kamerarörelse utan en suddning.
  *
- * Nu får resan 60 hundradelar. Mätt i webbläsaren blir det 2,08 sekunder
- * för de sex, alltså 2,9 gångers fart. Det är en rask åkning man kan följa. Resten av tiden går åt
- * till att förra texten lämnar och nästa kommer, och det är fades som inte
- * behöver lika lång tid.
+ * Nu får resan 60 hundradelar av tiden. Resten går åt till att förra texten
+ * lämnar och nästa kommer, och det är toningar som inte behöver lika lång
+ * tid som en kamerarörelse.
  */
-const TID = 3800
+const TID = 3300
 
 /**
  * Hur länge en dragning räknas som pågående efter sista händelsen.
@@ -144,6 +143,8 @@ export function useSteg() {
     let malI = -1
     let fran = 0
     let start = 0
+    /** Åt vilket håll den pågående framförningen går: 1 fram, −1 tillbaka. */
+    let riktning = 0
     /** När den senaste dragningen senast hördes av. */
     let sist = 0
 
@@ -160,22 +161,44 @@ export function useSteg() {
       const nu = performance.now()
       const gar = malI >= 0
       const kommit = gar ? (nu - start) / TID : 1
+
       /**
-       * En dragning i taget, men inte i en och en halv sekund.
+       * ATT VÄNDA GÅR ALLTID
        *
-       * `VILA` avvisar styrplattans utrullning, som är trettio händelser
-       * och en dragning. Andra villkoret avvisar en ny dragning som kommer
-       * medan kameran nyss lossnat — men bara då. Kommer den när resan är
-       * halvgången tas den emot och målet flyttas ett steg till, för den
-       * som rullar på i jämn takt ska komma framåt och inte mötas av en
-       * sida som ignorerar varannan dragning. Halva av 3800 är 1,9
-       * sekunder, alltså ungefär så ofta man hinner dra igen.
+       * Det gjorde det inte förut, och det var felet bakom "man kan inte
+       * rulla tillbaka". Spärren nedan avvisade varje dragning som kom
+       * innan framförningen var halvgången — oavsett åt vilket håll den
+       * gick. En framförning är 3,3 sekunder, alltså fanns det ett fönster
+       * på en och en halv sekund efter varje svep där ett svep åt andra
+       * hållet inte gjorde någonting alls. Den som svepte fram och genast
+       * ville tillbaka möttes av en sida som inte svarade, och slutsatsen
+       * att det inte gick är den enda rimliga att dra.
+       *
+       * En vändning är dessutom aldrig något att dämpa. Den är ett besked
+       * om att man ville något annat än det som pågår, och det beskedet ska
+       * gå fram i samma stund det ges.
        */
-      if (nu - sist < VILA || (gar && kommit < 0.5)) { sist = nu; return }
-      const i = (gar ? malI : narmast()) + steg
-      if (i < 0 || i >= lagen.length) { sist = nu; return }
+      const vander = gar && Math.sign(steg) !== riktning
+
+      /**
+       * `VILA` avvisar styrplattans utrullning, som är trettio händelser
+       * och en dragning. Det andra villkoret avvisar en ny dragning åt
+       * samma håll som kommer medan kameran nyss lossnat — men bara då.
+       * Kommer den när resan är halvgången tas den emot och målet flyttas
+       * ett steg till, för den som rullar på i jämn takt ska komma framåt
+       * och inte mötas av en sida som ignorerar varannan dragning.
+       */
+      if (steg === 0) return
+      if (nu - sist < VILA || (gar && !vander && kommit < 0.5)) { sist = nu; return }
+      const nuvarande = gar ? malI : narmast()
+      /* Klipp mot ändarna i stället för att avvisa. `Home` och `End` skickar
+         hela listans längd som steg just för att hamna längst ut, och med en
+         ren avvisning gjorde de två tangenterna ingenting alls. */
+      const i = Math.max(0, Math.min(lagen.length - 1, nuvarande + steg))
+      if (i === nuvarande) { sist = nu; return }
       fran = window.scrollY
       malI = i
+      riktning = Math.sign(i - nuvarande)
       start = nu
       sist = nu
     }
@@ -184,7 +207,7 @@ export function useSteg() {
       if (malI < 0) return
       const t = Math.min(1, (nu - start) / TID)
       window.scrollTo(0, Math.round(fran + (lagen[malI] - fran) * kurva(t)))
-      if (t >= 1) malI = -1
+      if (t >= 1) { malI = -1; riktning = 0 }
     })
 
     /* ── Hjulet ──────────────────────────────────────────────────────
@@ -258,9 +281,23 @@ export function useSteg() {
       history.pushState(null, '', id)
     }
 
-    /* Rutans höjd står i varje mått här — fästpunkterna sitter på `vh` —
-       så lägena måste mätas om när den ändras. */
-    const paStorlek = () => { mat(); malI = -1 }
+    /**
+     * NÄR RUTAN BYTER HÖJD
+     *
+     * Fästpunkterna sitter på skärmhöjder, så lägena måste mätas om när
+     * rutan ändras. Men framförningen ska inte avbrytas, och det gjorde den
+     * förut — `malI = -1` stod här.
+     *
+     * På en telefon är det inte ett kantfall utan det normala. Adressraden
+     * fälls ihop så fort sidan börjar röra sig, rutan växer med sextio till
+     * hundra bildpunkter, och webbläsaren skickar en storleksändring mitt i
+     * resan. Följden var att kameran stannade tvärt någonstans på vägen och
+     * lämnade en mellan två lägen.
+     *
+     * Nu mäts bara om. Varvet läser `lagen[malI]` varje bildruta, så målet
+     * flyttar med av sig självt och resan fortsätter dit den skulle.
+     */
+    const paStorlek = () => { mat() }
 
     addEventListener('wheel', paHjul, { passive: false })
     addEventListener('touchstart', paStart, { passive: true })
@@ -269,6 +306,9 @@ export function useSteg() {
     addEventListener('keydown', paTangent)
     document.addEventListener('click', paKlick)
     addEventListener('resize', paStorlek)
+    /* Adressradens upp- och nedfällning på telefon syns här och inte alltid
+       i `resize`. */
+    visualViewport?.addEventListener('resize', paStorlek)
 
     return () => {
       removeEventListener('wheel', paHjul)
@@ -278,6 +318,7 @@ export function useSteg() {
       removeEventListener('keydown', paTangent)
       document.removeEventListener('click', paKlick)
       removeEventListener('resize', paStorlek)
+      visualViewport?.removeEventListener('resize', paStorlek)
       slappVarv()
     }
   }, [])

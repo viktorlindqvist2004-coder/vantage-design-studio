@@ -957,8 +957,19 @@
 
 /* 21,4 hundradels ruta ned i partiet. Räkningen står i `Verk.tsx` där
    lappen ritas: det är rullningsläget där texten är helt framme och
-   kameran har stått stilla en stund. */
-.parti__lapp { top: 21.4vh; }
+   kameran har stått stilla en stund.
+
+   `svh` och inte bara `vh`, av samma skäl som partiets höjd har det. De två
+   måtten är inte samma sak på en telefon: `vh` räknar rutan med adressraden
+   undanfälld och `svh` med den framme, och mellanskillnaden är sextio till
+   hundra bildpunkter. Stod lappen i `vh` medan partiet den sitter i står i
+   `svh` hamnade den en bit fel ned i partiet — och partiets 21,4 hundradelar
+   är just den punkt där texten står fullt uppe, så en bit fel betyder en
+   text som inte hunnit fram eller redan börjat gå. */
+.parti__lapp {
+  top: 21.4vh;
+  top: 21.4svh;
+}
 
 /* Rutan. Fastnaglad hela verket igenom. */
 .verk__scen {
